@@ -34,19 +34,14 @@ This is the core.
 
 **Marine = Program**
 
-It is the space that fills an entire Tree.
+It is the space that contains the entire Goal DAG.
 
 ```text
 Root Goal
-────────────────────────────
-
-██████████████████████████
-
-██████████████████████████
-
-██████████████████████████
-
-Leaf Chain
+   ├── Goal B ──┐
+   └── Goal C ──┴── Shared Goal D
+                         │
+                  Grounded Leaves
 ```
 
 This entire blue region
@@ -79,7 +74,8 @@ There is only one Root.
 
 The world where Goals no longer exist.
 
-Here, there are only **Concrete Leaves** — reference anchors and arrow functions.
+Here, there are only **Concrete Leaves** — reference anchors and arrow-function
+leaves belonging to named Goals.
 
 A reference anchor names a **host function**, such as
 
@@ -109,7 +105,7 @@ The point where a Leaf is bound to a **host function**.
 
 is a prime example.
 
-An Anchor is always a reference to a host function — never a native effect and never a Subsea goal (those are reached by Goal import). It is opaque: never expanded, it only inherits the goal path it sits under. This is where the Goal Tree touches reality.
+An Anchor is always a reference to a host function — never a native effect and never a Subsea goal (those are reached by Goal import). It is opaque: never expanded, it inherits every active lineage that reaches it. This is where the Goal DAG touches reality.
 
 ---
 
@@ -124,7 +120,7 @@ Its responsibilities are limited to
 * Expansion
 * Reduction
 * Lazy Reduction
-* TCO
+* TCO (future; see [Recursion.md](Recursion.md))
 * Incremental Expansion
 
 only, no evaluation at all.
@@ -157,7 +153,7 @@ Touchdown is
 
 In other words,
 
-it is the state where the Leaf Chain
+it is the state where the reachable Leaves
 
 has actually
 
@@ -197,9 +193,10 @@ It keeps expanding.
 
 This is where many people get confused.
 
-The Scheduler does not know the entier program.
+The Scheduler does not know the entire program.
 
-The Scheduler only knows ground nodes.
+The Scheduler only knows grounded evaluation instances: a shared structural
+Goal node paired with routed arguments and active lineages.
 
 ```text
 Leaf

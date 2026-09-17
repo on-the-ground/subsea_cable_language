@@ -395,12 +395,15 @@ No action can edit topology, routing, aliases, or committed deductions.
 ### 8.6 Illustration only
 
 ```subsea
-@retry Patch
-@timeout("30s") {ReadCode[issue], ReadLogs[issue]}
+Patch = [d] -> @retry $editFiles(d)
+Read  = [issue] -> @timeout("30s") {ReadCode[issue], ReadLogs[issue]}
 ```
 
-A hypothetical `retry` interpreter answers `AttemptOutcome(Failed)` with
-`Reattempt`. A hypothetical `timeout` interpreter answers `ScopeOpened` with
+A hypothetical `retry` interpreter directly targets the `$editFiles` Anchor
+occurrence and answers its `AttemptOutcome(Failed)` with `Reattempt`. Written
+on the `Patch` Goal occurrence instead (`@retry Patch`), it would never receive
+the leaf's attempt events (§8.3), and reattempting the Goal scope itself is
+undefined (R4). A hypothetical `timeout` interpreter answers `ScopeOpened` with
 `StartTimer`, and `TimerFired` with `CancelScope` and then `FailScope`. Neither
 behavior is accepted language or policy semantics.
 
@@ -478,13 +481,13 @@ RunStuck(blockingReasons)
 Fix = [issue] -> [
     [] -> { code: ReadCode[issue], logs: ReadLogs[issue] },
     [{code, logs}] -> Diagnose[code, logs],
-    @retry Patch,
+    Patch,
     Verify
 ]
 ReadCode = [issue]      -> $readCode(issue)
 ReadLogs = [issue]      -> $ciLogs(issue)
 Diagnose = [code, logs] -> $diagnose(code, logs)
-Patch    = [d]          -> $editFiles(d)
+Patch    = [d]          -> @retry $editFiles(d)
 Verify   = [p]          -> $runTests(p)
 Fix["T-1"]
 ```
@@ -503,8 +506,8 @@ language rule.
 | 5 | both Anchors succeed | resolving map Satisfied `{code, logs}` → `ValueResolved`; Scheduler may now demand stage 2 |
 | 6 | stage 2 deduces → Diagnose Touchdown | dispatch |
 | 7 | prefetch examines `Patch` | Patch needs Diagnose's unresolved output → `PrefetchBlocked(pendingValue)`; no deduction commits |
-| 8 | Diagnose succeeds | its value resolves; Scheduler demands Patch → deduction commits, `retry` metadata attaches, Touchdown becomes eligible |
-| 9 | Patch fails | `retry` interpreter → `Reattempt`; same deduction, attempt 2 |
+| 8 | Diagnose succeeds | its value resolves; Scheduler demands Patch → deduction commits and exposes the `$editFiles` Anchor occurrence; its direct `retry` metadata attaches; the Touchdown becomes eligible |
+| 9 | `$editFiles` fails | the Anchor's own `retry` interpreter → `Reattempt`; same deduction, attempt 2 |
 | 10 | Patch succeeds | Scheduler demands Verify; only now can Verify deduce with Patch's resolved output |
 | 11 | Verify succeeds | serial Satisfied → `Fix` Satisfied → run result = Verify's value |
 

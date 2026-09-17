@@ -1,9 +1,16 @@
-# Findings from Building the Carousel POC
+# Carousel POC Findings
 
-> **Status:** evidence for owner review. Each item names what the POC did so it
-> could keep running. None of these choices is a proposed default. Items that
-> change language semantics need an SCP; items marked **Owner decision** need an
-> explicit decision before they are specified.
+> **Status:** evidence for owner review, not normative. It comes from an
+> independent proof of concept of the Carousel and its orchestrating Runtime,
+> maintained outside this repository at
+> [on-the-ground/subsea_cable_runtime](https://github.com/on-the-ground/subsea_cable_runtime)
+> (pinned to this repository at `cbc6f53`). Each item names what the POC did so
+> it could keep running. None of these choices is a proposed default. Items
+> that change language semantics need an SCP; items marked **Owner decision**
+> need an explicit decision before they are specified.
+
+Related plans: [CAROUSEL_ENGINE_PLAN.md](CAROUSEL_ENGINE_PLAN.md) and
+[RUNTIME_ORCHESTRATION_PLAN.md](RUNTIME_ORCHESTRATION_PLAN.md).
 
 ## Specification contradictions
 
@@ -17,17 +24,19 @@ writes the scenario as `Upper = [] -> B[]`.
 **Needed:** either correct the scenario text, or allow a bare zero-arity Goal as
 a direct Goal-arrow body (grammar and README change).
 
-### F2. The orchestration walkthrough's `@retry Patch` cannot work under the review rules
+### F2. Empty source unit
 
-`docs/RUNTIME_ORCHESTRATION_PLAN.md` §13 puts `@retry` on the `Patch` Goal
-occurrence and expects a leaf reattempt. Under review point 4 (a policy
-observes only its direct target) and R4 (composite reattempt is undefined), a
-policy on a Goal occurrence never receives the leaf's `AttemptOutcome`. The POC
-rejects `@retry` on a Goal occurrence with `UnsupportedPolicyTarget` (test
-`TestPolicyOnGoalOccurrenceIsNotInherited`). `examples/fix.subc` puts the policy
-on the Anchor leaf instead: `Patch = [d] -> @retry(2) $editFiles(d)`.
+Review of the first POC PR asked for an empty source to parse and fail as
+`InvalidRoot`. The current grammar does not allow that: `SubseaCable.g4` has
+`program : TERMINATOR? statementList EOF` and `statementList` requires at least
+one `statement`; the EBNF has the same shape. Generating the parser from
+`SubseaCable.g4` with ANTLR 4.11.1 and parsing an empty file reports
+`line 1:0 mismatched input '<EOF>'`, and a file of blank lines reports the same
+at EOF. The POC therefore keeps `SyntaxError` for empty sources.
 
-**Needed:** update the walkthrough, or decide R4.
+**Needed:** if empty programs should reach semantic validation, change both
+grammars and add an empty-file conformance case (an SCP); otherwise add an
+empty-file `SyntaxError` case to record the current rule.
 
 ## Missing contract pieces
 
@@ -63,12 +72,26 @@ or define it as a Scheduler-side hold on demand under the composite.
 ### F6. Failures found by speculative prefetch
 
 Carousel plan scenario 10 requires that a failure found ahead of evaluation must
-not disturb the evaluating leaf. With a fail-fast baseline, surfacing that
-failure immediately would cancel in-flight siblings. The POC records the
-failure at deduction time but surfaces it only when the Scheduler would demand
-the occurrence (`DeductionFailureDeferred` → `DeductionFailureSurfaced`). The
-plan should state which component owns this timing; it looks like Scheduler
-policy.
+not disturb the evaluating leaf. The POC records every prefetch-found failure
+at deduction time and surfaces it only when the Scheduler explicitly demands
+that occurrence (`DeductionFailureDeferred` → `DeductionFailureSurfaced`); a run
+that never demands it ends for lack of demand. The Carousel reports the
+occurrence's state to each demand (`accepted`, `already-committed`, `failed`,
+`withdrawn`, ...) so the Scheduler can do this.
+
+**Needed:** the plan should state that surfacing a speculative failure is a
+Scheduler decision tied to demand, and what `Demand` returns for a failed
+occurrence.
+
+### F6a. The consumption point changes what "N ahead" means (R10)
+
+With consumption at dispatch, the POC keeps N Touchdowns buffered behind an
+in-flight leaf. With consumption at completion, the in-flight leaf still
+occupies the window, so only N−1 are buffered behind it. A regression test in
+the POC shows both. Whichever point R10 selects, the Carousel plan's sentence
+"the leaf currently selected for evaluation is not one of those two" fixes the
+expected count, so R10 and the window counting rule (Carousel decision 3) must
+be decided together.
 
 ### F7. Nested serial stages and routing
 
@@ -112,13 +135,12 @@ such calls join the dependency structure. This is the same staging problem as
 eager `Goal(...)` arguments (R3). The POC rejects both with
 `UnsupportedByProfile`.
 
-## Residual issues in the orchestration plan (from the earlier review)
+## Residual issues in the orchestration plan
 
-These were raised before the POC and remain open in
-`docs/RUNTIME_ORCHESTRATION_PLAN.md`:
+These remain open in [RUNTIME_ORCHESTRATION_PLAN.md](RUNTIME_ORCHESTRATION_PLAN.md):
 
 1. §4.1 still lists `Waiting(args)`, which cannot occur under the conservative
-   barrier. The POC has no such reason.
+   barrier.
 2. §5–§6 report a demanded occurrence's value barrier as `PrefetchBlocked`. The
    POC emits `DeductionBlocked` for a single occurrence and `PrefetchBlocked`
    for the aggregated prefetch shortfall.
@@ -128,8 +150,19 @@ These were raised before the POC and remain open in
 4. §8.5 says an artifact with policies is "rejected as `UnknownPolicy`" under an
    empty registry. Policies are disclosed lazily, so the POC fails the affected
    scope when its occurrence is exposed, not the whole run up front.
-5. §16 lacks a policy-erasure scenario. The POC adds
-   `TestPolicyErasureKeepsReductionResults`.
+5. §16 lacks a policy-erasure scenario (see F4).
+
+The §13 walkthrough now attaches `@retry` directly to the `$editFiles` Anchor
+occurrence, as the direct-target rule requires.
+
+## Implementation defects fixed after review
+
+Review of the first POC PR found runtime defects that were implementation bugs,
+not language questions. They are fixed in the runtime repository with
+regression tests: the prefetch window was not refilled before time advanced;
+deduction records were not keyed by run; canonical encodings concatenated raw
+map keys and could collide; and speculative failures could end a manual-demand
+run. None of these changes the language.
 
 ## POC-only diagnostic kinds
 
@@ -138,10 +171,3 @@ error table: `UnsupportedByProfile` (phase `profile`), `InjectedFailure`,
 `AnchorFailed`, `NoOutputBranch`, `NoOutputAsValue` (phase
 `host`), and `PolicyTimeout`, `RunStuck`, `RunCancelled`, `StepBudgetExceeded`,
 `ChildFailed`, `CancelledByPolicy`, `FailedByPolicy` (phase `policy`).
-
-## Repository scope
-
-`AGENTS.md`, `CONTRIBUTING.md`, and `GOVERNANCE.md` say this repository does not
-accept Runtime implementation code. The POC lives here by owner direction.
-**Owner decision:** keep it here as a documented exception, move it to an
-external repository, or change those rules.

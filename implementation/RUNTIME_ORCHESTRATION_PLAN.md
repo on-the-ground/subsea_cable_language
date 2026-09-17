@@ -284,11 +284,14 @@ PrefetchBlocked       DeductionFailed        HostCapabilityChanged
    (§8.3); it is not inherited by descendant attempts.
 3. Dispatcher creates an Attempt and calls `Host.Functions.evaluate` or
    `Host.Anchors.invoke`.
-4. Dispatch and Touchdown consumption remain distinct events. The boundary
-   emits `TouchdownConsumed` only at the point selected by the accepted
-   Carousel/Scheduler handshake. Whether that point is selection, dispatch,
-   Host start, or another acknowledgement is **Owner decision R10**; no
-   implementation may infer it from this sequence.
+4. When the Dispatcher hands the leaf's first attempt to the Host, the
+   Scheduler emits `TouchdownConsumed` for it (**Owner decision R10**, decided:
+   consumption at dispatch; see the Carousel plan's
+   [Recorded decisions](CAROUSEL_ENGINE_PLAN.md#recorded-decisions)). Selecting
+   a leaf or running `BeforeAttempt` does not consume it, so a held leaf keeps
+   occupying the window. Reattempts of the same evaluation instance emit no
+   further `TouchdownConsumed`. A leaf whose scope is cancelled before its
+   first attempt leaves the window through a discard event instead.
 
 ### 7.5 On `AttemptCompleted`
 
@@ -501,7 +504,7 @@ language rule.
 |---|---|---|
 | 1 | `run(program)` | prepared `Fix["T-1"]` is the initial Scheduler demand; Carousel deduces it → serial scope with 4 stages |
 | 2 | example Scheduler demands stage 1 and both map branches | deduce → resolving map → ReadCode and ReadLogs → 2 Touchdowns |
-| 3 | both leaves Eligible | dispatch both concurrently; the accepted handshake determines when each leaves the Touchdown window |
+| 3 | both leaves Eligible | dispatch both concurrently; each Touchdown is consumed as its attempt is dispatched |
 | 4 | Carousel considers stage 2 as a prefetch candidate | destructuring `{code, logs}` needs an unresolved value → `PrefetchBlocked(pendingValue)` |
 | 5 | both Anchors succeed | resolving map Satisfied `{code, logs}` → `ValueResolved`; Scheduler may now demand stage 2 |
 | 6 | stage 2 deduces → Diagnose Touchdown | dispatch |
@@ -524,11 +527,12 @@ language rule.
 | R7 | Value store ownership | Runtime owns; Carousel reads through a port |
 | R8 | Vessel as the Runtime metaphor | adopt; it resolves Carousel plan decision 10 |
 | R9 | Policy observation model (§8.3) and closed action set (§8.4) | accept as the carrier mechanism; concrete policies still need evidence |
-| R10 | Exact `TouchdownConsumed` acknowledgement point | resolve Carousel decision 6 before closing the dispatch loop |
+| R10 | Exact `TouchdownConsumed` acknowledgement point | **Decided (2026-09-17):** at dispatch of the first attempt; the window counts every published, unconsumed grounded leaf (Carousel decision 3) |
 
-The ten Carousel plan decisions remain open. Prefetch scope, counting unit, and
-the consumption handshake (plan decisions 1–3 and 6) interact directly with
-§5–§7 and should be decided together with R2 and R10.
+Carousel plan decisions 3 and 6 are decided together with R10. The other
+Carousel plan decisions remain open; prefetch scope and demand count (plan
+decisions 1–2) interact directly with §5–§7 and should be decided together
+with R2.
 
 ## 15. Fit with the implementation phases
 

@@ -411,7 +411,7 @@ prefetch-ahead model. It does not yet answer all interface questions:
 2. **Evaluation demand count:** with Scheduler concurrency greater than one, is
    the target `active demand + prefetch`, or is prefetch independently scoped?
 3. **Counting:** do grounded but Scheduler-ineligible leaves occupy the window?
-   This plan recommends yes because Carousel cannot interpret policy.
+   **Decided** — see [Recorded decisions](#recorded-decisions).
 4. **Traversal choice:** when several frontier occurrences can deduce, what
    deterministic rule or Scheduler hint chooses among them?
 5. **Dynamic reconfiguration:** who may change prefetch, when does it take
@@ -419,6 +419,7 @@ prefetch-ahead model. It does not yet answer all interface questions:
    demand?
 6. **Backpressure ownership:** which side acknowledges `TouchdownConsumed`, and
    what happens when the Scheduler holds grounded work indefinitely?
+   **Decided** — see [Recorded decisions](#recorded-decisions).
 7. **Resource budgets:** which limits are mandatory, and which are named Runtime
    profile settings?
 8. **Default value:** is prefetch always explicit, or may a Runtime profile
@@ -432,6 +433,51 @@ prefetch-ahead model. It does not yet answer all interface questions:
 Each decision must be recorded before the affected implementation path starts.
 Choices that change portable behavior, identity, replay, or component ownership
 require an SCP and the owner's explicit decision.
+
+## Recorded decisions
+
+Owner decisions recorded on 2026-09-17, together with Owner decision R10 in
+[RUNTIME_ORCHESTRATION_PLAN.md](RUNTIME_ORCHESTRATION_PLAN.md). Evidence:
+[CAROUSEL_POC_FINDINGS.md](CAROUSEL_POC_FINDINGS.md) F6a.
+
+**Decision 6 — consumption point.** A buffered Touchdown is consumed at
+**dispatch**: when the Scheduler creates an evaluation attempt for it and hands
+that attempt to the Host. The Scheduler emits `TouchdownConsumed` at that
+moment. Selecting a leaf, or evaluating a policy before the attempt (for example
+a hold), does not consume it; a held leaf keeps occupying the window. Host start
+and completion are not consumption points. The Carousel never consumes a
+Touchdown on its own. A leaf that will never be attempted (for example because
+its scope was cancelled) leaves the window through a separate discard event.
+While the Scheduler holds grounded work, that work keeps counting against the
+window and the Carousel does not deduce past the target; releasing or abandoning
+held work is Scheduler policy.
+
+**Decision 3 — what the window counts.** The window counts every **published,
+unconsumed grounded leaf**, including leaves the Scheduler currently considers
+ineligible (waiting on upstream outcomes, held by policy, or waiting for
+capacity). The Carousel does not interpret eligibility or policy to compute the
+count.
+
+**Meaning of the prefetch target.** The target `N` is compared directly with
+that count; there is no correction for in-flight work. Because consumption
+happens at dispatch, an in-flight leaf is no longer counted, so the Carousel
+keeps up to `N` grounded leaves buffered behind the work already dispatched, as
+stated in the objective above.
+
+**Reattempts.** A Touchdown is consumed at most once. When a Scheduler policy
+reattempts an evaluation instance, the leaf does not re-enter the window, the
+reattempt emits no new `TouchdownConsumed`, and no deduction is repeated.
+
+These decisions add the following mandatory conformance scenarios:
+
+15. **Dispatch consumption:** with `prefetch = N` and one dispatched leaf, the
+    window holds `N` unconsumed grounded leaves when the graph permits.
+16. **Held leaf:** a grounded leaf held before its first attempt still occupies
+    the window, and the Carousel does not deduce past the target because of it.
+17. **Ineligible leaf:** a grounded leaf waiting on an upstream outcome counts
+    toward the window.
+18. **Reattempt:** reattempting a consumed leaf neither re-enters the window nor
+    emits a second `TouchdownConsumed`.
 
 ## Completion criteria
 
@@ -453,8 +499,8 @@ The Carousel design is complete when:
 
 ## Immediate next deliverables
 
-1. Resolve the ten open decisions above in order, beginning with prefetch scope,
-   count, and the Carousel/Scheduler handshake.
+1. Resolve the remaining open decisions above (decisions 3 and 6 are
+   recorded), beginning with prefetch scope and demand count.
 2. Write the state-machine reference algorithm and golden traces.
 3. Open the terminology/Runtime-boundary SCP that migrates deduction ownership
    from Vessel to Carousel.

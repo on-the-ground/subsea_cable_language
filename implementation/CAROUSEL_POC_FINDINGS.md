@@ -83,7 +83,7 @@ occurrence's state to each demand (`accepted`, `already-committed`, `failed`,
 Scheduler decision tied to demand, and what `Demand` returns for a failed
 occurrence.
 
-### F6a. The consumption point changes what "N ahead" means (R10)
+### F6a. The consumption point changes what "N ahead" means (R10) — **resolved**
 
 With consumption at dispatch, the POC keeps N Touchdowns buffered behind an
 in-flight leaf. With consumption at completion, the in-flight leaf still
@@ -92,6 +92,11 @@ the POC shows both. Whichever point R10 selects, the Carousel plan's sentence
 "the leaf currently selected for evaluation is not one of those two" fixes the
 expected count, so R10 and the window counting rule (Carousel decision 3) must
 be decided together.
+
+**Resolved (2026-09-17):** consumption at dispatch; the window counts every
+published, unconsumed grounded leaf; the target is compared with that count
+directly; reattempts never re-enter the window. See the Carousel plan's
+[Recorded decisions](CAROUSEL_ENGINE_PLAN.md#recorded-decisions).
 
 ### F7. Nested serial stages and routing
 

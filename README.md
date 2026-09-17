@@ -1,4 +1,8 @@
-# \_\_C — Subsea Cable
+# \_\_C Language — Subsea Cable Language
+
+
+![The Subsea Cable footballfish mascot discovering a cable on the seafloor](assets/branding/subsea-cable-footballfish-scene.png)
+
 
 > **Programs are not instruction sequences. They are executable intent.**
 

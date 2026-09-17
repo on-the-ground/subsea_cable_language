@@ -94,10 +94,14 @@ Scheduler issues it; the Carousel applies it atomically per occurrence and
 emits the normalized `TouchdownConsumed` event. First dispatch is ordered:
 
 1. The Scheduler creates the attempt record, with a non-empty `attemptId`.
-2. The Scheduler issues `ConsumeTouchdown`. It must return `Consumed`.
-3. Only then does the Scheduler invoke the Host, at most once per attempt.
+2. The Scheduler issues `ConsumeTouchdown`. It must return an **authorizing
+   result**: `Consumed`, or `Consumed(replayed)` when the same attempt's
+   request is retried after a lost response.
+3. Only then does the Scheduler invoke the Host, at most once per attempt; the
+   Scheduler's attempt record enforces that bound across replays.
 
-The Carousel records which attempt consumed each Touchdown. Results:
+The Carousel records which attempt consumed each Touchdown. Only the two
+authorizing results permit a Host invocation. Results:
 
 | Result | Meaning | Authorizes the Host call for this attempt? | Event |
 |---|---|---|---|
@@ -109,8 +113,8 @@ The Carousel records which attempt consumed each Touchdown. Results:
 | `Mismatch` | `evaluationInstanceId` does not match the occurrence | no; boundary error | none |
 | `Unknown` | Not a published grounded leaf of this run | no; boundary error | none |
 
-If the Host synchronously refuses an attempt after `Consumed`, the Touchdown
-stays consumed and the attempt ends with a Host-phase failure.
+If the Host synchronously refuses an attempt after an authorizing result, the
+Touchdown stays consumed and the attempt ends with a Host-phase failure.
 
 Selecting a leaf, evaluating pre-attempt policy, or withholding the first
 dispatch never consumes it.
@@ -183,7 +187,8 @@ the monotonic sequence number required by the Runtime Contract.
 - Policy erasure: unaffected; no policy semantics are defined here.
 - Carousel, Host, and Scheduler responsibilities: the Scheduler decides when to
   dispatch and issues acknowledgements; the Carousel alone applies them and owns
-  the window count; the Host is invoked only after `Consumed`.
+  the window count; the Host is invoked only after an authorizing result
+  (`Consumed` or `Consumed(replayed)`).
 - Aliases stay demand-resolved per occurrence; completed deductions stay
   immutable.
 - Value routing: unchanged.

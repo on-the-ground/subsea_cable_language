@@ -454,8 +454,9 @@ normative record; in summary:
   through exactly one applied acknowledgement. At the first dispatch of its
   evaluation instance, the Scheduler issues a consume acknowledgement carrying
   `(runId, occurrenceId, evaluationInstanceId, attemptId)`; the Carousel
-  applies it and emits `TouchdownConsumed`; only a `Consumed` result (including
-  a replay by the same attempt) lets that attempt invoke the Host. An attempt
+  applies it and emits `TouchdownConsumed`; only an authorizing result
+  (`Consumed`, or `Consumed(replayed)` for the same attempt) lets that attempt
+  invoke the Host. An attempt
   that receives `AlreadyConsumed` lost the race and must not invoke the Host.
   Selection, pre-attempt policy, and withholding do not consume. Later attempts
   issue no consume acknowledgement and never re-enter the window. A Touchdown

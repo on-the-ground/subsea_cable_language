@@ -298,9 +298,9 @@ HostCapabilityChanged
    (§8.3); it is not inherited by descendant attempts.
 3. For a first attempt, the Dispatcher creates the Attempt record and issues
    `ConsumeTouchdown(runId, occurrenceId, evaluationInstanceId, attemptId)`.
-   The Carousel applies it atomically and emits `TouchdownConsumed`. Only a
-   `Consumed` result, including a replay by the same attempt, lets the attempt
-   proceed; `AlreadyConsumed` (another attempt won) and `Discarded` abort it
+   The Carousel applies it atomically and emits `TouchdownConsumed`. Only an
+   authorizing result (`Consumed`, or `Consumed(replayed)` for the same attempt)
+   lets the attempt proceed; `AlreadyConsumed` (another attempt won) and `Discarded` abort it
    without a Host call. This is **Owner decision R10**, recorded in
    [SCP-0001](../proposals/0001-touchdown-consumption-and-window-counting.md),
    which also defines the other results, idempotency, and races. Selecting a

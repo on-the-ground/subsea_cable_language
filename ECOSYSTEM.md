@@ -1,7 +1,7 @@
 # Subsea Cable Ecosystem
 
-Carousel, Host, Scheduler, and complete Runtime implementations are maintained
-outside the language repository. This page may link independent projects for
+Carousel, Host, Scheduler, and complete Vessel (Consumer Runtime)
+implementations are maintained outside the language repository. This page may link independent projects for
 discovery; it does not vendor, endorse, or assume maintenance of them.
 
 ## Compatibility claims

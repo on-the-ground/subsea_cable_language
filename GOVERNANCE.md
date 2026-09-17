@@ -3,8 +3,8 @@
 ## Purpose
 
 This repository governs the Subsea Cable language, not its implementations. Its
-job is to preserve a coherent language base while independent Carousels, Hosts,
-Schedulers, and Runtimes explore different ecosystems.
+job is to preserve a coherent language base while independent Vessels and the
+Carousels, Hosts, and Schedulers they carry explore different ecosystems.
 
 The repository contains:
 
@@ -122,7 +122,8 @@ claiming unqualified compatibility.
 
 ## External implementation policy
 
-There is no official Carousel, Host, Scheduler, or full Runtime in this repository.
+There is no official Carousel, Host, Scheduler, or complete Vessel in this
+repository.
 External projects own their code, releases, security, licensing, support, and
 implementation-specific behavior.
 

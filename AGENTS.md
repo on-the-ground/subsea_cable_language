@@ -39,7 +39,8 @@ Keep these terms separate:
 
 - **Vessel / Consumer Runtime**: the whole runtime metaphor—frontend, validator,
   codebase, Carousel, Outcome & Value Store, Scheduler port, and Host port taken
-  together. Vessel is not a second deduction component.
+  together. Vessel is not a second deduction component. It is the whole an
+  operator or agent addresses; a component or interface is never named Vessel.
 - **Reduction**: the structural rule encoded by a resolved Goal artifact.
 - **Deduction**: demand-time alias resolution plus application and commit of one
   occurrence's reduction rule.

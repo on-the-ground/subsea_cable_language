@@ -955,8 +955,8 @@ policy discovery is maintained in [implementation](implementation/README.md).
 
 Subsea Cable intentionally ships without an official scheduler.
 
-Host, Carousel, Scheduler, and Runtime implementations are independent external
-projects. This repository neither vendors nor designates an official one.
+Host, Carousel, Scheduler, and complete Vessel (Consumer Runtime)
+implementations are independent external projects. This repository neither vendors nor designates an official one.
 
 Every project is free to provide execution strategies that fit its own runtime.
 

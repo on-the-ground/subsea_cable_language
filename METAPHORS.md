@@ -152,6 +152,22 @@ Frontend, Codebase and Deduction Ledger, Carousel, Outcome & Value Store,
 Scheduler, and Host connection. It is not a separately implementable deduction
 component and never competes with Carousel for ownership of a transition.
 
+The Vessel is also what steers. The Seafloor is a given three-dimensional
+terrain, and the Program is the route across it: writing the Root and the Goals
+beneath it says where this Vessel sails. Carousel then pays out Cable along
+that route, and the two-dimensional Touchdown Cable that results is the section
+of the Seafloor the chosen route reaches. Nobody authors the Touchdown shape:
+the route selects where the Cable lands, the Seafloor decides what is there,
+and Carousel records what actually happened.
+
+Because the Vessel is the whole that holds the route, the engine, the store,
+and the ports, it is also the thing an outside operator or agent addresses. An
+agent asks a Vessel to validate, store, or sail a route; it never operates
+Carousel directly, just as no one reaches into a ship's machinery from the
+dock. That is a consequence of this boundary, not a second responsibility:
+[SCP-0002](proposals/0002-carousel-runtime-boundaries.md) still forbids naming
+any component or interface Vessel.
+
 ## Carousel
 
 The Carousel unfolds the Program on demand. It owns:

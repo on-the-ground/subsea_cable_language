@@ -35,6 +35,11 @@ Host Port
   primitive semantics + arrow-function evaluation + $Anchor resolution/invocation
 ```
 
+The assembled whole is the **Vessel**, the complete Consumer Runtime. Vessel
+is a name for that whole and for the product an operator or agent addresses; no
+component, package, or interface inside it MUST be presented as the Vessel, and
+none other than Carousel MUST deduce.
+
 The deployment MAY package these together. Their responsibilities MUST remain
 separable in interfaces and tests.
 

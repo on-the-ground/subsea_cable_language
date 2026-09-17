@@ -70,6 +70,8 @@ nav:
           - Guide: proposals/README.md
           - Template: proposals/TEMPLATE.md
           - "SCP-0001: Touchdown consumption": proposals/0001-touchdown-consumption-and-window-counting.md
+          - "SCP-0002: Carousel boundaries": proposals/0002-carousel-runtime-boundaries.md
+          - "SCP-0003: Explicit call staging": proposals/0003-explicit-value-producing-call-staging.md
 
 plugins:
   - search

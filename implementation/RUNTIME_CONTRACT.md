@@ -22,8 +22,11 @@ Frontend
 Codebase
   immutable artifact store + mutable Name/Arity index + revision history
 
-Vessel
+Carousel
   demand-driven deduction → committed structure + undeduced frontier
+
+Outcome & Value Store
+  evaluation outcomes + scope outputs → resolved routed values
 
 Scheduler Port
   grounded occurrences + policy metadata ↔ execution outcomes
@@ -35,8 +38,12 @@ Host Port
 The deployment MAY package these together. Their responsibilities MUST remain
 separable in interfaces and tests.
 
-- The Vessel MUST resolve a Goal alias only when that occurrence is demanded. It
+- The Carousel MUST resolve a Goal alias only when that occurrence is demanded. It
   MUST NOT resolve Anchors, evaluate grounded leaves, or interpret policies.
+- The Runtime-owned Outcome & Value Store MUST accept actual Scheduler/Host
+  outcomes and expose resolved routed values through a narrow read port.
+- The Carousel MAY read that port but MUST NOT write outcomes; the Codebase MUST
+  NOT store live outcomes or routed Runtime values.
 - The Host's arrow-function evaluator MUST NOT call another Subsea Goal or
   create Goal structure; it evaluates only the terminal body already validated
   for its Goal.
@@ -71,12 +78,21 @@ before deduction begins. It MUST cover at least:
 - binding, parameter, and destructuring uniqueness;
 - casing law and structural contexts;
 - function-arrow leaf restrictions;
+- direct structural positioning of value-producing Goal/Anchor calls;
 - Goal name/arity resolution;
 - callability;
 - map-key identity and duplicates;
 - statically decidable lookup/destructuring failures;
 - unsupported recursion/cycles;
 - all cases in `conformance/cases.tsv`.
+
+Outside a function-arrow leaf, validation MUST reject a `Goal(...)` or
+`$anchor(...)` nested inside an argument, policy argument, operator operand,
+lookup key, or ordinary value container as `InvalidStructuralContext`. Direct
+Goal-arrow bodies, composition elements, and resolving-map branches remain
+valid call occurrences. Primitive expressions create no occurrence and remain
+valid in arguments. Inside a function-arrow leaf, nested Anchors remain Host
+call sites while every Subsea Goal reference remains forbidden.
 
 Anchor and policy argument expressions undergo ordinary validation. The external
 Anchor identifier, signature, policy identifier, applicability, and behavior do
@@ -211,9 +227,9 @@ remain distinct authored artifacts. An unqualified occurrence has no selected
 occurrence identities even when both deductions later select one shared Goal
 node.
 
-## 7. Vessel contract
+## 7. Carousel and Runtime-value contract
 
-The Vessel accepts a prepared Root occurrence and deduces only what is demanded.
+The Carousel accepts a prepared Root occurrence and deduces only what is demanded.
 It MUST:
 
 - keep every unqualified occurrence symbolic until that exact occurrence is
@@ -238,13 +254,30 @@ It MUST:
 - report occurrence-scoped deduction failures without inventing a run-level
   failure policy.
 
-The Vessel produces occurrence/containment events for all deduced structural
+The Carousel produces occurrence/containment events for all deduced structural
 occurrences, plus grounded leaf occurrences and dependency/readiness facts for
 the Scheduler Port. This is required because a policy may target a serial,
-parallel, resolving-map, Goal, or leaf occurrence. The Vessel MUST NOT copy a
+parallel, resolving-map, Goal, or leaf occurrence. The Carousel MUST NOT copy a
 composite's policy onto its descendants. It MUST NOT decide retry, timeout,
 cancellation, delivery guarantees, result caching, duplicate suppression, or
 success aggregation.
+
+### 7.1 Outcome & Value Store boundary
+
+The Outcome & Value Store belongs to the surrounding Runtime, metaphorically
+the Vessel. It MUST:
+
+- record actual attempt outcomes delivered through the Scheduler/Host boundary;
+- retain satisfied scope outputs, including `NoOutput` as distinct from a
+  missing result;
+- resolve the value references required by explicit downstream routing;
+- expose resolved values to Carousel through a read-only port;
+- keep run-scoped execution state out of the Codebase and Deduction Ledger.
+
+Carousel MUST stop at a value barrier when the required value is unresolved. It
+MUST NOT commit a placeholder, invoke a leaf to obtain the value, or hold a
+deduction half-committed across evaluation. The Scheduler and Host MUST NOT
+rewrite a deduction when they deliver an outcome.
 
 ## 8. Occurrence envelopes
 
@@ -305,7 +338,7 @@ Function Evaluation   validated arrow-function leaf bodies
 Anchor Resolution     lookup and invocation of opaque $Identifier capabilities
 ```
 
-The Vessel MAY call Primitive Semantics while applying a reduction rule, but it
+The Carousel MAY call Primitive Semantics while applying a reduction rule, but it
 MUST NOT evaluate a grounded leaf. The Scheduler offers grounded arrow-function
 and Anchor envelopes to the corresponding Host capability.
 
@@ -450,7 +483,7 @@ An implementation is not suitable as conformance or proposal evidence if it:
   unqualified deduction;
 - treats source occurrences as identical merely because arguments match;
 - allows Host functions to alter Goal topology invisibly;
-- hardcodes policy semantics inside the Vessel;
+- hardcodes policy semantics inside the Carousel;
 - ignores unknown policies;
 - uses one giant Anchor to retain the original program's orchestration;
 - reports original tests as evidence while weakening their assertions;

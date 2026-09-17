@@ -74,7 +74,7 @@ partially committed children. Earlier deduction records remain unchanged.
 ## 7. Primitive semantics belongs to the Host
 
 Deduce `A = [x] -> B[x + 1]` under an identified Host primitive-semantics
-profile. The Vessel requests `x + 1` from that Host capability. No Goal node,
+profile. Carousel requests `x + 1` from that Host capability. No Goal node,
 leaf, or Scheduler work is created for the operator expression. The successful
 value and Host profile identity are recorded with the deduction.
 

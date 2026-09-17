@@ -66,10 +66,9 @@ Without Carousel, a Runtime either has no leaf to evaluate or is forced to
 materialize the whole future eagerly. The first cannot run; the second destroys
 the mutable undeduced region that gives Subsea Cable its demand-paged character.
 
-## Terminology direction
+## Accepted terminology and ownership
 
-**Carousel is the deduction engine.** It owns the mechanism currently assigned
-to the Vessel in existing documents: demand-time alias resolution, application
+**Carousel is the deduction engine.** It owns demand-time alias resolution, application
 of reduction rules, atomic deduction commits, occurrence/frontier tracking,
 routing, lineage propagation, and delivery of grounded leaves.
 
@@ -82,16 +81,16 @@ Consumer Runtime
     Source Frontend
     Codebase
     Carousel          deduction engine
+    Outcome & Value Store
     Scheduler Port    evaluation eligibility and policy
     Host Port         concrete computation
     Diagnostics/Trace
 ```
 
-Updating `AGENTS.md`, `METAPHORS.md`, `README.md`, and
-`implementation/RUNTIME_CONTRACT.md` from “Vessel owns deduction” to this model
-is a planned contract migration. It must happen coherently after the interface
-questions in this plan are decided. No implementation should create both a
-Vessel deduction engine and a Carousel deduction engine in the meantime.
+This boundary is accepted by
+[SCP-0002](../proposals/0002-carousel-runtime-boundaries.md) and is reflected
+coherently across the canonical documents. An implementation must not create a
+second Vessel deduction engine alongside Carousel.
 
 ## Required distinctions
 
@@ -436,13 +435,22 @@ prefetch-ahead model. It does not yet answer all interface questions:
    “no future reachable work remains” without taking over Scheduler outcome?
 10. **Terminology migration:** after Carousel assumes deduction ownership, is
     Vessel retained only as the overall runtime metaphor or removed from the
-    component vocabulary?
+    component vocabulary? **Decided** — Vessel is the whole Consumer Runtime
+    metaphor, not a component; see [Recorded decisions](#recorded-decisions).
 
 Each decision must be recorded before the affected implementation path starts.
 Choices that change portable behavior, identity, replay, or component ownership
 require an SCP and the owner's explicit decision.
 
 ## Recorded decisions
+
+Decision 10 and the Runtime value boundary are closed by
+[SCP-0002 — Carousel and Runtime ownership boundaries](../proposals/0002-carousel-runtime-boundaries.md)
+(Accepted, owner decision 2026-09-17). Carousel is the sole deduction engine;
+the Runtime owns the Outcome & Value Store; the Scheduler reports outcomes to
+that store; Carousel observes committed values through a read-only port when
+deduction requires them. Codebase stores artifacts and aliases, never live run
+values.
 
 Decisions 3 and 6 are closed by
 [SCP-0001 — Touchdown consumption and window counting](../proposals/0001-touchdown-consumption-and-window-counting.md)
@@ -522,11 +530,10 @@ The Carousel design is complete when:
 
 ## Immediate next deliverables
 
-1. Resolve the remaining open decisions above (decisions 3 and 6 are
+1. Resolve the remaining open decisions above (decisions 3, 6, and 10 are
    recorded), beginning with prefetch scope and demand count.
 2. Write the state-machine reference algorithm and golden traces.
-3. Open the terminology/Runtime-boundary SCP that migrates deduction ownership
-   from Vessel to Carousel.
-4. Update the normative documents and conformance plan only after that decision.
-5. Start the external minimal implementation at Phase 2; do not add it to this
+3. Keep the normative documents and conformance plan synchronized with
+   SCP-0002 as the reference algorithm develops.
+4. Continue the external minimal implementation at Phase 2; do not add it to this
    language repository.

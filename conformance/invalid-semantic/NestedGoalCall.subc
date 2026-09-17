@@ -1,0 +1,4 @@
+C = (x) -> x + 1
+D = [y] -> $d(y)
+Root = [x] -> D[C(x)]
+Root[1]

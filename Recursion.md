@@ -36,7 +36,7 @@ Loop/1.Loop/1.Loop/1
 ```
 
 A value-dependent base case also means that continued traversal can depend on
-runtime data. The current Vessel may request pure primitive semantics from the
+runtime data. Carousel may request pure primitive semantics from the
 Host while applying a reduction rule, but it does not evaluate grounded leaves;
 the Scheduler sees those grounded evaluation instances. Recursion must preserve
 that boundary.
@@ -76,7 +76,7 @@ that boundary.
 - Does recursive expansion additionally need lexical environment or structural
   recursion context?
 - Which data may influence deduction beyond the Host primitive semantics the
-  Vessel already requests for ordinary value routing?
+  Carousel already requests for ordinary value routing?
 
 ### 5. Evaluation identity
 
@@ -87,7 +87,7 @@ that boundary.
 
 ### 6. Incremental expansion
 
-- How much of a recursive structure may the Vessel unfold ahead of demand?
+- How much of a recursive structure may Carousel unfold ahead of demand?
 - What backpressure or depth boundary prevents unbounded expansion?
 - Which component requests the next increment?
 
@@ -98,7 +98,7 @@ that boundary.
 - Does TCO reuse an evaluation frame, a structural Goal node, or both?
 - How is complete logical lineage retained for tracing when physical frames are
   reused?
-- Is TCO guaranteed by the specification or merely permitted for a Vessel or
+- Is TCO guaranteed by the specification or merely permitted for a Carousel or
   Scheduler implementation?
 
 ### 8. Errors and resource limits
@@ -130,7 +130,7 @@ Recursion should not be enabled until the specification provides:
 
 1. A finite structural representation for recursive Goals.
 2. A precise identity model for expansion nodes and runtime invocations.
-3. A branching model that preserves the Vessel/Scheduler separation.
+3. A branching model that preserves the Carousel/Scheduler separation.
 4. Defined memoization behavior for recursive and value-dependent structures.
 5. Termination, cancellation, resource-limit, and error semantics.
 6. A precise definition of tail position and the status of TCO guarantees.

@@ -26,7 +26,7 @@ mark, `.subc` for source files, and `subsea-cable` for portable slugs/language
 IDs. Never call the language “SubC” or use `__C` as a code identifier.
 
 Build the Host/Runtime in a separate repository. This language repository does
-not accept production Host, Vessel, Scheduler, adapter, or complete Runtime
+not accept production Host, Carousel, Scheduler, adapter, or complete Runtime
 implementation code. Changes here are limited to language specification,
 grammar, conformance, philosophy, governance, and design proposals.
 
@@ -37,13 +37,16 @@ playbook.
 
 Keep these terms separate:
 
-- **Consumer Runtime**: frontend, validator, codebase, Vessel, Scheduler port,
-  and Host port taken together.
+- **Vessel / Consumer Runtime**: the whole runtime metaphor—frontend, validator,
+  codebase, Carousel, Outcome & Value Store, Scheduler port, and Host port taken
+  together. Vessel is not a second deduction component.
 - **Reduction**: the structural rule encoded by a resolved Goal artifact.
 - **Deduction**: demand-time alias resolution plus application and commit of one
   occurrence's reduction rule.
-- **Vessel**: lazy deduction, structural reduction, occurrences, routing,
-  lineages, and the frontier.
+- **Carousel**: lazy deduction, structural reduction, occurrences, routing,
+  lineages, the frontier, and Touchdown publication.
+- **Outcome & Value Store**: Runtime-owned attempt outcomes, scope outputs, and
+  routed values; Carousel may only read resolved values through a narrow port.
 - **Host**: primitive semantics, arrow-function leaf evaluation, and `$Anchor`
   resolution/invocation.
 - **Scheduler**: execution eligibility, outcomes, and `@policy` only.
@@ -53,6 +56,12 @@ was parsed, stored, or deduced. It remains a symbolic `Name/Arity` occurrence
 until that occurrence is demanded. Deduction atomically records the selected
 full hash and resulting structure; later alias changes affect only undeduced
 occurrences.
+
+Never hide an evaluation dependency inside an argument or other value
+expression. Outside a function-arrow leaf, `Goal(...)` and `$anchor(...)` must
+be direct structural occurrences; nested forms are `InvalidStructuralContext`.
+Primitive expressions such as `B[x + 1]` remain valid because they create no
+occurrence or effect.
 
 Never hide existing orchestration behind one large Anchor merely to pass an
 original test suite. Move dependency structure into Subsea, keep only genuine
@@ -70,7 +79,7 @@ design decision. Keep that ADR in the external implementation repository and
 open a Subsea Cable Proposal here when the issue is language-level. Continue
 only unrelated work. The owner must decide any change
 to source syntax, structural semantics, identity, layer ownership, error phase,
-policy targeting/composition, or the Host/Vessel/Scheduler boundary.
+policy targeting/composition, or the Host/Carousel/Scheduler boundary.
 
 Every completed phase must satisfy its gate in `implementation/README.md` and
 leave reproducible tests or evidence. Implementation convenience is not language

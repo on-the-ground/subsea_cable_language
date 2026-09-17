@@ -12,3 +12,9 @@ Implementation ADRs remain in their external implementation repositories. An SCP
 links those ADRs and extracts the implementation-independent language question.
 
 See `GOVERNANCE.md` for statuses and decision procedure.
+
+## Accepted proposals
+
+- [SCP-0001 — Touchdown consumption and window counting](0001-touchdown-consumption-and-window-counting.md)
+- [SCP-0002 — Carousel and Runtime ownership boundaries](0002-carousel-runtime-boundaries.md)
+- [SCP-0003 — Explicit staging of value-producing calls](0003-explicit-value-producing-call-staging.md)

@@ -30,8 +30,8 @@ grammar SubseaCable;
  * ============================================================
  * Semantic Model
  * ------------------------------------------------------------
- * Interpreted by the Vessel (deduction/reduction), Host (concrete semantics),
- * and Scheduler (evaluation policy),
+ * Interpreted by Carousel (deduction/reduction), Host (concrete semantics),
+ * Scheduler (evaluation policy), and the Runtime-owned Outcome & Value Store,
  * NOT enforced by this grammar. Recorded here as the single source of truth.
  * ============================================================
  *
@@ -115,7 +115,7 @@ grammar SubseaCable;
  *   Primitive operators are intentional deduction-time conveniences and may be
  *   used in value-expression positions, including Goal arguments:
  *       A = [x] -> B[x + 1]
- *   The Vessel requests `x + 1` from Host primitive semantics when that routed
+ *   Carousel requests `x + 1` from Host primitive semantics when that routed
  *   argument is needed. This evaluation creates no Goal node, leaf, or
  *   Scheduler work. Subsea fixes the
  *   operators' syntax, precedence, associativity, and structural evaluation
@@ -135,13 +135,27 @@ grammar SubseaCable;
  *   profile and is distinct from the fixed structural equality used for
  *   Map-key identity.
  *
+ * VALUE-PRODUCING CALL POSITION:
+ *   Outside an arrow-function leaf, eager `Goal(...)` and `$anchor(...)` calls
+ *   MUST occur as direct structural occurrences: the direct body of a Goal
+ *   arrow, a serial or parallel element, or a resolving-Map branch. They
+ *   MUST NOT be nested inside Goal or Anchor arguments, policy arguments,
+ *   operator operands, lookup keys, or
+ *   ordinary value containers. Such a program is `InvalidStructuralContext`;
+ *   a Runtime never hoists the call or commits a pending argument placeholder.
+ *   Primitive expressions such as `B[x + 1]` remain valid. Inside an arrow-
+ *   function leaf, nested Anchor calls are ordinary Host-evaluated function
+ *   expressions; Goal calls remain forbidden by the function-leaf boundary.
+ *   These placement rules are semantic validation and are not enforced by this
+ *   permissive expression grammar.
+ *
  * NAME RESOLUTION AND ERROR OWNERSHIP:
  *   Syntactic category is fixed before lookup. A value Identifier searches
  *   innermost lexical scope outward, then top-level non-Goal bindings; Goals
  *   never satisfy value lookup. An unqualified Goal reference is stored as a
  *   symbolic Name/Arity occurrence. A local definition or current codebase
  *   entry may validate that spelling, but does not pin future occurrences.
- *   When an occurrence is demanded, the Vessel atomically resolves the then-
+ *   When an occurrence is demanded, Carousel atomically resolves the then-
  *   current Name/Arity alias, records the selected full ArtifactHash and
  *   codebase revision, applies the reduction rule, and commits the result.
  *   `Name#prefix` instead requires exactly one stored artifact and is expanded
@@ -220,7 +234,8 @@ grammar SubseaCable;
  * CALLABILITY:
  *   There are exactly two value-producing call forms. `Goal(...)` eagerly
  *   evaluates a Subsea Goal selected by Name/Arity; `$anchor(...)` invokes a
- *   Host-resolved Anchor.
+ *   Host-resolved Anchor. Outside a function leaf, either form must be a direct
+ *   structural occurrence; nesting it in a value expression is invalid.
  *   A lowercase value identifier followed by `(...)` is invalid. Maps,
  *   pipelines, grouped expressions, call results, and all other values are not
  *   callable. Calls cannot be chained, and callable values do not exist.
@@ -656,8 +671,10 @@ unary
     | postfix
     ;
 
-// Policies may also decorate a value-producing Goal/Anchor occurrence nested in
-// an expression. Pure literals and operator results are not policy targets.
+// Policies may decorate a value-producing Goal/Anchor occurrence. Outside a
+// function leaf that call must still occupy a direct structural position;
+// nesting it in another value expression is InvalidStructuralContext. Pure
+// literals and operator results are not policy targets.
 policyValue
     : policyPrefix+ (goalName (bracketSuffix | callSuffix) | hostAnchor)
     ;
@@ -675,9 +692,11 @@ postfix
 //            until that exact occurrence is demanded for deduction. Deduction
 //            then selects a hash, applies its reduction rule, and commits.
 //
-//   Goal(n)  (paren suffix) IS an eager call/evaluation: demand the occurrence
-//            now, deduct it through its pipeline, and yield a value. It obeys the
-//            same demand-time alias resolution and commit law.
+//   Goal(n)  (paren suffix) IS an eager call/evaluation when it is a direct
+//            structural occurrence: demand it now, deduct it through its
+//            pipeline, and yield a value. It obeys the same demand-time alias
+//            resolution and commit law. Nested use outside a function leaf is
+//            InvalidStructuralContext rather than implicit staging.
 //
 // Square brackets are restricted to a bare identifier so the naming law is
 // always defined. Leading underscores are ignored and the first ASCII letter

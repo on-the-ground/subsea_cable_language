@@ -4,6 +4,8 @@ syntax	accept	valid/continuations.subc
 syntax	accept	valid/unicode-strings.subc
 syntax	SyntaxError	invalid-syntax/unicode-identifier.subc
 syntax	SyntaxError	invalid-syntax/inline-function.subc
+syntax	SyntaxError	invalid-syntax/empty-program.subc
+syntax	SyntaxError	invalid-syntax/bare-goal-body.subc
 validation	InvalidRoot	invalid-semantic/InvalidRoot.subc
 validation	InvalidStructuralContext	invalid-semantic/InvalidStructuralContext.subc
 validation	InvalidUnicodeEscape	invalid-semantic/InvalidUnicodeEscape.subc

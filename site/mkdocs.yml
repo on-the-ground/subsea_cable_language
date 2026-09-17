@@ -69,6 +69,7 @@ nav:
       - Proposals:
           - Guide: proposals/README.md
           - Template: proposals/TEMPLATE.md
+          - "SCP-0001: Touchdown consumption": proposals/0001-touchdown-consumption-and-window-counting.md
 
 plugins:
   - search

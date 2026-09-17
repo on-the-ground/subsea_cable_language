@@ -161,6 +161,10 @@ overshoot the requested count by the indivisible result of one deduction. It
 must not discard a branch, partially commit a reduction, or rewrite the Goal
 structure merely to hit an exact number.
 
+The target bounds speculative deduction only. Explicitly demanded occurrences
+are deduced even when the window is already full, and the resulting over-target
+state is reported separately from atomic overshoot (SCP-0001).
+
 Conversely, Carousel may remain below target when progress requires an
 evaluation result, a missing input, a failed deduction, or an unresolved
 external condition. It reports the blocking reason instead of busy-spinning or
@@ -282,10 +286,14 @@ TouchdownConsumed
 PrefetchTargetReached
 PrefetchBlocked
 AtomicPrefetchOvershoot
+DemandedTouchdownOverTarget
+TouchdownDiscarded
 ReplenishmentStopped
 ```
 
-Names are provisional. Event payloads must preserve run, occurrence, lineage,
+`TouchdownPublished`, `TouchdownConsumed`, `TouchdownDiscarded`, and
+`DemandedTouchdownOverTarget` are fixed by SCP-0001, including their required
+fields. Other names are provisional. Event payloads must preserve run, occurrence, lineage,
 deduction cause, window counts, requested scope, and monotonic ordering. Existing
 `AliasResolved`, `LeafGrounded`, and evaluation events remain distinct rather
 than being collapsed into one “progress” event.
@@ -436,48 +444,54 @@ require an SCP and the owner's explicit decision.
 
 ## Recorded decisions
 
-Owner decisions recorded on 2026-09-17, together with Owner decision R10 in
-[RUNTIME_ORCHESTRATION_PLAN.md](RUNTIME_ORCHESTRATION_PLAN.md). Evidence:
-[CAROUSEL_POC_FINDINGS.md](CAROUSEL_POC_FINDINGS.md) F6a.
+Decisions 3 and 6 are closed by
+[SCP-0001 — Touchdown consumption and window counting](../proposals/0001-touchdown-consumption-and-window-counting.md)
+(Accepted, owner decision 2026-09-17), together with Owner decision R10 in
+[RUNTIME_ORCHESTRATION_PLAN.md](RUNTIME_ORCHESTRATION_PLAN.md). SCP-0001 is the
+normative record; in summary:
 
-**Decision 6 — consumption point.** A buffered Touchdown is consumed at
-**dispatch**: when the Scheduler creates an evaluation attempt for it and hands
-that attempt to the Host. The Scheduler emits `TouchdownConsumed` at that
-moment. Selecting a leaf, or evaluating a policy before the attempt (for example
-a hold), does not consume it; a held leaf keeps occupying the window. Host start
-and completion are not consumption points. The Carousel never consumes a
-Touchdown on its own. A leaf that will never be attempted (for example because
-its scope was cancelled) leaves the window through a separate discard event.
-While the Scheduler holds grounded work, that work keeps counting against the
-window and the Carousel does not deduce past the target; releasing or abandoning
-held work is Scheduler policy.
+- **Consumption (decision 6).** A Touchdown leaves the window exactly once,
+  when the Scheduler dispatches the first attempt of its evaluation instance.
+  The Scheduler issues one atomic consume acknowledgement carrying
+  `(runId, occurrenceId, evaluationInstanceId, attemptId)`; the Carousel
+  applies it and emits `TouchdownConsumed`; only after `Consumed` is the Host
+  invoked. Selection, pre-attempt policy, and withholding do not consume.
+  Later attempts never re-enter the window or consume again. A Touchdown that
+  will never be attempted leaves through a discard acknowledgement that the
+  Carousel applies and reports as `TouchdownDiscarded`. Consume and discard for
+  one occurrence are serialized; the first applied wins.
+- **Counting (decision 3).** The window counts every published grounded leaf
+  with no applied consume or discard, including Scheduler-ineligible and
+  withheld leaves.
+- **Target.** The prefetch target is compared with that count directly.
+- **Backpressure.** A full window stops only speculative deduction. Explicitly
+  demanded occurrences are always deduced; if that publishes leaves beyond the
+  target, the Carousel emits `DemandedTouchdownOverTarget`, not
+  `AtomicPrefetchOvershoot`.
 
-**Decision 3 — what the window counts.** The window counts every **published,
-unconsumed grounded leaf**, including leaves the Scheduler currently considers
-ineligible (waiting on upstream outcomes, held by policy, or waiting for
-capacity). The Carousel does not interpret eligibility or policy to compute the
-count.
-
-**Meaning of the prefetch target.** The target `N` is compared directly with
-that count; there is no correction for in-flight work. Because consumption
-happens at dispatch, an in-flight leaf is no longer counted, so the Carousel
-keeps up to `N` grounded leaves buffered behind the work already dispatched, as
-stated in the objective above.
-
-**Reattempts.** A Touchdown is consumed at most once. When a Scheduler policy
-reattempts an evaluation instance, the leaf does not re-enter the window, the
-reattempt emits no new `TouchdownConsumed`, and no deduction is repeated.
-
-These decisions add the following mandatory conformance scenarios:
+These decisions add the following mandatory conformance scenarios. They use
+Scheduler test doubles and assume no concrete policy semantics.
 
 15. **Dispatch consumption:** with `prefetch = N` and one dispatched leaf, the
     window holds `N` unconsumed grounded leaves when the graph permits.
-16. **Held leaf:** a grounded leaf held before its first attempt still occupies
-    the window, and the Carousel does not deduce past the target because of it.
+16. **Withheld first dispatch:** a Scheduler test double withholds the first
+    dispatch of a grounded leaf; the leaf keeps occupying the window, and no
+    speculative deduction exceeds the target because of it.
 17. **Ineligible leaf:** a grounded leaf waiting on an upstream outcome counts
     toward the window.
-18. **Reattempt:** reattempting a consumed leaf neither re-enters the window nor
-    emits a second `TouchdownConsumed`.
+18. **Subsequent attempt:** a Scheduler test double creates another attempt of
+    an already consumed evaluation instance; the leaf does not re-enter the
+    window, no second `TouchdownConsumed` is emitted, and no deduction repeats.
+19. **Demand over a full window:** with the window full of ineligible leaves,
+    an explicitly demanded occurrence is deduced to Touchdown and
+    `DemandedTouchdownOverTarget` is emitted.
+20. **Consume once:** repeating a consume acknowledgement for the same attempt
+    changes nothing and emits nothing.
+21. **Discard before dispatch:** a discarded Touchdown is never handed to the
+    Host; a later consume acknowledgement returns `Discarded`.
+22. **Dispatch/cancellation race:** in both orders, exactly one of
+    `TouchdownConsumed` and `TouchdownDiscarded` is emitted, and the Host is
+    invoked only if the consume acknowledgement was applied first.
 
 ## Completion criteria
 

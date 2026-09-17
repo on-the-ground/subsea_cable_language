@@ -148,12 +148,13 @@ Undeduced ──demand──▶ Deducing ──commit──▶ Open ──outcom
     └─withdraw─▶ Withdrawn  (never deduced; ledger unaffected)
 ```
 
-Leaf scopes refine `Open`:
+Leaf scopes refine `Open`. Under the conservative value barrier a leaf is
+grounded only with resolved arguments, so no leaf waits for arguments:
 
 ```text
-Grounded ─▶ Waiting(args|deps|policy) ─▶ Eligible ─▶ InFlight ─▶ outcome
-                                            ▲            │
-                                            └─reattempt──┘  (policy action)
+Grounded ─▶ Waiting(deps|withheld|capacity) ─▶ Eligible ─▶ InFlight ─▶ outcome
+                                                 ▲            │
+                                                 └─reattempt──┘  (Scheduler)
 ```
 
 ### 4.2 Baseline scope outcome rules
@@ -199,16 +200,23 @@ Demand Coordinator    preserves demand and visible prefetch configuration
 Carousel              selects and deduces within that request
 ```
 
-The number and scope of simultaneous demanded paths, whether ineligible grounded
-leaves occupy the window, and the deterministic selection of prefetch candidates
-remain Carousel decisions 1–4. This plan does not convert readiness into a
-portable demand rule.
+Ineligible grounded leaves occupy the window, and a full window never blocks
+explicit demand ([SCP-0001](../proposals/0001-touchdown-consumption-and-window-counting.md)).
+The number and scope of simultaneous demanded paths and the deterministic
+selection of prefetch candidates remain Carousel decisions 1, 2, and 4. This
+plan does not convert readiness into a portable demand rule.
 
 ## 6. The value barrier
 
 Under the current contract, an occurrence whose arguments require an unresolved
-`ValueRef` cannot deduce. Carousel reports `PrefetchBlocked(pendingValue)` and
-does not commit a deduction record or publish a Touchdown for that occurrence.
+`ValueRef` cannot deduce. Carousel commits no deduction record and publishes no
+Touchdown for it, and reports why:
+
+- `DeductionBlocked(occurrence, pendingValue)` for an occurrence carrying
+  explicit demand;
+- `PrefetchBlocked(reasons)` when speculative replenishment stays below the
+  target, listing each blocked candidate and its reason.
+
 A Touchdown envelope always contains resolved arguments.
 
 ```text
@@ -247,7 +255,9 @@ RunRequested          ScopeOutcome           TimerFired
 DeductionCommitted    AttemptCompleted       CancelRequested
 OccurrenceExposed     ValueResolved          PrefetchReconfigured
 TouchdownPublished    PolicyActionRequested  AliasChanged
-PrefetchBlocked       DeductionFailed        HostCapabilityChanged
+TouchdownConsumed     TouchdownDiscarded     DemandedTouchdownOverTarget
+DeductionBlocked      PrefetchBlocked        DeductionFailed
+HostCapabilityChanged
 ```
 
 ### 7.1 Start
@@ -271,8 +281,9 @@ PrefetchBlocked       DeductionFailed        HostCapabilityChanged
 ### 7.3 On `TouchdownPublished`
 
 1. The leaf scope enters `Grounded`, then `Waiting` with its blocking reasons:
-   unsatisfied structural predecessors or direct policy holds. An occurrence
-   with unresolved arguments cannot be Grounded under the current contract.
+   unsatisfied structural predecessors, Scheduler withholding, or capacity. An
+   occurrence with unresolved arguments cannot be Grounded under the current
+   contract.
 2. When no reason remains, it becomes `Eligible`.
 
 ### 7.4 Dispatch
@@ -282,16 +293,23 @@ PrefetchBlocked       DeductionFailed        HostCapabilityChanged
 2. Policy Engine runs `BeforeAttempt` only for policies directly attached to
    that leaf. A composite policy receives only events of its own target scope
    (§8.3); it is not inherited by descendant attempts.
-3. Dispatcher creates an Attempt and calls `Host.Functions.evaluate` or
-   `Host.Anchors.invoke`.
-4. When the Dispatcher hands the leaf's first attempt to the Host, the
-   Scheduler emits `TouchdownConsumed` for it (**Owner decision R10**, decided:
-   consumption at dispatch; see the Carousel plan's
-   [Recorded decisions](CAROUSEL_ENGINE_PLAN.md#recorded-decisions)). Selecting
-   a leaf or running `BeforeAttempt` does not consume it, so a held leaf keeps
-   occupying the window. Reattempts of the same evaluation instance emit no
-   further `TouchdownConsumed`. A leaf whose scope is cancelled before its
-   first attempt leaves the window through a discard event instead.
+3. For a first attempt, the Dispatcher creates the Attempt record and issues
+   `ConsumeTouchdown(runId, occurrenceId, evaluationInstanceId, attemptId)`.
+   The Carousel applies it atomically and emits `TouchdownConsumed`. Only a
+   `Consumed` result lets the attempt proceed; `Discarded` aborts it without a
+   Host call. This is **Owner decision R10**, recorded in
+   [SCP-0001](../proposals/0001-touchdown-consumption-and-window-counting.md),
+   which also defines the other results, idempotency, and races. Selecting a
+   leaf, running `BeforeAttempt`, or withholding dispatch does not consume it.
+4. The Dispatcher then calls `Host.Functions.evaluate` or `Host.Anchors.invoke`.
+   A synchronous Host refusal leaves the Touchdown consumed and fails the
+   attempt in the `host` phase.
+5. A later attempt of the same evaluation instance skips step 3: it neither
+   re-enters the window nor emits `TouchdownConsumed`.
+6. When the Scheduler settles a leaf that was never attempted (for example,
+   because an enclosing scope was cancelled), it issues `DiscardTouchdown`; the
+   Carousel applies it and emits `TouchdownDiscarded`. If a first dispatch and a
+   discard race, the one the Carousel applies first wins.
 
 ### 7.5 On `AttemptCompleted`
 
@@ -365,7 +383,7 @@ Interpreters return only these actions:
 | Action | Effect |
 |---|---|
 | `Admit` | allow the attempt or scope to proceed |
-| `Hold(condition)` | keep the target Waiting until the condition or a timer |
+| `Hold(condition)` | keep a leaf target Waiting until the condition or a timer; its meaning on a composite target is undefined (part of R9) |
 | `StartTimer(duration, token)` | ask for a later `TimerFired` |
 | `Reattempt(after?)` | leaf: create a new Attempt for the same evaluation instance |
 | `CancelScope(reason)` | cancel in-flight attempts and withdraw undeduced demand under the target |
@@ -388,12 +406,17 @@ No action can edit topology, routing, aliases, or committed deductions.
   table for supported ordered pairs. A pair missing from the table is
   `PolicyConflict` at attach time. This design deliberately chooses no nesting
   order.
-- **Policy erasure is testable without claiming identical demand.** For every
-  occurrence that is actually deduced, erasing policy metadata does not change
-  its structural reduction result. Policy actions may still change which
-  occurrences are demanded and when. A policy-bearing artifact run with an
-  empty registry is rejected as `UnknownPolicy`; policies are never silently
-  ignored to manufacture a comparison run.
+- **Policy erasure is testable without claiming identical demand.** Policy
+  actions may change which occurrences are demanded and when, so a
+  corresponding occurrence may observe a different alias revision after
+  erasure. The invariant is therefore conditional: for corresponding
+  occurrences that select the same artifact with the same arguments, erasing
+  policy metadata does not change the structural reduction result.
+- **Unsupported policies fail where they are disclosed.** Policies become known
+  only as occurrences are exposed. With an empty registry, a run starts
+  normally; each policy-bearing occurrence fails its own scope with
+  `UnknownPolicy` when it is exposed, before any affected execution. Policies
+  are never silently ignored to manufacture a comparison run.
 
 ### 8.6 Illustration only
 
@@ -414,7 +437,7 @@ behavior is accepted language or policy semantics.
 
 | Host capability | Caller | Contract in this design |
 |---|---|---|
-| Primitives | Carousel only | profile-declared semantics; successful results used by a committed deduction are recorded, so replay of that commit does not call the Host again |
+| Primitives | Carousel (during deduction) and Host function evaluation (operators inside arrow-function leaves) | one profile-declared semantics per run for both callers; results used by a committed deduction are recorded, so replaying that commit does not call the Host again (this replay guarantee covers only the Carousel's calls) |
 | Functions | Dispatcher | receives the leaf envelope, attempt ID, and an **Anchor gateway** for nested `$` calls |
 | Anchors | Dispatcher and gateway | lookup, signature check, invoke, convert result |
 | Control | Dispatcher | `cancel(attemptId)`, capability description, profile identity |
@@ -526,8 +549,8 @@ language rule.
 | R6 | Baseline scope outcome rules (§4.2) | accept as named profile `baseline-local/0`, never language |
 | R7 | Value store ownership | Runtime owns; Carousel reads through a port |
 | R8 | Vessel as the Runtime metaphor | adopt; it resolves Carousel plan decision 10 |
-| R9 | Policy observation model (§8.3) and closed action set (§8.4) | accept as the carrier mechanism; concrete policies still need evidence |
-| R10 | Exact `TouchdownConsumed` acknowledgement point | **Decided (2026-09-17):** at dispatch of the first attempt; the window counts every published, unconsumed grounded leaf (Carousel decision 3) |
+| R9 | Policy observation model (§8.3) and closed action set (§8.4) | open; until decided, Runtimes keep policies as opaque ordered metadata, ship no concrete interpreters, and reject every policy they cannot interpret |
+| R10 | Exact `TouchdownConsumed` acknowledgement point | **Accepted** in [SCP-0001](../proposals/0001-touchdown-consumption-and-window-counting.md): consume acknowledgement at first dispatch; the window counts every published, unconsumed grounded leaf (Carousel decision 3) |
 
 Carousel plan decisions 3 and 6 are decided together with R10. The other
 Carousel plan decisions remain open; prefetch scope and demand count (plan
@@ -562,3 +585,9 @@ with R2.
    the affected atomic deduction.
 9. A stuck run reports its blocking reasons instead of completing.
 10. Nested Anchor calls are traced with call-site identity and carry no policy.
+11. Policy erasure: for corresponding occurrences that select the same artifact
+    with the same arguments, the policy-erased run commits the same structural
+    reduction result.
+
+Touchdown consumption, discard, and window-count scenarios are Carousel plan
+scenarios 15–22 (SCP-0001).

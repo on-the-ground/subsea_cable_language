@@ -12,7 +12,9 @@ arguments, result structure, and active lineages.
 ## 1. Parent deduction does not resolve a child
 
 1. Store `B/0` as `hash-b1` and bind alias `B/0 -> hash-b1`.
-2. Store `Upper/0 = [] -> B` and demand the Root occurrence of `Upper/0`.
+2. Store `Upper = [] -> B[]` as `Upper/0` and demand the Root occurrence of
+   `Upper/0`. (A Goal-arrow body reference always carries `[...]` or `(...)`;
+   a bare `B` is valid only as a composition stage.)
 3. The committed Upper deduction exposes a child occurrence containing symbolic
    `B/0`; that child has no selected artifact hash yet.
 4. Rebind `B/0 -> hash-b2`.

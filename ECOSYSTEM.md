@@ -26,16 +26,15 @@ not a meaningful claim.
 | Field | Value |
 |---|---|
 | Repository | [on-the-ground/subsea_cable_runtime](https://github.com/on-the-ground/subsea_cable_runtime) |
-| License | not chosen yet |
+| License | Apache-2.0 |
 | Toolchain | Go 1.24, no third-party modules |
-| Supported language revision | `cbc6f53` (pinned as a git submodule) |
+| Language pin | `cbc6f53`, as a git submodule: grammar, conformance corpus, and `README.md` semantics |
+| Design documents followed | `implementation/CAROUSEL_ENGINE_PLAN.md`, `implementation/RUNTIME_ORCHESTRATION_PLAN.md`, and SCP-0001 as proposed in #1; the runtime repository's README records the exact revision |
 | Profile | `poc-baseline/0` Scheduler, `poc-rational/0` primitives, `poc-sha256-canon/1` artifacts |
-| Conformance command | `go test ./...` (runs `conformance/cases.tsv`; a daily job also tests against `main`) |
-| Current result | full `cases.tsv` corpus passes; `DEDUCTION.md` scenarios 1–4 and 6–8, 5 partially |
-| Supported | demand-driven Carousel with Touchdown prefetch, conservative value barrier, run-scoped ledger, policy carrier with illustrative interpreters, deterministic Runtime |
-| Unsupported | eager `Goal(...)` and value-position `$anchor(...)` outside function leaves, crash/resume, replay, concurrent deduction, composite reattempt |
-| Status | proof of concept; not an official Runtime |
-| Maintainer | on-the-ground (issues in the repository) |
-
-To add one, open an ecosystem-listing PR following `CONTRIBUTING.md`. Runtime
-source code itself remains in the external project.
+| Conformance command | `go test ./...` (runs `conformance/cases.tsv` of the pin; a daily job also runs against `main`) |
+| Current result | full `cases.tsv` corpus of the pin passes; `DEDUCTION.md` scenarios 1–4 and 6–8 pass using the corrected scenario 1 source (`[] -> B[]`), scenario 5 only partially (no resume) |
+| Supported | demand-driven Carousel with Touchdown prefetch (SCP-0001), conservative value barrier, run-scoped ledger, opaque `@policy` carrier that rejects every policy, deterministic Runtime |
+| Unsupported | concrete policy semantics, structure-valued lookup maps, eager `Goal(...)` and value-position `$anchor(...)` outside function leaves, crash/resume, replay, concurrent deduction |
+| Status | proof of concept; not an official Runtime; experimental paths are listed in `implementation/CAROUSEL_POC_FINDINGS.md` |
+| Security reports | GitHub private vulnerability reporting, as described in the repository's `SECURITY.md` |
+| Maintainer | on-the-ground |

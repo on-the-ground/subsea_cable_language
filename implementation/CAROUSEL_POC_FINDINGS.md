@@ -1,178 +1,58 @@
 # Carousel POC Findings
 
-> **Status:** evidence for owner review, not normative. It comes from an
+> **Status:** index of evidence, not normative. Findings come from an
 > independent proof of concept of the Carousel and its orchestrating Runtime,
-> maintained outside this repository at
-> [on-the-ground/subsea_cable_runtime](https://github.com/on-the-ground/subsea_cable_runtime)
-> (pinned to this repository at `cbc6f53`). Each item names what the POC did so
-> it could keep running. None of these choices is a proposed default. Items
-> that change language semantics need an SCP; items marked **Owner decision**
-> need an explicit decision before they are specified.
+> maintained at
+> [on-the-ground/subsea_cable_runtime](https://github.com/on-the-ground/subsea_cable_runtime).
+> This page does not decide anything and does not replace the ADR/SCP process:
+> every language-level gap links an external ADR and a Subsea Cable Proposal,
+> and the POC marks the affected path as experimental or blocked until the
+> owner decides.
 
 Related plans: [CAROUSEL_ENGINE_PLAN.md](CAROUSEL_ENGINE_PLAN.md) and
 [RUNTIME_ORCHESTRATION_PLAN.md](RUNTIME_ORCHESTRATION_PLAN.md).
 
-## Specification contradictions
+## Open language-level gaps
 
-### F1. DEDUCTION scenario 1 uses a body the grammar rejects
+| ID | Gap | Proposal | External ADR | POC path |
+|---|---|---|---|---|
+| F3 | Occurrence kind, deduction record, and lineage of an inline Goal-arrow stage | [Draft SCP](../proposals/draft-inline-goal-arrow-stage-occurrence.md) | `docs/decisions/0002-inline-goal-arrow-stages.md` | experimental |
+| F8 | Binding site, entry form, and routing of structure-valued lookup maps | [Draft SCP](../proposals/draft-structure-valued-lookup-maps.md) | `docs/decisions/0003-structure-valued-lookup-maps.md` | blocked (`UnsupportedByProfile`) |
+| F9 | Which top-level values an artifact captures in its hash | [Draft SCP](../proposals/draft-artifact-hash-value-closure.md) | `docs/decisions/0004-artifact-hash-value-closure.md` | experimental |
+| F10 | Error kind and phase for runtime `NoOutput` where a value is required | [Draft SCP](../proposals/draft-dynamic-nooutput-errors.md) | `docs/decisions/0005-dynamic-nooutput-errors.md` | experimental |
+| F12 | Staging of value-position `$anchor(...)` calls in Goal arguments | Owner decision R3 (with eager `Goal(...)` arguments) | — | blocked (`UnsupportedByProfile`) |
 
-`conformance/DEDUCTION.md` scenario 1 stores `Upper/0 = [] -> B`. In
-`SubseaCable.g4`, `goalBody → goalReference` requires `[...]` or `(...)`, so a
-bare `B` is only valid as a composition stage. The POC follows the grammar and
-writes the scenario as `Upper = [] -> B[]`.
+ADR paths are relative to the runtime repository.
 
-**Needed:** either correct the scenario text, or allow a bare zero-arity Goal as
-a direct Goal-arrow body (grammar and README change).
+## Resolved
 
-### F2. Empty source unit
+| ID | Finding | Resolution |
+|---|---|---|
+| F1 | `conformance/DEDUCTION.md` scenario 1 used `Upper/0 = [] -> B`, which the grammar rejects | Scenario corrected to `Upper = [] -> B[]`; invalid-syntax case `bare-goal-body.subc` added |
+| F2 | Empty source unit | The grammar requires at least one statement (confirmed with ANTLR). Invalid-syntax case `empty-program.subc` added |
+| F4 | Policy-erasure invariant lacked a condition | Orchestration plan §8.5 and §16 scenario 11 now condition it on the same selected artifact and arguments |
+| F5 | `Hold` on a composite target | Orchestration plan §8.4 leaves it undefined as part of R9 |
+| F6 | Timing of failures found by speculative prefetch | A Scheduler decision tied to explicit demand; the POC surfaces them only on demand |
+| F6a | Consumption point and window counting | [SCP-0001](../proposals/0001-touchdown-consumption-and-window-counting.md) (Accepted) |
+| F7 | Routing into a nested serial stage | Already specified: explicit brackets never receive an implicit argument, so in `[A, [B, C]]` the inner `B` is `/0`. The POC tests this |
+| F11 | Bare uppercase names outside compositions | Already specified: a bare uppercase identifier is a Goal stage only inside serial or parallel composition. The POC's fallback was a defect and was removed |
 
-Review of the first POC PR asked for an empty source to parse and fail as
-`InvalidRoot`. The current grammar does not allow that: `SubseaCable.g4` has
-`program : TERMINATOR? statementList EOF` and `statementList` requires at least
-one `statement`; the EBNF has the same shape. Generating the parser from
-`SubseaCable.g4` with ANTLR 4.11.1 and parsing an empty file reports
-`line 1:0 mismatched input '<EOF>'`, and a file of blank lines reports the same
-at EOF. The POC therefore keeps `SyntaxError` for empty sources.
+The orchestration plan's internal inconsistencies noted in earlier revisions of
+this page (`Waiting(args)`, per-occurrence vs. aggregate blocking reports, the
+empty-registry rejection point, and the primitive-semantics callers) are fixed
+in the plan text.
 
-**Needed:** if empty programs should reach semantic validation, change both
-grammars and add an empty-file conformance case (an SCP); otherwise add an
-empty-file `SyntaxError` case to record the current rule.
+## Policy discovery
 
-## Missing contract pieces
-
-### F3. Inline Goal-arrow stages have no occurrence kind — **Owner decision**
-
-`RUNTIME_CONTRACT.md` §8 lists `Goal | serial | parallel | resolving-map |
-function-leaf | anchor`. An inline stage such as `[{code, logs}] -> Diagnose[code,
-logs]` must bind a routed value before its body can be reduced, and its body can
-depend on that value (for example through lookup). The POC models it as a
-deducible occurrence `goal-arrow-stage`: it waits behind the value barrier,
-then commits a deduction record with `referenceKind = inline-arrow`, no
-artifact hash, and no lineage segment of its own.
-
-**Needed:** decide whether an inline arrow is its own occurrence kind, whether
-it gets a deduction record, and how it appears in lineage.
-
-### F4. The policy-erasure invariant needs a condition
-
-Policy actions can change when occurrences are demanded. An occurrence can then
-observe a different alias revision in the policy-erased run and select another
-artifact. The accurate invariant is: *for an occurrence that selects the same
-artifact with the same arguments, erasing policies does not change its
-structural reduction result.* The POC test compares only occurrences deduced in
-both runs, with no alias changes.
-
-### F5. `Hold` on a composite target has no meaning
-
-`Waiting` exists only for leaves. Interpreting a composite `Hold` as holding
-descendants would be the implicit inheritance review point 4 forbids. The POC
-allows `Hold` only on leaf targets. **Owner decision:** restrict it to leaves,
-or define it as a Scheduler-side hold on demand under the composite.
-
-### F6. Failures found by speculative prefetch
-
-Carousel plan scenario 10 requires that a failure found ahead of evaluation must
-not disturb the evaluating leaf. The POC records every prefetch-found failure
-at deduction time and surfaces it only when the Scheduler explicitly demands
-that occurrence (`DeductionFailureDeferred` → `DeductionFailureSurfaced`); a run
-that never demands it ends for lack of demand. The Carousel reports the
-occurrence's state to each demand (`accepted`, `already-committed`, `failed`,
-`withdrawn`, ...) so the Scheduler can do this.
-
-**Needed:** the plan should state that surfacing a speculative failure is a
-Scheduler decision tied to demand, and what `Demand` returns for a failed
-occurrence.
-
-### F6a. The consumption point changes what "N ahead" means (R10) — **resolved**
-
-With consumption at dispatch, the POC keeps N Touchdowns buffered behind an
-in-flight leaf. With consumption at completion, the in-flight leaf still
-occupies the window, so only N−1 are buffered behind it. A regression test in
-the POC shows both. Whichever point R10 selects, the Carousel plan's sentence
-"the leaf currently selected for evaluation is not one of those two" fixes the
-expected count, so R10 and the window counting rule (Carousel decision 3) must
-be decided together.
-
-**Resolved (2026-09-17):** consumption at dispatch; the window counts every
-published, unconsumed grounded leaf; the target is compared with that count
-directly; reattempts never re-enter the window. See the Carousel plan's
-[Recorded decisions](CAROUSEL_ENGINE_PLAN.md#recorded-decisions).
-
-### F7. Nested serial stages and routing
-
-`[A, [B, C]]` parses. README says explicit brackets never receive an implicit
-argument, but it does not say whether a nested serial's first stage receives the
-upstream value. The POC routes nothing into a nested serial, so its first bare
-stage is `/0`.
-
-### F8. Structure-valued lookup maps
-
-README allows "an ordinary-map lookup whose selectable entries are all valid
-Goal structure" as a Goal-arrow body. It does not say where such a map may be
-bound or how a bare Goal entry's arity is chosen. The POC requires a top-level
-map literal binding, requires every entry to be structure, and checks a bare
-entry's arity where the lookup is used.
-
-### F9. Artifact hashes and top-level values
-
-Goal bodies can read top-level value bindings, but README does not say whether
-those values are part of `ArtifactHash`. Without them, two different programs
-could share a hash. The POC includes all of the unit's value bindings, which is
-coarse: editing an unrelated value changes every hash.
-
-### F10. Dynamic `NoOutput` where a value is required
-
-README makes a statically `NoOutput` resolving-map branch invalid, but it does
-not name the error when a Host leaf returns `NoOutput` at runtime into a
-resolving-map branch or a value position. The POC uses `NoOutputBranch` and
-`NoOutputAsValue` with phase `host`.
-
-### F11. Uppercase non-Goal value bindings
-
-`X = 1` is not forbidden, but inside a composition a bare `X` reads as a Goal
-stage. The POC treats `X` as a value when no Goal named `X` exists, and as a
-Goal otherwise.
-
-### F12. Value-position Anchor calls in Goal arguments
-
-`B[$f(x)]` is syntactically valid, and the short-circuit rule in README implies
-such calls join the dependency structure. This is the same staging problem as
-eager `Goal(...)` arguments (R3). The POC rejects both with
-`UnsupportedByProfile`.
-
-## Residual issues in the orchestration plan
-
-These remain open in [RUNTIME_ORCHESTRATION_PLAN.md](RUNTIME_ORCHESTRATION_PLAN.md):
-
-1. §4.1 still lists `Waiting(args)`, which cannot occur under the conservative
-   barrier.
-2. §5–§6 report a demanded occurrence's value barrier as `PrefetchBlocked`. The
-   POC emits `DeductionBlocked` for a single occurrence and `PrefetchBlocked`
-   for the aggregated prefetch shortfall.
-3. §9 names the Carousel as the only caller of primitives, but function leaves
-   also evaluate operators. The POC uses the same Host primitive profile for
-   both within a run.
-4. §8.5 says an artifact with policies is "rejected as `UnknownPolicy`" under an
-   empty registry. Policies are disclosed lazily, so the POC fails the affected
-   scope when its occurrence is exposed, not the whole run up front.
-5. §16 lacks a policy-erasure scenario (see F4).
-
-The §13 walkthrough now attaches `@retry` directly to the `$editFiles` Anchor
-occurrence, as the direct-target rule requires.
-
-## Implementation defects fixed after review
-
-Review of the first POC PR found runtime defects that were implementation bugs,
-not language questions. They are fixed in the runtime repository with
-regression tests: the prefetch window was not refilled before time advanced;
-deduction records were not keyed by run; canonical encodings concatenated raw
-map keys and could collide; and speculative failures could end a manual-demand
-run. None of these changes the language.
+The POC ships no concrete policy interpreters. It keeps `@policy` as opaque,
+ordered occurrence metadata and rejects every policy with `UnknownPolicy` when
+its occurrence is disclosed. Concrete policy semantics wait for migration
+evidence, an ADR, and an owner decision, as `POLICY_DISCOVERY.md` requires.
 
 ## POC-only diagnostic kinds
 
-These kinds exist only in this profile and are not proposed for the language
-error table: `UnsupportedByProfile` (phase `profile`), `InjectedFailure`,
-`AnchorFailed`, `NoOutputBranch`, `NoOutputAsValue` (phase
-`host`), and `PolicyTimeout`, `RunStuck`, `RunCancelled`, `StepBudgetExceeded`,
-`ChildFailed`, `CancelledByPolicy`, `FailedByPolicy` (phase `policy`).
+These kinds exist only in the POC profile and are not proposed for the language
+error table: `UnsupportedByProfile` (phase `profile`); `InjectedFailure`,
+`AnchorFailed`, `NoOutputBranch`, `NoOutputAsValue` (phase `host`); and
+`RunStuck`, `RunCancelled`, `StepBudgetExceeded`, `ChildFailed`,
+`CancelledByPolicy`, `FailedByPolicy` (phase `policy`).

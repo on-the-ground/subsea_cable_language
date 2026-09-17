@@ -161,6 +161,10 @@ overshoot the requested count by the indivisible result of one deduction. It
 must not discard a branch, partially commit a reduction, or rewrite the Goal
 structure merely to hit an exact number.
 
+The target bounds speculative deduction only. Explicitly demanded occurrences
+are deduced even when the window is already full, and the resulting over-target
+state is reported separately from atomic overshoot (SCP-0001).
+
 Conversely, Carousel may remain below target when progress requires an
 evaluation result, a missing input, a failed deduction, or an unresolved
 external condition. It reports the blocking reason instead of busy-spinning or
@@ -282,10 +286,14 @@ TouchdownConsumed
 PrefetchTargetReached
 PrefetchBlocked
 AtomicPrefetchOvershoot
+DemandedTouchdownOverTarget
+TouchdownDiscarded
 ReplenishmentStopped
 ```
 
-Names are provisional. Event payloads must preserve run, occurrence, lineage,
+`TouchdownPublished`, `TouchdownConsumed`, `TouchdownDiscarded`, and
+`DemandedTouchdownOverTarget` are fixed by SCP-0001, including their required
+fields. Other names are provisional. Event payloads must preserve run, occurrence, lineage,
 deduction cause, window counts, requested scope, and monotonic ordering. Existing
 `AliasResolved`, `LeafGrounded`, and evaluation events remain distinct rather
 than being collapsed into one “progress” event.
@@ -411,7 +419,7 @@ prefetch-ahead model. It does not yet answer all interface questions:
 2. **Evaluation demand count:** with Scheduler concurrency greater than one, is
    the target `active demand + prefetch`, or is prefetch independently scoped?
 3. **Counting:** do grounded but Scheduler-ineligible leaves occupy the window?
-   This plan recommends yes because Carousel cannot interpret policy.
+   **Decided** — see [Recorded decisions](#recorded-decisions).
 4. **Traversal choice:** when several frontier occurrences can deduce, what
    deterministic rule or Scheduler hint chooses among them?
 5. **Dynamic reconfiguration:** who may change prefetch, when does it take
@@ -419,6 +427,7 @@ prefetch-ahead model. It does not yet answer all interface questions:
    demand?
 6. **Backpressure ownership:** which side acknowledges `TouchdownConsumed`, and
    what happens when the Scheduler holds grounded work indefinitely?
+   **Decided** — see [Recorded decisions](#recorded-decisions).
 7. **Resource budgets:** which limits are mandatory, and which are named Runtime
    profile settings?
 8. **Default value:** is prefetch always explicit, or may a Runtime profile
@@ -432,6 +441,66 @@ prefetch-ahead model. It does not yet answer all interface questions:
 Each decision must be recorded before the affected implementation path starts.
 Choices that change portable behavior, identity, replay, or component ownership
 require an SCP and the owner's explicit decision.
+
+## Recorded decisions
+
+Decisions 3 and 6 are closed by
+[SCP-0001 — Touchdown consumption and window counting](../proposals/0001-touchdown-consumption-and-window-counting.md)
+(Accepted, owner decision 2026-09-17), together with Owner decision R10 in
+[RUNTIME_ORCHESTRATION_PLAN.md](RUNTIME_ORCHESTRATION_PLAN.md). SCP-0001 is the
+normative record; in summary:
+
+- **Consumption (decision 6).** A published Touchdown leaves the window
+  through exactly one applied acknowledgement. At the first dispatch of its
+  evaluation instance, the Scheduler issues a consume acknowledgement carrying
+  `(runId, occurrenceId, evaluationInstanceId, attemptId)`; the Carousel
+  applies it and emits `TouchdownConsumed`; only an authorizing result
+  (`Consumed`, or `Consumed(replayed)` for the same attempt) lets that attempt
+  invoke the Host. An attempt
+  that receives `AlreadyConsumed` lost the race and must not invoke the Host.
+  Selection, pre-attempt policy, and withholding do not consume. Later attempts
+  issue no consume acknowledgement and never re-enter the window. A Touchdown
+  that will never be attempted leaves through a discard acknowledgement that
+  the Carousel applies and reports as `TouchdownDiscarded`. Consume and discard
+  for one occurrence are serialized; the first applied wins.
+- **Counting (decision 3).** The window counts every published grounded leaf
+  with no applied consume or discard, including Scheduler-ineligible and
+  withheld leaves.
+- **Target.** The prefetch target is compared with that count directly.
+- **Backpressure.** A full window stops only speculative deduction. Explicitly
+  demanded occurrences are always deduced; if such a deduction publishes leaves
+  and the window count afterwards exceeds the target, the Carousel emits
+  `DemandedTouchdownOverTarget`, not `AtomicPrefetchOvershoot`.
+
+These decisions add the following mandatory conformance scenarios. They use
+Scheduler test doubles and assume no concrete policy semantics.
+
+15. **Dispatch consumption:** with `prefetch = N` and one dispatched leaf, the
+    window holds `N` unconsumed grounded leaves when the graph permits.
+16. **Withheld first dispatch:** a Scheduler test double withholds the first
+    dispatch of a grounded leaf; the leaf keeps occupying the window, and no
+    speculative deduction exceeds the target because of it.
+17. **Ineligible leaf:** a grounded leaf waiting on an upstream outcome counts
+    toward the window.
+18. **Subsequent attempt:** a Scheduler test double creates another attempt of
+    an already consumed evaluation instance; the leaf does not re-enter the
+    window, no second `TouchdownConsumed` is emitted, and no deduction repeats.
+19. **Demand over the target:** with the window full of ineligible leaves, an
+    explicitly demanded occurrence is deduced to Touchdown and
+    `DemandedTouchdownOverTarget` is emitted. The same event is emitted when a
+    partially filled window (for example one of two) receives a demanded
+    deduction that grounds several leaves and ends above the target.
+20. **Consume replay:** repeating a consume acknowledgement with the same
+    attempt returns `Consumed(replayed)`, authorizes that attempt again, and
+    emits nothing; an empty attempt identity is rejected.
+21. **Discard before dispatch:** a discarded Touchdown is never handed to the
+    Host; a later consume acknowledgement returns `Discarded`.
+22. **Dispatch/cancellation race:** in both orders, exactly one of
+    `TouchdownConsumed` and `TouchdownDiscarded` is emitted, and the Host is
+    invoked only if the consume acknowledgement was applied first.
+23. **Competing first dispatch:** when a different attempt already consumed the
+    Touchdown, a consume acknowledgement returns `AlreadyConsumed` naming the
+    first attempt, and the losing attempt never reaches the Host.
 
 ## Completion criteria
 
@@ -453,8 +522,8 @@ The Carousel design is complete when:
 
 ## Immediate next deliverables
 
-1. Resolve the ten open decisions above in order, beginning with prefetch scope,
-   count, and the Carousel/Scheduler handshake.
+1. Resolve the remaining open decisions above (decisions 3 and 6 are
+   recorded), beginning with prefetch scope and demand count.
 2. Write the state-machine reference algorithm and golden traces.
 3. Open the terminology/Runtime-boundary SCP that migrates deduction ownership
    from Vessel to Carousel.

@@ -54,6 +54,8 @@ nav:
       - Starting Point: implementation/STATUS.md
       - Runtime Contract: implementation/RUNTIME_CONTRACT.md
       - Carousel Engine Plan: implementation/CAROUSEL_ENGINE_PLAN.md
+      - Runtime Orchestration Plan: implementation/RUNTIME_ORCHESTRATION_PLAN.md
+      - Carousel POC Findings: implementation/CAROUSEL_POC_FINDINGS.md
       - Migration Playbook: implementation/MIGRATION_PLAYBOOK.md
       - Policy Discovery: implementation/POLICY_DISCOVERY.md
       - Experiment Template: implementation/EXPERIMENT_TEMPLATE.md
@@ -67,6 +69,7 @@ nav:
       - Proposals:
           - Guide: proposals/README.md
           - Template: proposals/TEMPLATE.md
+          - "SCP-0001: Touchdown consumption": proposals/0001-touchdown-consumption-and-window-counting.md
 
 plugins:
   - search

@@ -13,7 +13,10 @@
 - This repository contains no official Runtime and will not host one.
 - No concrete anchoring policy semantics have been accepted.
 - No open-source migration experiment has started.
-- No Carousel deduction engine implementation has started. Its objective,
+- An independent, non-normative Carousel/Runtime proof of concept exists in
+  `on-the-ground/subsea_cable_runtime`; its findings are in
+  `CAROUSEL_POC_FINDINGS.md`. It settles no open decision.
+- No production Carousel deduction engine implementation has started. Its objective,
   Touchdown-prefetch model, design questions, and phased plan are recorded in
   `CAROUSEL_ENGINE_PLAN.md`; the existing Vessel terminology remains normative
   until the planned boundary decision is synchronized.

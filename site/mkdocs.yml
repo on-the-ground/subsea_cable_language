@@ -1,0 +1,97 @@
+site_name: "__C — Subsea Cable"
+site_description: "A language-agnostic representation of executable intent."
+site_url: "https://on-the-ground.github.io/subsea_cable_language/"
+repo_url: "https://github.com/on-the-ground/subsea_cable_language"
+repo_name: "on-the-ground/subsea_cable_language"
+edit_uri: "edit/main/"
+
+# Canonical documentation stays in the repository tree. The site is only a
+# generated projection and deliberately has no second editable content copy.
+docs_dir: ".."
+
+theme:
+  name: material
+  language: en
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+nav:
+  - Start:
+      - Overview: README.md
+      - The Subsea Cable World: METAPHORS.md
+      - Manifesto: MANIFESTO.md
+      - The Problem: TheProblem.md
+      - For Agents: ToAgents.md
+  - Language:
+      - Brand Contract: BRAND.md
+      - Recursion — Deferred Notes: Recursion.md
+      - Agent Instructions: AGENTS.md
+  - Conformance:
+      - Conformance Corpus: conformance/README.md
+      - Deduction Scenarios: conformance/DEDUCTION.md
+  - Implementers:
+      - Implementation Guide: implementation/README.md
+      - Starting Point: implementation/STATUS.md
+      - Runtime Contract: implementation/RUNTIME_CONTRACT.md
+      - Migration Playbook: implementation/MIGRATION_PLAYBOOK.md
+      - Policy Discovery: implementation/POLICY_DISCOVERY.md
+      - Experiment Template: implementation/EXPERIMENT_TEMPLATE.md
+      - Decision Records:
+          - Guide: implementation/decisions/README.md
+          - Template: implementation/decisions/TEMPLATE.md
+  - Project:
+      - Governance: GOVERNANCE.md
+      - Contributing: CONTRIBUTING.md
+      - Ecosystem: ECOSYSTEM.md
+      - Proposals:
+          - Guide: proposals/README.md
+          - Template: proposals/TEMPLATE.md
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      title: On this page
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+
+extra_css:
+  - site/stylesheets/extra.css
+
+exclude_docs: |
+  .antlr/
+  .git/
+  .github/
+  site/mkdocs.yml
+  site/requirements.txt
+
+copyright: "Subsea Cable is licensed under Apache-2.0. The website is a generated view of the canonical repository sources."

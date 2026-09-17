@@ -1,0 +1,5 @@
+A = [] -> $a
+C = (x) -> x + 1
+B = [x] -> [A[], C(x)]
+Root = [] -> @timeout("30s") {A, A}
+Root[]

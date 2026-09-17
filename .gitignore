@@ -1,0 +1,7 @@
+# Local static-site build environments and output
+.site-venv/
+.site-output/
+
+# Python build residue
+__pycache__/
+*.py[cod]

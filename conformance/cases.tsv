@@ -1,0 +1,15 @@
+phase	expected	file
+syntax	accept	valid/core.subc
+syntax	accept	valid/continuations.subc
+syntax	accept	valid/unicode-strings.subc
+syntax	SyntaxError	invalid-syntax/unicode-identifier.subc
+syntax	SyntaxError	invalid-syntax/inline-function.subc
+validation	InvalidRoot	invalid-semantic/InvalidRoot.subc
+validation	InvalidStructuralContext	invalid-semantic/InvalidStructuralContext.subc
+validation	InvalidUnicodeEscape	invalid-semantic/InvalidUnicodeEscape.subc
+validation	ArityMismatch	invalid-semantic/ArityMismatch.subc
+validation	GoalNotFound	invalid-semantic/GoalNotFound.subc
+validation	NotCallable	invalid-semantic/NotCallable.subc
+validation	DuplicateMapKey	invalid-semantic/DuplicateMapKey.subc
+validation	DestructureMismatch	invalid-semantic/DestructureMismatch.subc
+validation	CycleDetected	invalid-semantic/CycleDetected.subc

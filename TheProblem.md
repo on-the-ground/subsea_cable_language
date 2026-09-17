@@ -30,7 +30,8 @@ A program first describes **what goals exist** and **how those goals depend on o
 
 Only afterwards should a scheduler decide **how** those goals are executed.
 
-When separated, the program itself becomes nothing more than a declarative dependency graph.
+When separated, the program itself becomes a deferred structural Cable whose
+dependency graph is disclosed through demand-driven deduction.
 
 Execution order, evaluation strategy, parallelism, batching, cancellation, locality, and resource allocation become responsibilities of the scheduler—not of the program.
 
@@ -56,4 +57,5 @@ Schedulers execute them.
 
 A program is not an instruction sequence.
 
-It is a cable waiting to be laid.
+It is a Cable waiting to be laid—committed one deduction at a time while its
+undeduced aliases remain open to revision.

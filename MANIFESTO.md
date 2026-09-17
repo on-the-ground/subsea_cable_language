@@ -1,6 +1,6 @@
-# MANIFESTO.md
+# Subsea Cable Manifesto
 
-# The Function Was Never Meant To Carry The Program
+## The Function Was Never Meant To Carry The Program
 
 For decades, programming languages have asked functions to do something they were never designed to do.
 
@@ -51,6 +51,12 @@ Functions implement goals.
 Schedulers decide execution.
 
 No single layer should own all three.
+
+The Program exists as a deferred Cable. A Vessel discloses its Goal DAG lazily:
+each demanded deduction commits the artifact chosen for one occurrence and the
+structure produced by its reduction rule. Human-readable aliases remain mutable
+for occurrences that have not yet been deduced, while committed history stays
+fixed.
 
 ---
 
@@ -107,3 +113,6 @@ Programs should outlive infrastructures.
 Programs should outlive languages.
 
 Subsea Cable is an attempt to make that possible.
+
+Its visual short mark is `__C`; its source files use `.subc`. The name remains
+Subsea Cable.

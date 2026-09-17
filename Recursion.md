@@ -4,9 +4,11 @@
 
 Recursion is not part of the current Subsea Cable language.
 
-Direct self-reference and every form of mutual cycle in the binding dependency
-graph are semantic errors. Forward references remain valid as long as the
-resulting graph is acyclic.
+Direct self-reference and every form of mutual cycle are unsupported. A cycle
+visible entirely within one source unit is a validation error. Because
+unqualified Goal aliases resolve only when an occurrence is demanded, a cycle
+introduced by later alias rebinding is a deduction error. Forward references
+remain valid as long as the selected artifacts stay acyclic.
 
 This restriction is intentional. Recursion cannot be added as a local syntax
 feature because it affects the identity, expansion, evaluation, and
@@ -14,11 +16,13 @@ observability of the entire Goal structure.
 
 ## Why It Is Deferred
 
-Expansion is currently shared by `GoalNodeId`, the resolved Goal-definition
-identity plus arity, while evaluation instances are distinguished by their
-routed arguments. A Goal node may have multiple incoming edges and therefore
-multiple lineage paths. Ordinary reduction extends each incoming lineage across
-outgoing edges.
+Resolved definition identity is currently shared by `GoalNodeId`, the
+policy-erased `StructureHash` plus arity selected during deduction, while
+deduction records remain occurrence-specific and evaluation instances are
+distinguished by their routed arguments. A Goal node may have multiple incoming
+edges and therefore
+multiple lineage paths. Each committed deduction extends its incoming lineages
+across the outgoing edges produced by the selected artifact's reduction rule.
 
 The current Program structure is a DAG. Enabling recursion would add a back-edge
 to an existing Goal node and turn that DAG into a cyclic graph. Traversing such
@@ -32,18 +36,21 @@ Loop/1.Loop/1.Loop/1
 ```
 
 A value-dependent base case also means that continued traversal can depend on
-runtime data. That conflicts with definition-based structural expansion and
-with the current separation between the Vessel, which never evaluates, and the
-Scheduler, which sees only grounded evaluation instances.
+runtime data. The current Vessel may request pure primitive semantics from the
+Host while applying a reduction rule, but it does not evaluate grounded leaves;
+the Scheduler sees those grounded evaluation instances. Recursion must preserve
+that boundary.
 
 ## Questions That Must Be Resolved
 
 ### 1. Supported recursion forms
 
 - Direct recursion only, or mutual recursion as well?
-- May imported Goals participate in a recursive component?
-- Are recursive edges limited to statically named Goals, or may imported Goal
-  aliases participate? Function arrows remain terminal leaf implementations;
+- May Goals resolved from the content-addressed codebase participate in a
+  recursive component?
+- Are recursive edges limited to definitions authored in one source unit, or may
+  both late-bound aliases and pinned full-hash references participate? Function
+  arrows remain terminal leaf implementations;
   they cannot carry or invoke recursive Subsea Goal structure.
 
 ### 2. Branching and termination
@@ -57,6 +64,8 @@ Scheduler, which sees only grounded evaluation instances.
 
 - A back-edge can reuse an existing `GoalNodeId`; how is each logical recursive
   invocation distinguished from that structurally shared node?
+- Content hashes are trivial over the current acyclic dependency graph; how are
+  hashes assigned to a mutually recursive strongly connected component?
 - Does each traversal of the back-edge append another logical lineage segment,
   or is recursive lineage represented in a compressed form?
 
@@ -66,7 +75,8 @@ Scheduler, which sees only grounded evaluation instances.
   graph?
 - Does recursive expansion additionally need lexical environment or structural
   recursion context?
-- Which data may influence expansion without making the Vessel evaluate values?
+- Which data may influence deduction beyond the Host primitive semantics the
+  Vessel already requests for ordinary value routing?
 
 ### 5. Evaluation identity
 

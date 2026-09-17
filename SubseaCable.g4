@@ -2,7 +2,7 @@ grammar SubseaCable;
 
 /*
  * ============================================================
- * SubseaCable Language — ANTLR4 Parser Specification
+ * Subsea Cable Language — ANTLR4 Parser Specification
  * ============================================================
  * NOTE:
  * The generated lexer emits physical newline and comment tokens. Before the
@@ -10,13 +10,13 @@ grammar SubseaCable;
  * raw token stream according to the SSoT lexical conventions below:
  * - Remove a line comment but preserve its terminating physical newline.
  * - Replace an entire block comment, including any internal newlines, with one
- *   ordinary whitespace boundary. Only a newline outside `/* ... */` can emit
+ *   ordinary whitespace boundary. Only a newline outside a block comment can emit
  *   a TERMINATOR. Comments never concatenate adjacent tokens.
- * - Block comments do not nest; the first following `*/` closes the comment.
+ * - Block comments do not nest; the first closing delimiter ends the comment.
  * - Suppress physical newlines inside unclosed [], {}, or ().
  * - Suppress a physical newline immediately after any token in this exact
  *   continuation set:
- *       =  ->  ,  :  @
+ *       =  ->  ,  :  @  $
  *       ||  &&  ==  !=  <=  >=  <  >
  *       +  -  *  /  %  !
  * - Coalesce the remaining physical newlines and emit logical TERMINATOR tokens.
@@ -30,25 +30,27 @@ grammar SubseaCable;
  * ============================================================
  * Semantic Model
  * ------------------------------------------------------------
- * Interpreted by the Vessel (reduction) and Scheduler (evaluation),
+ * Interpreted by the Vessel (deduction/reduction), Host (concrete semantics),
+ * and Scheduler (evaluation policy),
  * NOT enforced by this grammar. Recorded here as the single source of truth.
  * ============================================================
  *
  * NAMING LAW (the only one):
- *   The identifier immediately before `[...]` is read by case:
- *       Something[...]   uppercase -> Goal
- *       something[...]   lowercase -> map
+ *   The base Identifier before `[...]` is read by case. A Goal name may carry
+ *   an optional codebase hash qualifier after that Identifier:
+ *       Something[...]          uppercase -> Goal
+ *       Something#7fa31c[...]   uppercase -> hash-qualified Goal
+ *       something[...]          lowercase -> map
  *   A map access MUST contain exactly one key: `something[key]`. Empty or
- *   multi-argument lowercase brackets are semantic errors. Goals may retain
- *   zero or more arguments.
+ *   multi-argument lowercase brackets are semantic errors, and a lowercase map
+ *   name may not carry a hash qualifier. Goals may retain zero or more arguments.
  *   Leading underscores do not participate in the case test; the first ASCII
  *   letter decides it (`_Build[...]` -> Goal, `_cache[...]` -> map). An
  *   identifier with no letter at all may not take a bracket suffix.
  *   Inside serial or parallel Goal composition only, a bare Identifier whose
  *   first ASCII letter is uppercase is also a Goal stage. This is the sole
  *   bracket-omission shorthand; a bare lowercase Identifier remains a value.
- *   No other casing rule exists in the language. In particular, alias/import
- *   targets are NOT constrained by case (a host language may expose either).
+ *   No other casing rule exists in the language.
  *
  * MAP WILDCARD:
  *   `_` is reserved for use as a map key. It is not a general expression and
@@ -65,20 +67,103 @@ grammar SubseaCable;
  *   spelling; `success` and `"success"` are therefore duplicates. Map keys are
  *   never scope lookups or evaluated expressions. Numeric and String keys are
  *   distinct, so `1` and `"1"` are different keys.
- *   Equality and duplicate detection use normalized semantic values, not source
- *   spelling: `1` equals `1.0`, `0` equals `-0`, and String escapes are decoded
- *   before comparison. String comparison is case-sensitive.
+ *   Equality and duplicate detection use normalized structural key forms, not
+ *   raw source spelling: `1` equals `1.0`, `0` equals `-0`, and String escapes
+ *   are decoded before comparison. String comparison is case-sensitive.
+ *
+ *   Source text is UTF-8, but Identifiers deliberately remain ASCII:
+ *   `[A-Za-z_][A-Za-z0-9_]*`. The ASCII casing law therefore remains portable
+ *   and applies equally to Goal names, parameters, `$` Anchor names, `@` policy
+ *   names, and bare Identifier map keys. Hash qualifiers also remain ASCII
+ *   alphanumeric. Strings contain Unicode scalar values and are never Unicode-
+ *   normalized; invalid UTF-8 is a source-decoding error, and canonically
+ *   equivalent spellings such as precomposed `é` and `e` plus a combining
+ *   accent remain different values. Escape spellings are
+ *   decoded before String equality, map-key comparison, or hashing, so source
+ *   spellings that decode to the same scalar sequence denote the same String.
+ *   `\u{...}` must contain one to six hexadecimal digits and denote a Unicode
+ *   scalar value (0..10FFFF excluding D800..DFFF), otherwise validation fails.
  *   Ordinary lookup Maps are selective routing structures. `map[key]` selects
  *   an exact normalized key first, then `_`; only the selected entry participates
  *   in the resulting dependency/value structure. Unselected entries do not. If
  *   neither exists, lookup raises `KeyNotFound`. A statically evident miss is a
- *   validation error; a runtime-only miss is an evaluation error. A Map literal
+ *   validation error; a demand-time miss is a deduction error. A Map literal
  *   is resolving only when it is the direct body of a Goal arrow. Its concrete
  *   keyed entries declare independent Goal branches and explicit key-to-result
  *   relationships. A Map is a value producer, never a Goal stage by itself;
  *   `[A, {x: B, y: C}, D]` is invalid. Wrap it as
  *   `[A, [] -> {x: B, y: C}, D]`, or use a parameterized Goal arrow when
  *   upstream routing is required.
+ *
+ * NUMBER BOUNDARY:
+ *   Subsea has one Number syntax, not separate integer, floating-point, decimal,
+ *   or width-specific types. A NUMBER token is only a grammar-validated decimal
+ *   string. Subsea does not convert it to a native numeric representation and
+ *   defines no precision, range, overflow, rounding, division, modulo, or
+ *   division-by-zero behavior. The Host primitive semantics owns all
+ *   such conversion and computation semantics, including its result and errors.
+ *   This deliberately permits different implementations to realize the same
+ *   Goal structure with different numeric models.
+ *   Numeric Map keys are the sole structural exception: duplicate detection and
+ *   lookup normalize their source text without evaluating a number. Remove
+ *   trailing fractional zeroes, remove a now-empty decimal point, and erase a
+ *   minus sign from zero. Thus `1`, `1.0`, and `1.00` denote one structural key,
+ *   as do `0`, `0.0`, and `-0`. This normalization defines key identity only;
+ *   it does not define runtime arithmetic or numeric equality.
+ *
+ * PRIMITIVE EXPRESSIONS:
+ *   Primitive operators are intentional deduction-time conveniences and may be
+ *   used in value-expression positions, including Goal arguments:
+ *       A = [x] -> B[x + 1]
+ *   The Vessel requests `x + 1` from Host primitive semantics when that routed
+ *   argument is needed. This evaluation creates no Goal node, leaf, or
+ *   Scheduler work. Subsea fixes the
+ *   operators' syntax, precedence, associativity, and structural evaluation
+ *   control such as left-to-right Boolean short-circuiting. A consuming
+ *   Host primitive-semantics profile owns operand support and conversion,
+ *   numeric representation, exact results, and errors. Consequently
+ *   String `+`, mixed-type equality/order, overflow, rounding, division, modulo,
+ *   and division by zero are implementation contracts rather than Subsea value
+ *   semantics. Every successful result MUST re-enter deduction as a Subsea-
+ *   representable value; primitive operator evaluation itself MUST have no
+ *   effect.
+ *   Because a computed value may select an ordinary Map branch, the unfolded
+ *   structure is relative to the source, its input values, and the selected
+ *   Host primitive-semantics profile. Every deduction MUST record that profile
+ *   and version in provenance. Changing it may affect only future deductions;
+ *   no committed deduction is rewritten. Runtime `==` belongs to that Host
+ *   profile and is distinct from the fixed structural equality used for
+ *   Map-key identity.
+ *
+ * NAME RESOLUTION AND ERROR OWNERSHIP:
+ *   Syntactic category is fixed before lookup. A value Identifier searches
+ *   innermost lexical scope outward, then top-level non-Goal bindings; Goals
+ *   never satisfy value lookup. An unqualified Goal reference is stored as a
+ *   symbolic Name/Arity occurrence. A local definition or current codebase
+ *   entry may validate that spelling, but does not pin future occurrences.
+ *   When an occurrence is demanded, the Vessel atomically resolves the then-
+ *   current Name/Arity alias, records the selected full ArtifactHash and
+ *   codebase revision, applies the reduction rule, and commits the result.
+ *   `Name#prefix` instead requires exactly one stored artifact and is expanded
+ *   to its full pinned hash before storage. Bare Identifier Map keys perform no
+ *   lookup. `$Anchor` and `@policy` names are not resolved by structural
+ *   validation, though their arguments still undergo ordinary validation.
+ *   No exact Goal match yields `ArityMismatch` when the name exists at other
+ *   arities, otherwise `GoalNotFound`. These kinds are validation errors when
+ *   statically provable and deduction errors when late alias lookup discovers
+ *   them. Qualified lookup yields `HashNotFound` or `AmbiguousHashPrefix` before
+ *   `ArityMismatch`.
+ *   Error phases are source, validation, deduction, host, and policy. Source
+ *   and validation errors invalidate the whole source unit and prevent codebase
+ *   commit. `KeyNotFound`, `DestructureMismatch`, and cycles are validation
+ *   errors when statically provable and otherwise deduction errors. Primitive
+ *   semantics are Host-provided; a failure requested while reducing is reported
+ *   in the deduction context. Arrow-function and Anchor leaf failures are Host-
+ *   owned. Policy existence, applicability, conflicts, scheduling, and upstream
+ *   outcomes are Scheduler-owned. A failed deduction commits no partial result
+ *   and never rewrites any earlier deduction. Each error has a stable kind and
+ *   phase; source span, artifact, occurrence, and active lineages are attached
+ *   when available.
  *
  * LEXICAL PARAMETERS:
  *   Names must be unique within one Goal parameter list or one destructuring
@@ -91,18 +176,21 @@ grammar SubseaCable;
  *   parameters are unsupported. Destructuring a non-Map or a Map missing any
  *   requested key raises `DestructureMismatch`; unrequested extra keys are
  *   allowed. A mismatch known from structure is a validation error; otherwise
- *   it is an evaluation error.
+ *   it is a deduction error.
  *
  * GOAL ARITY:
- *   A Goal's identity is (name, arity). Multiple local Goal definitions may share
- *   a name only when their parameter counts differ; the same name/arity may
- *   have exactly one implementation. A deferred `Goal[...]` reduction or eager
- *   `Goal(...)` call selects that implementation solely by argument count and
- *   MUST match it exactly. Argument values, types, patterns, and guards never
- *   participate in overload selection. Default and variadic parameters are not
- *   supported. An imported Goal MUST expose all supported name/arity signatures
- *   as metadata; an unverifiable signature is a validation error. These checks
- *   are semantic and are not enforced by the grammar.
+ *   Source lookup uses (human-readable name, arity, optional hash prefix).
+ *   Multiple local Goal definitions may share a name only when their parameter
+ *   counts differ; one source unit may define at most one implementation of a
+ *   given name/arity. A deferred `Goal[...]` reduction or eager `Goal(...)` call
+ *   supplies the lookup arity solely by argument count. Argument values, types,
+ *   patterns, and guards never participate in overload selection. Default and
+ *   variadic parameters are not supported.
+ *   An unqualified reference remains symbolic Name/Arity in the stored artifact
+ *   and selects the current alias only when its occurrence is demanded.
+ *   `Name#prefix` selects a specific stored ArtifactHash and is expanded to the
+ *   full hash before storage. Arity checks are semantic and are not enforced by
+ *   the grammar.
  *   Context supplies arguments only for a bare uppercase stage in a composition.
  *   An initial serial stage or a parallel sibling with no upstream value is
  *   Goal/0. A later bare serial stage is Goal/1 and receives the immediately
@@ -121,22 +209,23 @@ grammar SubseaCable;
  *   right-hand side creates an immutable non-Goal value binding. There is no
  *   reassignment. A function arrow is never a value: it cannot be aliased,
  *   passed, returned, stored in a Map, or placed in a composition or argument.
- *   A String binding remains an ordinary value, but
- *   when referenced as `@alias` or as an imported Goal it MUST be validated as
- *   a location and resolved in that use context. The same String may still be
- *   read as a normal value elsewhere. A reference anchor itself may never be
- *   bound directly (`name = @host` is invalid), though invoking an anchor may
- *   produce a value that can participate in a larger expression. These rules
- *   are semantic and are not enforced by the grammar.
+ *   A String binding remains an ordinary value and has no special location or
+ *   import meaning. Host Anchors never resolve through String bindings: `$`
+ *   accepts only an Identifier, which the Host resolves through an external
+ *   registry. A Host Anchor itself may never
+ *   be bound directly (`name = $host` is invalid), though invoking one may
+ *   produce a value that participates in a larger expression. These rules are
+ *   semantic and are not enforced by the grammar.
  *
  * CALLABILITY:
- *   There are exactly two call forms. `Goal(...)` eagerly evaluates a Subsea
- *   Goal selected by Name/Arity; `@anchor(...)` invokes a host function.
+ *   There are exactly two value-producing call forms. `Goal(...)` eagerly
+ *   evaluates a Subsea Goal selected by Name/Arity; `$anchor(...)` invokes a
+ *   Host-resolved Anchor.
  *   A lowercase value identifier followed by `(...)` is invalid. Maps,
  *   pipelines, grouped expressions, call results, and all other values are not
  *   callable. Calls cannot be chained, and callable values do not exist.
  *   Inside an arrow-function leaf implementation, every Subsea Goal call is
- *   forbidden at any depth; only host-function calls written with `@` are
+ *   forbidden at any depth; only Host Anchor calls written with `$` are
  *   permitted.
  *
  * STRUCTURAL ARROWS VS FUNCTION ARROWS:
@@ -150,9 +239,9 @@ grammar SubseaCable;
  *   Its body is terminal reduction content and MUST NOT contain a structural
  *   arrow, serial/parallel/resolving Goal composition, deferred Goal reference,
  *   or eager Subsea Goal call at any depth. It may use literals, parameters,
- *   operators, ordinary Maps/lookups, and Anchor calls such as `@Plus(x, y)`.
+ *   operators, ordinary Maps/lookups, and Anchor calls such as `$Plus(x, y)`.
  *   Anchor calls inside the implementation do not create Subsea Goal nodes.
- *       Leaf = ({x, y}) -> { @C(x); @D(y) }   valid
+ *       Leaf = ({x, y}) -> { $C(x); $D(y) }   valid
  *       Leaf = (x) -> C(x)                    invalid: Subsea Goal call
  *       [A, (x) -> x + 1, B]                  invalid: inline function arrow
  *   Function parameters are either a comma-separated Identifier list or one
@@ -172,10 +261,12 @@ grammar SubseaCable;
  *   selectable results are all valid Goal structure. Goal arguments may still
  *   contain ordinary value expressions.
  *   A bare Anchor is an Anchor/0 leaf; enclosing Goal parameters are never
- *   forwarded implicitly. Host signature metadata MUST confirm its arity.
+ *   forwarded implicitly. `$host` and `$host()` are the same zero-argument
+ *   occurrence. Signature compatibility and resolution belong entirely to the
+ *   Host, not structural validation.
  *       Value = [x] -> 42          invalid: primitive body
- *       Zero  = [x] -> @host       valid: Anchor/0; x is unused
- *       Call  = [x] -> @host(x)    valid: Anchor/1
+ *       Zero  = [x] -> $host       valid: Anchor/0; x is unused
+ *       Call  = [x] -> $host(x)    valid: Anchor/1
  *       Bad   = [x] -> (y) -> y    invalid: function arrow is never inline
  *   Serial and parallel elements obey the same structural restriction. A Map
  *   literal may appear there only behind a Goal arrow as defined above.
@@ -286,8 +377,7 @@ grammar SubseaCable;
  *   implementation kind may share a base name only across distinct arities.
  *   A Goal and a non-Goal binding may not share a base name. Rebinding,
  *   reassignment, same-name/same-arity Goal definitions, and
- *   last-declaration-wins behavior do not exist. An imported Goal alias is one
- *   binding whose metadata may expose multiple arities.
+ *   last-declaration-wins behavior do not exist.
  *   Violations are semantic errors and are not enforced by the grammar.
  *   Recursion is not currently supported. Direct self-reference and every
  *   mutual cycle in the binding dependency graph are semantic errors. The
@@ -297,19 +387,23 @@ grammar SubseaCable;
  * ONE PROGRAM, ONE ROOT:
  *   A program contains exactly one top-level statement that is not a Binding.
  *   That expression is the Root and MUST be exactly a deferred Goal reduction:
- *   an Identifier whose first ASCII letter is uppercase, followed by one `[]`
- *   bracket suffix and no call suffix. Bare names, map access, literals, maps,
- *   anchors, arrows, and eager `Goal(...)` calls cannot be Roots. Any number of
- *   Bindings may accompany the Root, but a binding-only file and a file with
- *   multiple Root expressions are semantic errors. Library/module-only files
- *   are not currently part of the language.
+ *   a GoalName whose base Identifier's first ASCII letter is uppercase, followed
+ *   by one `[]` bracket suffix and no call suffix. The GoalName may be hash-
+ *   qualified. Bare names, map access, literals, Maps, Anchors, arrows, and eager
+ *   `Goal(...)` calls cannot be Roots. Any number of Bindings may accompany the
+ *   Root, but a binding-only file and a file with multiple Root expressions are
+ *   semantic errors. Root creates the program's first deduction demand; it does
+ *   not control storage or visibility.
  *
  * GOAL DAG:
- *   The structure reachable from the one Root is a directed acyclic graph (DAG),
- *   not necessarily a tree. Source expressions are tree-shaped notation, but
- *   multiple references to the same resolved Goal definition/arity designate
- *   one structural Goal node and add incoming edges to it; they do not clone
- *   that node. Serial/parallel placement, argument routing, and resolving keys
+ *   Demand-driven deductions materialize the structure reachable from Root as
+ *   a directed acyclic graph (DAG), not necessarily a tree. The complete future
+ *   graph is not frozen in advance: an undeduced unqualified occurrence still
+ *   observes a mutable alias when demanded. Source expressions are tree-shaped,
+ *   but occurrences that select the same resolved Goal definition/arity
+ *   designate one structural Goal node and add incoming edges to it; they do not
+ *   clone that node. Occurrences that select different hashes remain different
+ *   nodes. Serial/parallel placement, argument routing, and resolving keys
  *   belong to edges and composite structure. Direct and mutual cycles remain
  *   invalid because recursion is unsupported.
  *   Node sharing alone does not combine incoming values or create an all-parent
@@ -318,20 +412,24 @@ grammar SubseaCable;
  *   an explicit structure such as a resolving Map combines them.
  *
  * GOAL NODE IDENTITY, LINEAGE, AND EVALUATION:
- *   GoalNodeId is the resolved Goal-definition identity plus arity. It is
- *   independent of parent, source occurrence, lineage, and argument values.
- *   The Vessel expands each GoalNodeId once and structurally shares that node.
- *   Deferred `Goal[...]` and eager `Goal(...)` references resolve to the same
- *   GoalNodeId; their suffix changes reduction/evaluation timing, not identity.
- *   A lineage path is one Root-to-node traversal, not the node's identity or
+ *   Before deduction, an unqualified occurrence has stable occurrence identity
+ *   but no selected GoalNodeId. Deduction resolves its alias and commits the
+ *   selected artifact. GoalNodeId is that artifact's policy-erased StructureHash
+ *   plus arity, independent of parent, occurrence, lineage, and argument values.
+ *   The definition node is structurally shared while deduction and evaluation
+ *   remain occurrence/argument-sensitive. Deferred `Goal[...]` and eager
+ *   `Goal(...)` references share a GoalNodeId only when they select the same
+ *   artifact; their suffix changes demand/evaluation timing, not post-resolution
+ *   identity. A lineage path is one Root-to-occurrence traversal, not node identity or
  *   memoization key. A node with multiple incoming paths carries multiple
- *   lineages. Reduction extends every incoming lineage across outgoing edges:
+ *   lineages. Deduction extends every incoming lineage across committed outgoing edges:
  *       PrepareOrder[10, {..}]
- *         reduces to
+ *         deduces the explanatory projection
  *       { PrepareOrder/2.GetUserInfo/1[10],
  *         PrepareOrder/2.ValidateOrder/1[{..}] }
- *   The dotted `Name/Arity` form is explanatory pretty-printing of one lineage,
- *   NOT `.subsea` syntax, a reparsable reduction output, or a unique address.
+ *   The dotted `Name/Arity` form is human-readable explanatory pretty-printing
+ *   of one lineage,
+ *   NOT `.subc` syntax, a reparsable deduction output, or a unique address.
  *   For example, `Root/0.B/1.D/1` and `Root/0.C/1.D/1` are two lineages of the
  *   same structural D/1 node when B and C both reduce to D. Values such as leaf
  *   parameters, map values, and literals remain lexically scoped and inherit
@@ -342,30 +440,65 @@ grammar SubseaCable;
  *   coalescing; those remain Scheduler policy. Each instance carries the active
  *   lineage or lineages that actually contributed its routed inputs, while the
  *   structural node's lineage set is their union.
+ *   Distinct source occurrences remain distinct even when they point to the
+ *   same GoalNodeId with the same routed arguments. For example,
+ *   `{Goal1, Goal1}` contains two sibling occurrences and two edges to one
+ *   shared Goal1/0 node. The structure is therefore a directed acyclic
+ *   multigraph. Each occurrence/edge has stable identity so lineage and policy
+ *   attachment can distinguish duplicates. Whether identical evaluation work
+ *   is physically coalesced remains Scheduler policy.
  *   Data-dependent expansion, where structure branches on a value, would break
  *   definition-based structural expansion. It is deferred with recursion; see
  *   Recursion.md.
  *
  * LEAVES (exactly two kinds):
- *   Reduction bottoms out in either an arrow-function leaf belonging to a named
- *   Goal or a reference Anchor reached by structural reduction. An arrow
+ *   Successive deductions bottom out in either an arrow-function leaf belonging
+ *   to a named Goal or an Anchor leaf. Both are Host-provided computation: the
+ *   Host evaluates an arrow body and resolves/invokes an opaque `$Anchor`. An arrow
  *   function cannot be hidden in or transported through a value; its enclosing
  *   Goal supplies its Name/Arity and active lineages.
- *   There are NO native effects. An anchor `@` ALWAYS names a host function
- *   (an implementation supplied by a consuming language); it is opaque, never
- *   expanded, and inherits the active goal lineages as context.
+ *   There are NO native effects. `$identifier` marks an opaque Host-resolved
+ *   Anchor. Subsea supplies the Identifier, explicit arguments/arity, occurrence
+ *   identity, and active lineages, but neither locates nor validates the Host
+ *   implementation. The Anchor is never structurally reduced.
  *
- * ALIAS / IMPORT:
- *   A String value binding can be used as a location alias; the binding itself
- *   carries no `@`:
- *       join = "registry.example.com/pkg/Join@1.2.3"
- *   Use decides meaning:
- *       @join           -> host-function anchor (leaf)
- *       ImportedGoal    -> a goal imported from elsewhere, used bare & reduced
+ * ANCHORING POLICY:
+ *   `@policy` prefixes attach How metadata to exactly the following structural
+ *   occurrence. They never change dependency topology, GoalNodeId, arguments,
+ *   or result routing. Stacked prefixes attach an ordered policy list to the
+ *   same target. Policy meaning, applicability, inheritance over a composite,
+ *   conflicts, and execution are Scheduler concerns.
+ *       @retry Goal1
+ *       @retry @atLeastOnce $foo
+ *       @timeout("30s") {Goal1, Goal1}
+ *   A policy on a shared Goal reference belongs to that occurrence/edge and its
+ *   lineage, never to the shared Goal definition or node. Erasing all policy
+ *   annotations yields the same structural projection. StructureHash therefore
+ *   excludes policies. ArtifactHash identifies the complete authored term and
+ *   MUST include its ordered policy projection.
+ *
+ * CODEBASE AND HOST ANCHOR:
+ *   A Host Anchor uses only `$Identifier`; its registry and resolution live
+ *   outside Subsea source. It is never a codebase Goal reference.
+ *   Subsea has no import, export, package, module, or visibility construct.
+ *   Every named Goal definition in a valid source unit is stored in an abstract
+ *   content-addressed codebase, including definitions unreachable from Root.
+ *   Root is only the first deduction demand. The codebase backend may be a file
+ *   store, database, distributed service, or any implementation of the same
+ *   lookup contract.
+ *   ArtifactHash is the identity of one stored authored Goal term, including its
+ *   policy projection; policy-erased StructureHash is used for structural node
+ *   sharing. The current name index maps (human-readable name, arity) to one
+ *   ArtifactHash while retaining older hashes and observable revisions. Names
+ *   are mutable indexes, never identity. Stored unqualified Goal references
+ *   retain symbolic Name/Arity and resolve only when their occurrences are
+ *   demanded. The successful deduction records the chosen full hash and
+ *   codebase revision and can never be retargeted. `Name#prefix` is expanded to
+ *   one pinned full hash before storage for exact historical selection.
  *   A name may NOT be bound directly to an anchor (semantic rule, not syntactic):
- *       Add = [a,b] -> @plus(a,b)   OK  — a real goal reducing to a leaf
+ *       Add = [a,b] -> $plus(a,b)   OK  — a real goal reducing to a leaf
  *       Add = (a,b) -> a + b        OK  — a named Goal with a function leaf
- *       Add = @plus                 FORBIDDEN — a leaf disguised as a goal
+ *       Add = $plus                 FORBIDDEN — a leaf disguised as a goal
  *   An Anchor leaf must be reached through structural Goal reduction; only the
  *   dedicated function-arrow binding form may give a Goal a direct leaf
  *   implementation.
@@ -415,8 +548,12 @@ goalArrow
     ;
 
 goalBody
+    : policyPrefix* goalBodyCore
+    ;
+
+goalBodyCore
     : goalReference
-    | anchorLeaf
+    | hostAnchor
     | goalArrow
     | serialPipeline
     | parallelComposition
@@ -428,11 +565,26 @@ goalBody
 // uppercase bracket/paren forms are deferred/eager Goal references. Case and
 // arity constraints remain semantic.
 goalReference
-    : IDENTIFIER (bracketSuffix | callSuffix)
+    : goalName (bracketSuffix | callSuffix)
     ;
 
-anchorLeaf
-    : placeholder callSuffix?
+// A hash qualifier is an authoring-time codebase lookup hint. Resolution
+// replaces it with the full ArtifactHash before the Goal term is stored. Without
+// a qualifier, Name/Arity remains symbolic until each occurrence is demanded.
+goalName
+    : IDENTIFIER HASH_QUALIFIER?
+    ;
+
+// `@policy` prefixes are transparent structural annotations. Their argument
+// list is policy data; they target exactly the following structural occurrence.
+policyPrefix
+    : '@' IDENTIFIER callSuffix?
+    ;
+
+// `$name` marks an opaque Host-resolved Anchor. Only an Identifier is allowed;
+// location strings and Host registry entries live outside Subsea source.
+hostAnchor
+    : '$' IDENTIFIER callSuffix?
     ;
 
 goalParams
@@ -500,34 +652,40 @@ multiplicative
 unary
     : '!' unary
     | '-' unary
+    | policyValue
     | postfix
     ;
 
+// Policies may also decorate a value-producing Goal/Anchor occurrence nested in
+// an expression. Pure literals and operator results are not policy targets.
+policyValue
+    : policyPrefix+ (goalName (bracketSuffix | callSuffix) | hostAnchor)
+    ;
+
 postfix
-    : IDENTIFIER (bracketSuffix | callSuffix)?
-    | placeholder callSuffix?
+    : goalName (bracketSuffix | callSuffix)?
+    | hostAnchor
     | nonIdentifierPrimary
     ;
 
 // The two suffix forms carry DIFFERENT semantics, not just different brackets:
 //
-//   Goal[n]  (bracket suffix) is NOT "evaluate this". It is a REDUCTION
-//            directive: it declares this position is a goal still to be reduced.
-//            [ Goal[n], ... ] means "this slot must, at some point, be reduced
-//            into a leaf node." It records that reduction work remains here —
-//            nothing is evaluated yet.
+//   Goal[n]  (bracket suffix) is NOT "evaluate this". It creates a deferred
+//            Goal occurrence. If unqualified, its Name/Arity remains symbolic
+//            until that exact occurrence is demanded for deduction. Deduction
+//            then selects a hash, applies its reduction rule, and commits.
 //
-//   Goal(n)  (paren suffix) IS a call / evaluation: feed the value n into Goal,
-//            reduce it now, run it through the pipeline, yield a value. This is
-//            the legitimate "evaluate now" form.
+//   Goal(n)  (paren suffix) IS an eager call/evaluation: demand the occurrence
+//            now, deduct it through its pipeline, and yield a value. It obeys the
+//            same demand-time alias resolution and commit law.
 //
 // Square brackets are restricted to a bare identifier so the naming law is
 // always defined. Leading underscores are ignored and the first ASCII letter
 // decides case; an identifier without a letter may not use this suffix. A
 // semantic validator requires exactly one argument for a lowercase map access.
-// Parentheses are available only on a bare Identifier or Anchor. Semantic
-// validation further restricts them to eager uppercase Goal calls and host
-// Anchor calls, and forbids Subsea Goal calls inside leaf implementations.
+// Parentheses are available only on a bare Identifier, Host Anchor, or policy.
+// Semantic validation further restricts ordinary Identifier calls to eager
+// uppercase Goal calls and forbids Subsea Goal calls inside leaf implementations.
 bracketSuffix
     : '[' argList? ']'
     ;
@@ -551,18 +709,6 @@ nonIdentifierPrimary
     | STRING_LITERAL
     ;
 
-// A Placeholder names an Anchor, and an Anchor ALWAYS refers to a host function
-// (an implementation provided by a consuming language). There is no other kind
-// of anchor and no native effect. `@` is applied to either an alias identifier
-// bound to a location string (join = "...url..."  ->  @join) or an inline
-// location string (@"https://registry.example.com/pkg/Join@1.2.3"). A URL always
-// resolves to a function inside a host package, never to a Subsea goal. Subsea
-// goals are referenced by Goal import (a bare aliased name used as a Goal), not
-// by an anchor. See the Semantic Model header.
-placeholder
-    : '@' ( IDENTIFIER | STRING_LITERAL )
-    ;
-
 serialPipeline
     : '[' pipelineStageList ']'
     ;
@@ -572,8 +718,12 @@ pipelineStageList
     ;
 
 goalStage
-    : IDENTIFIER (bracketSuffix | callSuffix)?
-    | anchorLeaf
+    : policyPrefix* goalStageCore
+    ;
+
+goalStageCore
+    : goalName (bracketSuffix | callSuffix)?
+    | hostAnchor
     | goalArrow
     | serialPipeline
     | parallelComposition
@@ -626,6 +776,12 @@ group
 
 WILDCARD : '_';
 
+// Human-readable source may pin a codebase Goal with `Name#hashPrefix`.
+// The codebase validates prefix length, alphabet, uniqueness, and algorithm.
+HASH_QUALIFIER
+    : '#' [a-zA-Z0-9]+
+    ;
+
 BOOLEAN
     : 'true'
     | 'false'
@@ -638,6 +794,8 @@ IDENTIFIER
 fragment IDENT_START : [a-zA-Z_];
 fragment IDENT_REST  : [a-zA-Z0-9_];
 
+// A validated numeric spelling only. Its runtime representation and all
+// arithmetic semantics belong to the consuming implementation.
 NUMBER
     : INT_PART FRAC_PART?
     ;
@@ -655,8 +813,11 @@ fragment STRING_CHAR
     ;
 
 fragment ESCAPE_SEQ
-    : '\\' ['"nt\\] 
+    : '\\' ['"nrt\\]
+    | '\\u{' HEX_DIGIT HEX_DIGIT? HEX_DIGIT? HEX_DIGIT? HEX_DIGIT? HEX_DIGIT? '}'
     ;
+
+fragment HEX_DIGIT : [0-9a-fA-F];
 
 TERMINATOR
     // Physical newline token. The required lexical preprocessor decides

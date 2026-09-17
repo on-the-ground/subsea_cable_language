@@ -6,6 +6,12 @@ implementation-specific ADRs live in those external repositories, not in the
 Subsea Cable language repository. This guide intentionally does not predesign retry,
 timeout, delivery, or failure-aggregation semantics.
 
+The deduction engine objective, Touchdown prefetch model, backpressure boundary,
+and phased delivery plan are tracked separately in
+[CAROUSEL_ENGINE_PLAN.md](CAROUSEL_ENGINE_PLAN.md). Read it before freezing a
+Runtime component model; it records an owner-directed boundary change that has
+not yet been propagated into the normative Runtime Contract.
+
 The external-implementer starting point is recorded in [STATUS.md](STATUS.md). A
 new implementation agent copies the relevant templates into its own repository
 and starts there after reading the language repository instructions.

@@ -283,6 +283,12 @@ Here is what is still open, so you know where the edges are.
   migration protocol, fault-injection method, and evidence-driven policy
   promotion rules are recorded under [implementation](implementation/README.md).
   Concrete policy semantics remain intentionally undiscovered.
+- **Carousel deduction engine**: the owner-directed objective is to keep a
+  user-requested Touchdown prefetch window ahead of evaluation. Its boundaries,
+  semantic consequences, open decisions, and phased implementation plan are in
+  [CAROUSEL_ENGINE_PLAN.md](implementation/CAROUSEL_ENGINE_PLAN.md). Existing
+  Vessel terminology remains normative until that boundary migration is decided
+  and synchronized; agents must not implement two competing deduction engines.
 - **Leaf contracts**: the structure removes ambiguity *between* goals. The meaning
   of a single goal such as `Diagnose` still needs input, output and completion
   contracts.

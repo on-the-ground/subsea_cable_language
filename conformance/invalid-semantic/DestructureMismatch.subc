@@ -1,4 +1,4 @@
 values = {x: 1}
 Leaf = ({x, y}) -> x
-Root = [] -> $emit(Leaf(values))
+Root = [] -> Leaf(values)
 Root[]

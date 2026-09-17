@@ -242,7 +242,10 @@ implementation path.
 **Eager calls in argument position** (`D[C(x)]`) still require a precise staging
 contract: `C(x)` must produce a value before D can receive a real Subsea value,
 but the current documents do not yet specify how the enclosing atomic deduction
-exposes and waits for that demanded evaluation. **Owner decision R3:** define
+exposes and waits for that demanded evaluation. The same question covers
+`$anchor(...)` calls in argument positions
+([Draft SCP](../proposals/draft-argument-position-call-staging.md)).
+**Owner decision R3:** define
 that staging without committing D or its enclosing deduction with a placeholder.
 
 ## 7. The orchestration loop
@@ -296,8 +299,9 @@ HostCapabilityChanged
 3. For a first attempt, the Dispatcher creates the Attempt record and issues
    `ConsumeTouchdown(runId, occurrenceId, evaluationInstanceId, attemptId)`.
    The Carousel applies it atomically and emits `TouchdownConsumed`. Only a
-   `Consumed` result lets the attempt proceed; `Discarded` aborts it without a
-   Host call. This is **Owner decision R10**, recorded in
+   `Consumed` result, including a replay by the same attempt, lets the attempt
+   proceed; `AlreadyConsumed` (another attempt won) and `Discarded` abort it
+   without a Host call. This is **Owner decision R10**, recorded in
    [SCP-0001](../proposals/0001-touchdown-consumption-and-window-counting.md),
    which also defines the other results, idempotency, and races. Selecting a
    leaf, running `BeforeAttempt`, or withholding dispatch does not consume it.
@@ -543,7 +547,7 @@ language rule.
 |---|---|---|
 | R1 | Separate ad-hoc stored-Goal invocation API | keep outside Program execution; profile question only |
 | R2 | Scheduler demand scope and cardinality | resolve with Carousel decisions 1–3; never infer demand from readiness |
-| R3 | Eager `Goal(...)` in argument position | specify staging; never commit a placeholder argument |
+| R3 | Eager `Goal(...)` and `$anchor(...)` in argument positions | specify staging; never commit a placeholder argument ([Draft SCP](../proposals/draft-argument-position-call-staging.md)) |
 | R4 | Reattempting a composite scope | reject until attempt-scoped occurrence identity exists |
 | R5 | Withdrawing speculative demand on alias change | profile choice, always traced |
 | R6 | Baseline scope outcome rules (§4.2) | accept as named profile `baseline-local/0`, never language |
@@ -590,4 +594,4 @@ with R2.
     reduction result.
 
 Touchdown consumption, discard, and window-count scenarios are Carousel plan
-scenarios 15–22 (SCP-0001).
+scenarios 15–23 (SCP-0001).

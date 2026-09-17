@@ -450,24 +450,26 @@ Decisions 3 and 6 are closed by
 [RUNTIME_ORCHESTRATION_PLAN.md](RUNTIME_ORCHESTRATION_PLAN.md). SCP-0001 is the
 normative record; in summary:
 
-- **Consumption (decision 6).** A Touchdown leaves the window exactly once,
-  when the Scheduler dispatches the first attempt of its evaluation instance.
-  The Scheduler issues one atomic consume acknowledgement carrying
+- **Consumption (decision 6).** A published Touchdown leaves the window
+  through exactly one applied acknowledgement. At the first dispatch of its
+  evaluation instance, the Scheduler issues a consume acknowledgement carrying
   `(runId, occurrenceId, evaluationInstanceId, attemptId)`; the Carousel
-  applies it and emits `TouchdownConsumed`; only after `Consumed` is the Host
-  invoked. Selection, pre-attempt policy, and withholding do not consume.
-  Later attempts never re-enter the window or consume again. A Touchdown that
-  will never be attempted leaves through a discard acknowledgement that the
-  Carousel applies and reports as `TouchdownDiscarded`. Consume and discard for
-  one occurrence are serialized; the first applied wins.
+  applies it and emits `TouchdownConsumed`; only a `Consumed` result (including
+  a replay by the same attempt) lets that attempt invoke the Host. An attempt
+  that receives `AlreadyConsumed` lost the race and must not invoke the Host.
+  Selection, pre-attempt policy, and withholding do not consume. Later attempts
+  issue no consume acknowledgement and never re-enter the window. A Touchdown
+  that will never be attempted leaves through a discard acknowledgement that
+  the Carousel applies and reports as `TouchdownDiscarded`. Consume and discard
+  for one occurrence are serialized; the first applied wins.
 - **Counting (decision 3).** The window counts every published grounded leaf
   with no applied consume or discard, including Scheduler-ineligible and
   withheld leaves.
 - **Target.** The prefetch target is compared with that count directly.
 - **Backpressure.** A full window stops only speculative deduction. Explicitly
-  demanded occurrences are always deduced; if that publishes leaves beyond the
-  target, the Carousel emits `DemandedTouchdownOverTarget`, not
-  `AtomicPrefetchOvershoot`.
+  demanded occurrences are always deduced; if such a deduction publishes leaves
+  and the window count afterwards exceeds the target, the Carousel emits
+  `DemandedTouchdownOverTarget`, not `AtomicPrefetchOvershoot`.
 
 These decisions add the following mandatory conformance scenarios. They use
 Scheduler test doubles and assume no concrete policy semantics.
@@ -482,16 +484,22 @@ Scheduler test doubles and assume no concrete policy semantics.
 18. **Subsequent attempt:** a Scheduler test double creates another attempt of
     an already consumed evaluation instance; the leaf does not re-enter the
     window, no second `TouchdownConsumed` is emitted, and no deduction repeats.
-19. **Demand over a full window:** with the window full of ineligible leaves,
-    an explicitly demanded occurrence is deduced to Touchdown and
-    `DemandedTouchdownOverTarget` is emitted.
-20. **Consume once:** repeating a consume acknowledgement for the same attempt
-    changes nothing and emits nothing.
+19. **Demand over the target:** with the window full of ineligible leaves, an
+    explicitly demanded occurrence is deduced to Touchdown and
+    `DemandedTouchdownOverTarget` is emitted. The same event is emitted when a
+    partially filled window (for example one of two) receives a demanded
+    deduction that grounds several leaves and ends above the target.
+20. **Consume replay:** repeating a consume acknowledgement with the same
+    attempt returns `Consumed(replayed)`, authorizes that attempt again, and
+    emits nothing; an empty attempt identity is rejected.
 21. **Discard before dispatch:** a discarded Touchdown is never handed to the
     Host; a later consume acknowledgement returns `Discarded`.
 22. **Dispatch/cancellation race:** in both orders, exactly one of
     `TouchdownConsumed` and `TouchdownDiscarded` is emitted, and the Host is
     invoked only if the consume acknowledgement was applied first.
+23. **Competing first dispatch:** when a different attempt already consumed the
+    Touchdown, a consume acknowledgement returns `AlreadyConsumed` naming the
+    first attempt, and the losing attempt never reaches the Host.
 
 ## Completion criteria
 

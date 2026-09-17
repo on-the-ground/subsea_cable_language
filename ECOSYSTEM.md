@@ -28,7 +28,7 @@ not a meaningful claim.
 | Repository | [on-the-ground/subsea_cable_runtime](https://github.com/on-the-ground/subsea_cable_runtime) |
 | License | Apache-2.0 |
 | Toolchain | Go 1.24, no third-party modules |
-| Language pin | `cbc6f53`, as a git submodule: grammar, conformance corpus, and `README.md` semantics |
+| Language pin | `cbc6f53`, as a git submodule: grammar, conformance corpus, and `README.md` semantics; CI also runs against this pull request's head |
 | Design documents followed | `implementation/CAROUSEL_ENGINE_PLAN.md`, `implementation/RUNTIME_ORCHESTRATION_PLAN.md`, and SCP-0001 as proposed in #1; the runtime repository's README records the exact revision |
 | Profile | `poc-baseline/0` Scheduler, `poc-rational/0` primitives, `poc-sha256-canon/1` artifacts |
 | Conformance command | `go test ./...` (runs `conformance/cases.tsv` of the pin; a daily job also runs against `main`) |

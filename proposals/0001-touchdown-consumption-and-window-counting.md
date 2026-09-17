@@ -12,10 +12,11 @@
 
 ## Summary
 
-A buffered Touchdown leaves the Carousel's Touchdown window exactly once: when
-the Scheduler's first attempt for its evaluation instance is dispatched, through
-one atomic consume acknowledgement applied by the Carousel before the Host is
-invoked. The window counts every published, unconsumed grounded leaf. Window
+A published Touchdown leaves the Carousel's Touchdown window through exactly one
+applied acknowledgement: a consume acknowledgement at the first dispatch of its
+evaluation instance, applied before the Host is invoked, or a discard
+acknowledgement if it will never be attempted. The window counts every
+published grounded leaf without an applied acknowledgement. Window
 backpressure limits only speculative prefetch; explicit Scheduler demand is
 always deduced. This closes Carousel plan decisions 3 and 6 and Runtime
 orchestration decision R10.
@@ -77,11 +78,13 @@ compute it.
 The prefetch target `N` is compared with the window count directly. When the
 count is at or above `N`, the Carousel performs no **speculative** deduction.
 Deduction of occurrences carrying explicit Scheduler demand proceeds regardless
-of the count. When a demanded deduction publishes leaves while the count
-already meets or exceeds `N`, the Carousel emits
-`DemandedTouchdownOverTarget`. This is distinct from
-`AtomicPrefetchOvershoot`, which is reserved for a single speculative deduction
-that grounds more leaves than the remaining target.
+of the count. When a deduction of an explicitly demanded occurrence publishes
+at least one leaf and the window count **after** that deduction exceeds `N`,
+the Carousel emits `DemandedTouchdownOverTarget`, whatever the count was before
+(for example, `N = 2`, one leaf buffered, and a demanded deduction grounding two
+leaves). This is distinct from `AtomicPrefetchOvershoot`, which is reserved for
+a single speculative deduction that grounds more leaves than the remaining
+target.
 
 ### Consume acknowledgement (first dispatch)
 
@@ -90,19 +93,21 @@ single boundary operation that removes a Touchdown from the window. The
 Scheduler issues it; the Carousel applies it atomically per occurrence and
 emits the normalized `TouchdownConsumed` event. First dispatch is ordered:
 
-1. The Scheduler creates the attempt record.
+1. The Scheduler creates the attempt record, with a non-empty `attemptId`.
 2. The Scheduler issues `ConsumeTouchdown`. It must return `Consumed`.
-3. Only then does the Scheduler invoke the Host.
+3. Only then does the Scheduler invoke the Host, at most once per attempt.
 
-Results:
+The Carousel records which attempt consumed each Touchdown. Results:
 
-| Result | Meaning | Scheduler action |
-|---|---|---|
-| `Consumed` | Applied now; `TouchdownConsumed` emitted | invoke the Host |
-| `AlreadyConsumed(attemptId')` | An earlier acknowledgement for the same evaluation instance was applied | no new event; a repeated acknowledgement for the same `attemptId` is a no-op |
-| `Discarded` | A discard was applied first | do not invoke the Host; end the attempt as aborted |
-| `Mismatch` | `evaluationInstanceId` does not match the occurrence | boundary error; do not invoke the Host |
-| `Unknown` | Not a published grounded leaf of this run | boundary error |
+| Result | Meaning | Authorizes the Host call for this attempt? | Event |
+|---|---|---|---|
+| `Consumed` | Applied now | yes | `TouchdownConsumed` |
+| `Consumed(replayed)` | The same `attemptId` already consumed this Touchdown (for example, the first response was lost and the request was retried) | yes, it reconfirms the same authorization; the Scheduler's attempt record still guarantees at most one Host invocation per attempt | none |
+| `AlreadyConsumed(attemptId')` | A **different** attempt consumed this Touchdown first | **no**; this attempt lost the first-dispatch race and ends as aborted | none |
+| `Discarded` | A discard was applied first | no; the attempt ends as aborted | none |
+| `InvalidAttempt` | `attemptId` is empty | no; boundary error | none |
+| `Mismatch` | `evaluationInstanceId` does not match the occurrence | no; boundary error | none |
+| `Unknown` | Not a published grounded leaf of this run | no; boundary error | none |
 
 If the Host synchronously refuses an attempt after `Consumed`, the Touchdown
 stays consumed and the attempt ends with a Host-phase failure.
@@ -112,10 +117,11 @@ dispatch never consumes it.
 
 ### Subsequent attempts
 
-A later attempt of an already consumed evaluation instance does not re-enter
-the window, emits no `TouchdownConsumed`, and repeats no deduction. A Scheduler
-need not issue `ConsumeTouchdown` for it; if it does, the result is
-`AlreadyConsumed`.
+A later attempt of an already consumed evaluation instance is a separate
+Scheduler decision, not a first dispatch. It issues no `ConsumeTouchdown`, does
+not re-enter the window, emits no `TouchdownConsumed`, and repeats no
+deduction. If a Scheduler issues `ConsumeTouchdown` for it anyway, the result is
+`AlreadyConsumed(firstAttemptId)`, and that result does not authorize anything.
 
 ### Discard acknowledgement
 
@@ -200,7 +206,7 @@ the monotonic sequence number required by the Runtime Contract.
 - ANTLR changes: none.
 - EBNF changes: none.
 - valid cases / invalid syntax cases / invalid semantic cases: none.
-- policy/runtime cases: Carousel plan mandatory scenarios 15–22, stated with
+- policy/runtime cases: Carousel plan mandatory scenarios 15–23, stated with
   Scheduler test doubles and without concrete policy semantics.
 
 ## Reference experiment
@@ -223,11 +229,13 @@ scenario above.
 - Maintainer/agent recommendation: consume at first dispatch; count all
   unconsumed published leaves; compare the target directly; reattempts never
   re-enter the window.
-- Owner response: accepted all four recommendations (2026-09-17). The consume
-  and discard handshake, demand priority, trace fields, and policy-neutral
-  scenarios were specified afterwards at the owner's review request in
-  on-the-ground/subsea_cable_language#1; their exact wording is confirmed by
-  that PR's review.
+- Owner response: accepted all four recommendations (2026-09-17). This
+  acceptance covers the core decisions only.
+- Detailed contract: the acknowledgement results, replay rule, discard rule,
+  races, demand priority, over-target condition, trace fields, and
+  policy-neutral scenarios were written afterwards at the owner's review
+  request and are **submitted for confirmation** in
+  on-the-ground/subsea_cable_language#1. They are not yet confirmed.
 - Decision date: 2026-09-17
 - Conditions: prefetch scope and demand count stay open.
 

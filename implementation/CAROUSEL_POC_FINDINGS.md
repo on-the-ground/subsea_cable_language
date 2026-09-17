@@ -20,7 +20,7 @@ Related plans: [CAROUSEL_ENGINE_PLAN.md](CAROUSEL_ENGINE_PLAN.md) and
 | F8 | Binding site, entry form, and routing of structure-valued lookup maps | [Draft SCP](../proposals/draft-structure-valued-lookup-maps.md) | `docs/decisions/0003-structure-valued-lookup-maps.md` | blocked (`UnsupportedByProfile`) |
 | F9 | Which top-level values an artifact captures in its hash | [Draft SCP](../proposals/draft-artifact-hash-value-closure.md) | `docs/decisions/0004-artifact-hash-value-closure.md` | experimental |
 | F10 | Error kind and phase for runtime `NoOutput` where a value is required | [Draft SCP](../proposals/draft-dynamic-nooutput-errors.md) | `docs/decisions/0005-dynamic-nooutput-errors.md` | experimental |
-| F12 | Staging of value-position `$anchor(...)` calls in Goal arguments | Owner decision R3 (with eager `Goal(...)` arguments) | — | blocked (`UnsupportedByProfile`) |
+| F12 | Staging of value-producing calls (`$anchor(...)` and eager `Goal(...)`) in argument positions (Owner decision R3) | [Draft SCP](../proposals/draft-argument-position-call-staging.md) | `docs/decisions/0006-argument-position-call-staging.md` | blocked (`UnsupportedByProfile`) |
 
 ADR paths are relative to the runtime repository.
 

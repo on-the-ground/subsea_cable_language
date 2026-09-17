@@ -54,7 +54,8 @@ Include “make no language change” as an alternative.
 - Does this preserve structure vs execution policy?
 - Does this preserve Goal vs function separation?
 - Does policy erasure preserve topology?
-- Are Host, Vessel, and Scheduler responsibilities still distinct?
+- Are Carousel, Runtime value-store, Host, and Scheduler responsibilities still
+  distinct?
 - Do unqualified aliases remain demand-resolved per occurrence, and do completed
   deductions remain immutable commits?
 - Is value routing explicit?

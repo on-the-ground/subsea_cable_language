@@ -8,6 +8,8 @@ syntax	SyntaxError	invalid-syntax/empty-program.subc
 syntax	SyntaxError	invalid-syntax/bare-goal-body.subc
 validation	InvalidRoot	invalid-semantic/InvalidRoot.subc
 validation	InvalidStructuralContext	invalid-semantic/InvalidStructuralContext.subc
+validation	InvalidStructuralContext	invalid-semantic/NestedGoalCall.subc
+validation	InvalidStructuralContext	invalid-semantic/NestedAnchorCall.subc
 validation	InvalidUnicodeEscape	invalid-semantic/InvalidUnicodeEscape.subc
 validation	ArityMismatch	invalid-semantic/ArityMismatch.subc
 validation	GoalNotFound	invalid-semantic/GoalNotFound.subc

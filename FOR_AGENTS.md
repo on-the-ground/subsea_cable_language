@@ -178,11 +178,11 @@ What this does for you:
 
 This is the part that matters most for agents.
 
-A Subsea program is not expanded all at once. A **Vessel** unfolds the cable
+A Subsea program is not expanded all at once. The **Carousel** unfolds the Cable
 one demanded occurrence at a time.
 
 ```
-committed deductions ─────● undeduced frontier ───── Carousel
+committed deductions ─────● undeduced frontier ───── Folded Cable
                           │
                           └─ Name/Arity alias is still mutable
 ```
@@ -202,7 +202,7 @@ At any moment, a path can contain all three states:
 |---|---|---|
 | Committed deduction | Its occurrence selected a hash and committed its reduction result | No |
 | Undeduced frontier | The occurrence exists, but its unqualified alias has not selected a hash | Yes |
-| Folded Carousel | The occurrence has not yet been exposed or demanded | Yes |
+| Folded Cable | The occurrence has not yet been exposed | Yes |
 | Touchdown | A path of committed deductions has reached a concrete leaf | Structurally no; execution has not necessarily occurred |
 
 Partially unfolded does not mean partially committed. It means that a path has a
@@ -262,13 +262,13 @@ Here is what is still open, so you know where the edges are.
 
 - **The structure language** (this repository) is well specified: grammar in
   EBNF and ANTLR4, with the semantic model in [README.md](README.md). No official
-  Vessel or Scheduler exists; that is by design.
+  Consumer Runtime, Carousel, Host, or Scheduler exists; that is by design.
 - **Anchoring policy semantics** are not designed yet. The `@policy` surface
   syntax and occurrence targeting exist, but conflict resolution, inheritance
   over composites, and the Scheduler behavior of individual policies remain open.
 - **Controlled data-dependent expansion** is the key open problem for agents: how
   an observed value is allowed to shape the not-yet-unfolded structure without
-  collapsing the Vessel/Scheduler separation. It is deferred together with
+  collapsing the Carousel/Scheduler separation. It is deferred together with
   recursion; see [Recursion.md](Recursion.md).
 - **Canonical encoding and hash mechanics**: Goals live in an abstract
   content-addressed codebase. Hash-qualified references are pinned; unqualified
@@ -283,12 +283,12 @@ Here is what is still open, so you know where the edges are.
   migration protocol, fault-injection method, and evidence-driven policy
   promotion rules are recorded under [implementation](implementation/README.md).
   Concrete policy semantics remain intentionally undiscovered.
-- **Carousel deduction engine**: the owner-directed objective is to keep a
-  user-requested Touchdown prefetch window ahead of evaluation. Its boundaries,
-  semantic consequences, open decisions, and phased implementation plan are in
-  [CAROUSEL_ENGINE_PLAN.md](implementation/CAROUSEL_ENGINE_PLAN.md). Existing
-  Vessel terminology remains normative until that boundary migration is decided
-  and synchronized; agents must not implement two competing deduction engines.
+- **Carousel deduction engine**: Carousel owns demand-time alias resolution,
+  deduction commits, occurrences, routing, lineages, and Touchdown publication.
+  Vessel is only the metaphor for the complete Consumer Runtime. The engine's
+  remaining prefetch and traversal decisions are tracked in
+  [CAROUSEL_ENGINE_PLAN.md](implementation/CAROUSEL_ENGINE_PLAN.md); agents must
+  never implement a second Vessel deduction engine.
 - **Leaf contracts**: the structure removes ambiguity *between* goals. The meaning
   of a single goal such as `Diagnose` still needs input, output and completion
   contracts.
@@ -314,7 +314,7 @@ the required reading order and the non-negotiable layer boundaries.
 | Propose new language behavior | [proposal guide](proposals/README.md) and [SCP template](proposals/TEMPLATE.md) | A Draft SCP here; prototypes and ADRs stay external |
 | List an independent implementation | [ECOSYSTEM.md](ECOSYSTEM.md) and [CONTRIBUTING.md](CONTRIBUTING.md) | A pull request here |
 
-Runtime, Host, Vessel, Scheduler, adapters, and production integrations are not
+Runtime, Host, Carousel, Scheduler, adapters, and production integrations are not
 accepted into this repository. Their maintainers own them independently and pin
 the exact Subsea Cable revision/profile they support.
 
@@ -360,7 +360,7 @@ to PEPs. Do not begin by editing the grammar.
    semantic implementation or claim the proposed behavior is compatible Subsea
    Cable.
 6. Request the owner's explicit decision whenever syntax, semantics, identity,
-   error phase, policy composition, or the Host/Vessel/Scheduler boundary would
+   error phase, policy composition, or the Host/Carousel/Scheduler boundary would
    change. Record that decision in the SCP.
 7. Only after acceptance, update normative text, both grammars, examples,
    diagnostics, and conformance cases together. A prototype may demonstrate the

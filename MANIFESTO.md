@@ -52,11 +52,11 @@ Schedulers decide execution.
 
 No single layer should own all three.
 
-The Program exists as a deferred Cable. A Vessel discloses its Goal DAG lazily:
-each demanded deduction commits the artifact chosen for one occurrence and the
-structure produced by its reduction rule. Human-readable aliases remain mutable
-for occurrences that have not yet been deduced, while committed history stays
-fixed.
+The Program exists as a deferred Cable. Inside the Vessel—the complete Consumer
+Runtime—the Carousel discloses its Goal DAG lazily: each demanded deduction
+commits the artifact chosen for one occurrence and the structure produced by
+its reduction rule. Human-readable aliases remain mutable for occurrences that
+have not yet been deduced, while committed history stays fixed.
 
 ---
 

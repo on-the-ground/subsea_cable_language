@@ -13,9 +13,10 @@
 ![The original Subsea Cable concept sketch](assets/subsea-cable-concept.jpg)
 
 The sketch above is the conceptual anchor for the language. The Sea is Goal
-Space; the Cable is the Program; the Vessel unfolds it; each demand-driven
-deduction commits one occurrence; and Touchdown is reached when successive
-deductions arrive at a Host-provided concrete leaf. See
+Space; the Cable is the Program; the Vessel is the complete Consumer Runtime;
+its Carousel unfolds the Cable; each demand-driven deduction commits one
+occurrence; and Touchdown is reached when successive deductions arrive at a
+Host-provided concrete leaf. See
 [METAPHORS.md](METAPHORS.md) for the precise textual model.
 
 Subsea Cable is not another programming language.
@@ -76,7 +77,7 @@ This repository is the canonical **language base** for Subsea Cable. It contains
 the philosophy, structural semantics, grammar, conformance corpus, proposal
 process, and guidance for independent implementers.
 
-It does **not** contain or accept production Host, Vessel, Scheduler, or complete
+It does **not** contain or accept production Host, Carousel, Scheduler, or complete
 Runtime implementations. Implementations belong in independently maintained
 repositories. Their authors may discover missing concepts while implementing or
 migrating real programs; those findings return here as evidence-backed language
@@ -123,6 +124,7 @@ build the site to understand Subsea Cable.
 | Carousel deduction engine and Touchdown prefetch plan | [implementation/CAROUSEL_ENGINE_PLAN.md](implementation/CAROUSEL_ENGINE_PLAN.md) |
 | Runtime orchestration of Carousel, Host, and policy | [implementation/RUNTIME_ORCHESTRATION_PLAN.md](implementation/RUNTIME_ORCHESTRATION_PLAN.md) |
 | Findings from the external Carousel POC | [implementation/CAROUSEL_POC_FINDINGS.md](implementation/CAROUSEL_POC_FINDINGS.md) |
+| Accepted boundary and language decisions | [SCP-0002](proposals/0002-carousel-runtime-boundaries.md), [SCP-0003](proposals/0003-explicit-value-producing-call-staging.md) |
 | Proposing a language change | [proposals](proposals/README.md) |
 | Governance and contribution scope | [GOVERNANCE.md](GOVERNANCE.md), [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Independent implementations | [ECOSYSTEM.md](ECOSYSTEM.md) |
@@ -379,7 +381,9 @@ ordinary map value, or computed operator result. Valid direct forms are a Goal
 reference/call, an Anchor leaf/call, another Goal arrow, serial composition,
 unkeyed parallel composition, a resolving map, or an ordinary-map lookup whose
 selectable entries are all valid Goal structure. Ordinary value expressions
-remain valid inside Goal and Anchor argument lists.
+remain valid inside Goal and Anchor argument lists, but those argument
+expressions may not themselves contain a value-producing `Goal(...)` or
+`$anchor(...)` call.
 
 ```subsea
 Value = [x] -> 42          // invalid: primitive body
@@ -393,6 +397,24 @@ the same zero-argument occurrence. Signature compatibility and resolution belong
 to the Host, not structural validation. Serial and parallel elements follow the
 same structural restriction, so a value cannot stand beside Goals merely because
 it parses as an expression.
+
+Outside a function-arrow leaf, an eager Goal call or Anchor call must itself be
+the direct structural occurrence: the complete Goal-arrow body, a serial or
+parallel element, or a resolving-map branch.
+It may not be hidden inside another call's arguments, a policy argument, an
+operator operand, a lookup key, or an ordinary value container.
+
+```subsea
+[C[x], D]                 // valid: explicit dependency and routing
+[C(x), [v] -> D[v]]       // valid: eager C is a visible stage
+D[C(x)]                   // invalid: hidden eager Goal dependency
+D[$fetch(x)]              // invalid: hidden Anchor effect
+B[x + 1]                  // valid: effect-free primitive expression
+```
+
+The invalid nested forms report `InvalidStructuralContext`. Validation never
+invents a hoisted occurrence, and deduction never commits a placeholder while
+waiting for a hidden evaluation.
 
 The square-bracket arrow remains structural and may appear inline in Goal
 composition. By contrast, a function arrow exists only as the complete leaf
@@ -485,7 +507,7 @@ not to bare `GetUserInfo` / `ValidateOrder` Goals.
 
 Each path segment contains the Goal's name and arity. The dotted `Name/Arity`
 form is explanatory pretty-printing of one Root-to-occurrence lineage held by the
-Vessel. It is not `.subc` source syntax, a unique node address, or reparsable
+Carousel. It is not `.subc` source syntax, a unique node address, or reparsable
 deduction output. Path `.` and `/arity` are not source-language syntax.
 
 Each incoming lineage is extended across the outgoing edges committed by a
@@ -500,7 +522,7 @@ inherit the active lineage set as context.
 
 Before deduction, an unqualified Goal occurrence is a symbolic `Name/Arity`
 reference with stable occurrence identity but no selected Goal node. When it is
-demanded, the Vessel atomically resolves the current alias to an `ArtifactHash`,
+demanded, the Carousel atomically resolves the current alias to an `ArtifactHash`,
 commits that choice, and associates the occurrence with the artifact's
 policy-erased `StructureHash` and arity. That pair is its `GoalNodeId`.
 
@@ -549,9 +571,9 @@ distinguish duplicates. Whether a Scheduler physically coalesces identical
 evaluation work is execution policy, not structural identity.
 
 ```
-Definition  → shared by GoalNodeId                  (Vessel)
-Deduction   → committed per demanded occurrence     (Vessel)
-Lineage     → one or more Root-to-occurrence paths   (Vessel)
+Definition  → shared by GoalNodeId                  (Carousel)
+Deduction   → committed per demanded occurrence     (Carousel)
+Lineage     → one or more Root-to-occurrence paths   (Carousel)
 Evaluation  → distinguished by routed arguments     (Scheduler)
 ```
 
@@ -704,7 +726,7 @@ used wherever a value expression is accepted, including routed Goal arguments:
 A = [x] -> B[x + 1]
 ```
 
-When B's argument is needed during deduction, the Vessel requests `x + 1` from
+When B's argument is needed during deduction, the Carousel requests `x + 1` from
 the Host's primitive semantics. This creates no Goal node, leaf, or Scheduler
 work. Subsea defines operator syntax, precedence, associativity, and structural
 evaluation control such as left-to-right Boolean short-circuiting. The Host
@@ -732,10 +754,12 @@ for map-key identity.
 produce Boolean values. Boolean map keys are supported and remain distinct from
 strings, so `true` and `"true"` are different keys.
 
-`&&` and `||` short-circuit from left to right. `false && rhs` and `true || rhs`
-do not select `rhs`, so eager Goal or Anchor calls found only there do not join
-the resulting dependency/evaluation structure. This is Boolean value selection,
-not failure handling; execution policy remains with the Scheduler.
+`&&` and `||` short-circuit from left to right. Outside a function-arrow leaf,
+their operands cannot contain Goal or Anchor calls because that would hide an
+evaluation dependency inside a value expression. Inside a function-arrow leaf,
+an Anchor call in an unselected right operand is not invoked. This is Boolean
+value selection, not failure handling; execution policy remains with the
+Scheduler.
 
 Ordinary lookup maps are selective routing structures. `map[key]` checks an
 exact normalized key first and then `_`; only the selected entry participates
@@ -830,7 +854,7 @@ and deduction-time errors carry active lineage information.
 |---|---|---|
 | source | decoder/parser | `InvalidSourceEncoding`, `SyntaxError` |
 | validation | structural language | `DuplicateBinding`, `DuplicateParameter`, `InvalidRoot`, `InvalidStructuralContext`, `InvalidUnicodeEscape`, `UnboundName`, statically provable `GoalNotFound`, `ArityMismatch`, `HashNotFound`, `AmbiguousHashPrefix`, `NotCallable`, `DuplicateMapKey`, `CycleDetected` |
-| deduction | Vessel using Codebase and Host primitive semantics | dynamic `GoalNotFound`, `ArityMismatch`, `CycleDetected`, `KeyNotFound`, `DestructureMismatch`, `PrimitiveError` |
+| deduction | Carousel using Codebase and Host primitive semantics | dynamic `GoalNotFound`, `ArityMismatch`, `CycleDetected`, `KeyNotFound`, `DestructureMismatch`, `PrimitiveError` |
 | host | Host | `AnchorNotFound`, `AnchorSignatureMismatch`, arrow-function or Anchor leaf implementation failures |
 | policy | Scheduler/anchoring layer | `UnknownPolicy`, `InvalidPolicyArguments`, `UnsupportedPolicyTarget`, `PolicyConflict`, scheduling and upstream-failure outcomes |
 
@@ -864,8 +888,11 @@ directly: `name = $host` is invalid.
 There are exactly two value-producing call forms. `Goal(...)` eagerly evaluates
 a Subsea Goal; `$anchor(...)` invokes a Host-resolved Anchor. Lowercase values,
 maps, pipelines, groups, call results, and every other value are not callable.
-Calls cannot be chained. Inside an arrow-function leaf implementation, Subsea
-Goal calls are forbidden and only the Host Anchor form may be used.
+Calls cannot be chained. Outside a function-arrow leaf these calls are valid
+only as direct structural occurrences and cannot be nested in value
+expressions. Inside an arrow-function leaf implementation, Subsea Goal calls
+are forbidden and only the Host Anchor form may be used; nested Anchor calls
+there belong to the Host evaluation of that one grounded leaf.
 
 Because `$` marks a Host Anchor leaf, a name may never be bound directly to one.
 
@@ -897,7 +924,7 @@ implementation of the same resolution contract. Deletion, garbage collection,
 access control, branches, and namespaces belong to that implementation.
 
 An unqualified reference stored inside an artifact retains `Name/Arity`. It is
-the demand-paged address of Goal space. The Vessel resolves it against the
+the demand-paged address of Goal space. The Carousel resolves it against the
 current name index only when that particular occurrence deduces. Alias rebinding
 can therefore change still-undeduced structure but can never rewrite a committed
 deduction. A hash-qualified reference stores a full pinned hash and bypasses the
@@ -928,7 +955,7 @@ policy discovery is maintained in [implementation](implementation/README.md).
 
 Subsea Cable intentionally ships without an official scheduler.
 
-Host, Vessel, Scheduler, and Runtime implementations are independent external
+Host, Carousel, Scheduler, and Runtime implementations are independent external
 projects. This repository neither vendors nor designates an official one.
 
 Every project is free to provide execution strategies that fit its own runtime.

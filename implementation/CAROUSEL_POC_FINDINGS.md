@@ -20,7 +20,6 @@ Related plans: [CAROUSEL_ENGINE_PLAN.md](CAROUSEL_ENGINE_PLAN.md) and
 | F8 | Binding site, entry form, and routing of structure-valued lookup maps | [Draft SCP](../proposals/draft-structure-valued-lookup-maps.md) | `docs/decisions/0003-structure-valued-lookup-maps.md` | blocked (`UnsupportedByProfile`) |
 | F9 | Which top-level values an artifact captures in its hash | [Draft SCP](../proposals/draft-artifact-hash-value-closure.md) | `docs/decisions/0004-artifact-hash-value-closure.md` | experimental |
 | F10 | Error kind and phase for runtime `NoOutput` where a value is required | [Draft SCP](../proposals/draft-dynamic-nooutput-errors.md) | `docs/decisions/0005-dynamic-nooutput-errors.md` | experimental |
-| F12 | Staging of value-producing calls (`$anchor(...)` and eager `Goal(...)`) in argument positions (Owner decision R3) | [Draft SCP](../proposals/draft-argument-position-call-staging.md) | `docs/decisions/0006-argument-position-call-staging.md` | blocked (`UnsupportedByProfile`) |
 
 ADR paths are relative to the runtime repository.
 
@@ -36,6 +35,8 @@ ADR paths are relative to the runtime repository.
 | F6a | Consumption point and window counting | [SCP-0001](../proposals/0001-touchdown-consumption-and-window-counting.md) (Accepted) |
 | F7 | Routing into a nested serial stage | Already specified: explicit brackets never receive an implicit argument, so in `[A, [B, C]]` the inner `B` is `/0`. The POC tests this |
 | F11 | Bare uppercase names outside compositions | Already specified: a bare uppercase identifier is a Goal stage only inside serial or parallel composition. The POC's fallback was a defect and was removed |
+| F12 | Staging of value-producing calls in argument positions | [SCP-0003](../proposals/0003-explicit-value-producing-call-staging.md) (Accepted): nested Goal/Anchor calls outside function leaves are `InvalidStructuralContext`; use an explicit direct structural stage. The external POC validator must replace its temporary `UnsupportedByProfile` behavior |
+| F13 | Deduction-engine and live-value ownership | [SCP-0002](../proposals/0002-carousel-runtime-boundaries.md) (Accepted): Carousel alone owns deduction; the Runtime owns the Outcome & Value Store; Vessel names the whole Runtime metaphor |
 
 The orchestration plan's internal inconsistencies noted in earlier revisions of
 this page (`Waiting(args)`, per-occurrence vs. aggregate blocking reports, the

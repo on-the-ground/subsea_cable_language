@@ -9,8 +9,8 @@ timeout, delivery, or failure-aggregation semantics.
 The deduction engine objective, Touchdown prefetch model, backpressure boundary,
 and phased delivery plan are tracked separately in
 [CAROUSEL_ENGINE_PLAN.md](CAROUSEL_ENGINE_PLAN.md). Read it before freezing a
-Runtime component model; it records an owner-directed boundary change that has
-not yet been propagated into the normative Runtime Contract. The proposed
+Runtime component model; its ownership boundary is accepted in SCP-0002 and
+propagated into the normative Runtime Contract. The proposed
 coordination of Carousel, Host, and `@policy` from a run command to the Root
 outcome is in [RUNTIME_ORCHESTRATION_PLAN.md](RUNTIME_ORCHESTRATION_PLAN.md),
 and evidence from an external proof of concept is in
@@ -69,8 +69,8 @@ Owner decision is mandatory for any change to:
 - source syntax or valid/invalid program classification;
 - Goal topology, routing, output, reduction, or Root semantics;
 - ArtifactHash, StructureHash, GoalNodeId, occurrence, or lineage identity;
-- the ownership boundary among Vessel, Host, and Scheduler, including Host
-  primitive semantics and both leaf forms;
+- the ownership boundary among Carousel, Host, Scheduler, and the Runtime value
+  store, including Host primitive semantics and both leaf forms;
 - a stable diagnostic kind or phase;
 - policy target, inheritance, ordering, composition, or topology erasure;
 - Host/Codebase interoperability or cross-runtime portability;
@@ -90,17 +90,21 @@ It contains separable parts:
 ```text
 Source Frontend  → UTF-8, preprocessing, parse, validation, artifact preparation
 Codebase         → immutable Goal artifacts, mutable aliases, revisions, deduction ledger
-Vessel           → lazy deduction, reduction rules, occurrences, lineages, frontier
+Carousel         → lazy deduction, reduction rules, occurrences, lineages, frontier
+Outcome/Value    → live run outcomes and resolved routed values
 Scheduler Port   → readiness/outcomes and opaque @policy delivery
 Host Port        → primitive semantics, arrow-leaf evaluation, $Anchor resolution/invocation
 Diagnostics      → errors, traces, provenance, and conformance evidence
 ```
 
 The Host supplies concrete computation semantics. The Scheduler interprets
-`@policy`. The Vessel owns demand-time Goal alias resolution and structural
+`@policy`. Carousel owns demand-time Goal alias resolution and structural
 deduction, but delegates primitive value semantics to the Host and never
-evaluates grounded leaves. A concrete package may ship all parts together, but
-its APIs and tests must preserve these boundaries.
+evaluates grounded leaves. The Runtime owns the Outcome & Value Store; Scheduler
+writes outcomes and Carousel reads committed values through a narrow port.
+**Vessel** is the metaphor for this whole Consumer Runtime, not another
+component. A concrete package may ship all parts together, but its APIs and
+tests must preserve these boundaries.
 
 ## Normative sources
 
@@ -136,7 +140,8 @@ Before production code, create short decision records for:
 1. reference implementation language and build system;
 2. canonical artifact encoding and hash algorithm;
 3. occurrence-ID, codebase-revision, and deduction-record identity/persistence;
-4. public Runtime, Vessel, Host Port, and Scheduler Port APIs;
+4. public Runtime, Carousel, Outcome & Value Store, Host Port, and Scheduler
+   Port APIs;
 5. the in-memory Codebase transaction model;
 6. the Host primitive-semantics profile;
 7. the baseline test Scheduler profile;
@@ -157,7 +162,7 @@ language rule.
 - Every item above has an accepted decision record or is explicitly marked as a
   blocking owner decision.
 - `RUNTIME_CONTRACT.md` can be mapped to concrete interfaces without merging the
-  Vessel, Scheduler, and Host responsibilities.
+  Carousel, value-store, Scheduler, and Host responsibilities.
 - No concrete policy semantics have been invented to unblock implementation.
 
 ## Phase 1 — Build the frontend first
@@ -185,7 +190,7 @@ All cases in `conformance/cases.tsv` pass automatically. Generated parser output
 is treated as build output. A clean checkout can reproduce the result with one
 documented command.
 
-## Phase 2 — Implement Codebase and Vessel
+## Phase 2 — Implement Codebase and Carousel
 
 Start with an in-memory Codebase. Store unqualified Goal references as symbolic
 `Name/Arity`, store hash-qualified references as pinned full hashes, and expose
@@ -219,8 +224,10 @@ Required invariant tests:
 
 A deterministic golden trace demonstrates parse → prepare → store → demand →
 resolve alias → commit deduction → ground leaves for representative serial,
-parallel, shared-node,
-resolving-map, eager-call, and Anchor cases.
+parallel, shared-node, resolving-map, explicit direct-call stage, and Anchor
+cases. Nested
+value-producing calls such as `D[C(x)]` must fail validation as
+`InvalidStructuralContext` under SCP-0003.
 Every scenario in `conformance/DEDUCTION.md` passes automatically.
 
 ## Phase 3 — Add Host and Scheduler ports
@@ -228,13 +235,15 @@ Every scenario in `conformance/DEDUCTION.md` passes automatically.
 Implement the abstract ports in `RUNTIME_CONTRACT.md` without adding production
 policies.
 
-The Host Port supplies primitive semantics to Vessel deductions and evaluates
+The Host Port supplies primitive semantics to Carousel deductions and evaluates
 grounded arrow-function and Anchor leaves. The Scheduler Port receives every
 deduced structural occurrence—including policy-bearing composites—plus grounded
 leaves and reports execution outcomes. A composite policy remains on
-that composite occurrence; it is not copied onto descendants. The Vessel remains
-unaware of Host registries, retries, timeout clocks, success aggregation, or
-cancellation strategy.
+that composite occurrence; it is not copied onto descendants. Outcomes are
+committed to the Runtime-owned Outcome & Value Store; Carousel observes only
+resolved values needed for deduction. Carousel remains unaware of Host
+registries, retries, timeout clocks, success aggregation, or cancellation
+strategy.
 
 Add a deterministic test Host and a named baseline test Scheduler. Unknown
 policies must produce an explicit policy-phase error before affected execution;
@@ -249,10 +258,10 @@ they must not be dropped.
 - Removing every policy changes no topology or routing trace.
 - A policy on a composite reaches the Scheduler with its original target and
   without appearing as a direct child policy.
-- Replacing the baseline Scheduler requires no parser, Codebase, or Vessel
+- Replacing the baseline Scheduler requires no parser, Codebase, or Carousel
   changes.
 - Replacing the Host profile requires no parser, Codebase, or Scheduler changes;
-  the Vessel depends only on the Host primitive-semantics port.
+  Carousel depends only on the Host primitive-semantics port.
 
 ## Phase 4 — Migrate one real program slice
 

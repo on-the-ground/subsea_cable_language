@@ -33,7 +33,7 @@ Phase 0 requires records for:
 1. reference language and build system;
 2. canonical artifact encoding and hash algorithm;
 3. occurrence-ID, codebase-revision, and deduction-record identity;
-4. Runtime/Vessel/Host/Scheduler API shape;
+4. Runtime/Carousel/Outcome-and-Value-Store/Host/Scheduler API shape;
 5. Codebase transaction model;
 6. Host primitive-semantics profile;
 7. baseline test Scheduler profile;

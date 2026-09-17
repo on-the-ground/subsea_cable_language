@@ -180,7 +180,7 @@ A behavior is a policy candidate only when all are true:
 - it applies to a specific structural occurrence or composite occurrence;
 - the Scheduler can enforce it using grounded occurrence information and Host
   outcomes;
-- it does not require the Vessel to inspect future execution results and create
+- it does not require Carousel to inspect future execution results and create
   new undeclared structure;
 - it can be described without referring to the source framework's private API.
 

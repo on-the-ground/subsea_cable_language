@@ -15,11 +15,13 @@
 - No open-source migration experiment has started.
 - An independent, non-normative Carousel/Runtime proof of concept exists in
   `on-the-ground/subsea_cable_runtime`; its findings are in
-  `CAROUSEL_POC_FINDINGS.md`. It settles no open decision.
+  `CAROUSEL_POC_FINDINGS.md`. It provides evidence but has no authority to settle
+  an open decision.
 - No production Carousel deduction engine implementation has started. Its objective,
   Touchdown-prefetch model, design questions, and phased plan are recorded in
-  `CAROUSEL_ENGINE_PLAN.md`; the existing Vessel terminology remains normative
-  until the planned boundary decision is synchronized.
+  `CAROUSEL_ENGINE_PLAN.md`. SCP-0002 is accepted and the canonical documents
+  use Carousel as the sole deduction engine; Vessel names the whole Runtime
+  metaphor only.
 
 ## Starting phase for a new external implementation
 
@@ -41,7 +43,8 @@ In a separate implementation repository, the next implementing agent should:
 
 The agent may make reversible implementation-profile choices and record them.
 It must stop for owner review if a choice changes source-language semantics,
-weakens a conformance case, merges Vessel/Host/Scheduler responsibilities, or
+weakens a conformance case, merges Carousel/Host/Scheduler/value-store
+responsibilities, or
 claims cross-runtime hash interoperability.
 
 Every design issue discovered after Phase 0 follows the same rule: preserve the

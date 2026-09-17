@@ -15,10 +15,10 @@ Every metaphor corresponds to an actual responsibility or state transition.
 
 ```text
 Surface: intent and the one Root
-                         Vessel
-                    [ Carousel ]
+                    Vessel / Consumer Runtime
+               [ Carousel + Store + Scheduler ]
                           |
-                     folded Cable
+                      Folded Cable
 ~~~~~~~~~~~~~~~~~~~~~~~~~~|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                           |        Sea = Goal Space
                           |        undeduced occurrence = mutable
@@ -147,30 +147,41 @@ codebase revision.
 
 ## Vessel
 
-The Vessel unfolds the Program. It owns:
+The Vessel is the metaphor for the complete Consumer Runtime. It carries the
+Frontend, Codebase and Deduction Ledger, Carousel, Outcome & Value Store,
+Scheduler, and Host connection. It is not a separately implementable deduction
+component and never competes with Carousel for ownership of a transition.
+
+## Carousel
+
+The Carousel unfolds the Program on demand. It owns:
 
 - demand-driven deduction;
 - structural reduction;
 - occurrence and frontier tracking;
-- dependency and value routing;
+- explicit dependency and value routing;
 - lineage propagation;
-- incremental expansion;
+- incremental expansion and Touchdown publication;
 - future recursion/TCO mechanics, if recursion is later admitted.
 
-The Vessel does not invent primitive meanings, resolve Anchor implementations,
-or decide scheduling policy. When reduction needs a primitive expression such
-as `x + 1`, the Vessel asks the Host for the active primitive semantics and
-commits the returned Subsea-representable value as part of that deduction.
+Carousel does not invent primitive meanings, resolve Anchor implementations,
+store evaluation outcomes, or decide scheduling policy. When reduction needs a
+primitive expression such as `x + 1`, Carousel asks the Host for the active
+primitive semantics and commits the returned Subsea-representable value as part
+of that deduction. When routing needs an upstream result, Carousel reads the
+resolved value through the Runtime-owned Outcome & Value Store port.
 
-## Carousel
+## Folded Cable and the undeduced frontier
 
-The Carousel carries the still-folded Cable. It is the deferred portion of the
-Program whose occurrences have not yet been demanded.
+The **Folded Cable** is the part of the Program not yet exposed as occurrences.
+The **undeduced frontier** is different: those occurrences already exist in
+committed structure, but their own reductions have not committed.
 
-The Carousel is not merely “everything that has not reached Touchdown.” A
-partially unfolded path can contain committed deductions followed by an
-undeduced frontier. Only that frontier and what remains behind it preserve the
-opportunity to observe a later alias binding.
+A partially unfolded path can contain committed deductions followed by an
+undeduced frontier and then Folded Cable. Only the frontier and what remains
+folded behind it preserve the opportunity to observe a later alias binding.
+“Folded Carousel” is not a state; Carousel is the engine operating on these
+states.
 
 ## Touchdown and Touchdown Cable
 
@@ -203,7 +214,7 @@ arrow-function leaf  -> Host evaluates the Subsea expression body
 $Anchor leaf         -> Host resolves and invokes the named capability
 ```
 
-The Host also supplies primitive semantics needed while the Vessel is reducing
+The Host also supplies primitive semantics needed while Carousel is reducing
 Goal arrows, including numeric representation, operators, comparisons, and
 ordinary value operations. Subsea specifies their syntax and structural role;
 the Host supplies their concrete meaning.
@@ -240,9 +251,11 @@ execution strategies. The language structure declares dependencies and routing,
 not success criteria or failure policy.
 
 ```text
-Vessel     -> what structure is deduced and committed
+Carousel   -> what structure is deduced and committed
+Value Store-> which produced values are available for explicit routing
 Host       -> what concrete computation means and how it is invoked
 Scheduler  -> when and under which policy grounded work is attempted
+Vessel     -> the Runtime metaphor carrying all four
 ```
 
 ## Goal identity survives Touchdown

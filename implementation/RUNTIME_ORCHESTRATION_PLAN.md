@@ -111,14 +111,13 @@ never changes the language grammar.
 | Outcome & Value Store | attempt outcomes, scope outputs, `ValueRef` resolution | invent values |
 | Host | primitive meaning, function-leaf evaluation, Anchor invocation | see structure or aliases |
 
-**Recommendation for known issue “value-store owner”:** the Runtime owns the
-Outcome & Value Store. Carousel reads resolved values through a narrow port and
-never writes outcomes. **Owner decision R7.**
-
-**Recommendation for “Vessel after migration” (Carousel plan decision 10):**
-use **Vessel** as the metaphor name for this Runtime: the ship that carries the
-Carousel, the ledger, and the Codebase, and connects them to the Seafloor
-(Host). It would name no second deduction engine. **Owner decision R8.**
+These boundaries are accepted in
+[SCP-0002](../proposals/0002-carousel-runtime-boundaries.md): the Runtime owns
+the Outcome & Value Store; Carousel reads resolved values through a narrow port
+and never writes outcomes. **Vessel** names the whole Runtime metaphor—the ship
+that carries the Carousel, ledger, and Codebase and connects them to the
+Seafloor (Host)—not a second deduction engine. This closes R7, R8, and Carousel
+plan decision 10.
 
 ## 4. Core runtime data model
 
@@ -239,14 +238,13 @@ It is therefore not a Runtime profile fallback. Such a design requires a
 language-level SCP and explicit owner approval before it can appear on an
 implementation path.
 
-**Eager calls in argument position** (`D[C(x)]`) still require a precise staging
-contract: `C(x)` must produce a value before D can receive a real Subsea value,
-but the current documents do not yet specify how the enclosing atomic deduction
-exposes and waits for that demanded evaluation. The same question covers
-`$anchor(...)` calls in argument positions
-([Draft SCP](../proposals/draft-argument-position-call-staging.md)).
-**Owner decision R3:** define
-that staging without committing D or its enclosing deduction with a placeholder.
+**Value-producing calls are not implicit expressions.** Under
+[SCP-0003](../proposals/0003-explicit-value-producing-call-staging.md),
+`D[C(x)]` and `D[$anchor(x)]` are invalid outside a function leaf. A Goal or
+Anchor call must be a direct structural occurrence so that its evaluation stage
+and dependency are visible, for example `[C(x), [v] -> D[v]]`. Primitive value
+expressions such as `D[x + 1]` remain valid. Carousel never hoists a nested call
+or commits a placeholder argument. This closes R3.
 
 ## 7. The orchestration loop
 
@@ -547,12 +545,12 @@ language rule.
 |---|---|---|
 | R1 | Separate ad-hoc stored-Goal invocation API | keep outside Program execution; profile question only |
 | R2 | Scheduler demand scope and cardinality | resolve with Carousel decisions 1–3; never infer demand from readiness |
-| R3 | Eager `Goal(...)` and `$anchor(...)` in argument positions | specify staging; never commit a placeholder argument ([Draft SCP](../proposals/draft-argument-position-call-staging.md)) |
+| R3 | Eager `Goal(...)` and `$anchor(...)` in argument positions | **Accepted** in [SCP-0003](../proposals/0003-explicit-value-producing-call-staging.md): reject nested calls outside function leaves; require an explicit direct structural stage; never hoist or commit placeholders |
 | R4 | Reattempting a composite scope | reject until attempt-scoped occurrence identity exists |
 | R5 | Withdrawing speculative demand on alias change | profile choice, always traced |
 | R6 | Baseline scope outcome rules (§4.2) | accept as named profile `baseline-local/0`, never language |
-| R7 | Value store ownership | Runtime owns; Carousel reads through a port |
-| R8 | Vessel as the Runtime metaphor | adopt; it resolves Carousel plan decision 10 |
+| R7 | Value store ownership | **Accepted** in [SCP-0002](../proposals/0002-carousel-runtime-boundaries.md): Runtime owns; Carousel reads through a port |
+| R8 | Vessel as the Runtime metaphor | **Accepted** in [SCP-0002](../proposals/0002-carousel-runtime-boundaries.md): Vessel names the whole Runtime metaphor, not a component |
 | R9 | Policy observation model (§8.3) and closed action set (§8.4) | open; until decided, Runtimes keep policies as opaque ordered metadata, ship no concrete interpreters, and reject every policy they cannot interpret |
 | R10 | Exact `TouchdownConsumed` acknowledgement point | **Accepted** in [SCP-0001](../proposals/0001-touchdown-consumption-and-window-counting.md): consume acknowledgement at first dispatch; the window counts every published, unconsumed grounded leaf (Carousel decision 3) |
 

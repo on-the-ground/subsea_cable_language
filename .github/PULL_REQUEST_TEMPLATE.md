@@ -1,70 +1,98 @@
-## Contribution type
+## Classification
+
+Select exactly one primary classification.
 
 - [ ] Editorial clarification with no semantic change
-- [ ] Conformance correction for existing semantics
-- [ ] Subsea Cable Proposal / language change
+- [ ] Conformance correction for already specified behavior
+- [ ] Language change backed by a Draft or accepted SCP
 - [ ] Ecosystem listing
+- [ ] Website-only presentation change using canonical repository sources
 
-This repository does not accept Host, Vessel, Scheduler, adapter, or complete
-Runtime implementation code.
+This repository does not accept Runtime, Host, Vessel/Carousel, Scheduler,
+adapter, or production integration code.
 
 ## Summary
 
-What language-base artifact changes, and why?
+What canonical language-base artifact changes, and why?
 
 ## Evidence
 
 - External implementation repository/revision:
-- External ADR:
+- External proposed ADR:
 - SCP:
 - Minimal reproduction:
 - Original tests/fault injection:
 - Normalized traces:
 
-Use `not applicable` only for genuinely editorial changes.
+Use `not applicable` only for genuinely editorial or presentation-only changes.
 
-## Classification
+## Language-change gate
+
+- Owner decision required: yes/no
+- Exact question presented:
+- Recommendation and viable alternatives:
+- Recorded owner response, date, and conditions:
+
+- [ ] This PR does not introduce language behavior merely because one Runtime
+      found it convenient.
+- [ ] Any affected implementation path remained blocked until the required
+      owner decision was recorded.
+- [ ] A language change has a linked SCP using `proposals/TEMPLATE.md`.
+- [ ] No proposed behavior is described as accepted before its SCP is accepted.
+
+## Classification boundary
 
 Why does this belong in the language repository rather than corrected Goal
-structure, value routing, a Host contract, Scheduler profile, external Runtime,
-or deferred feature?
+structure, explicit value routing, a Host Anchor contract, Scheduler
+configuration, a reversible Runtime profile, or a deferred feature?
 
 ## Philosophy and boundary review
 
 - [ ] Structure remains separate from execution policy.
 - [ ] Goal composition remains separate from function implementation.
 - [ ] Value routing stays explicit.
-- [ ] Host, Vessel, and Scheduler ownership remains distinct.
+- [ ] Host, deduction engine, and Scheduler ownership remains distinct.
+- [ ] The Vessel-to-Carousel terminology migration is not treated as complete
+      before its boundary SCP and synchronized normative update.
 - [ ] Unqualified Goal aliases remain lazy until occurrence demand, and no
       committed deduction can be retargeted.
-- [ ] Policy erasure preserves topology, or the proposal explicitly changes and
+- [ ] Policy erasure preserves topology, or the SCP explicitly changes and
       justifies that invariant.
 - [ ] The change is portable across languages and infrastructures.
 - [ ] No implementation convenience is presented as language law.
+
+Explain every unchecked applicable item.
 
 ## Compatibility
 
 - Previously valid source affected:
 - Previously invalid source newly accepted:
-- Artifact/hash impact:
-- Diagnostic impact:
+- Artifact/hash and stored-codebase impact:
+- Diagnostic kind/phase impact:
+- Runtime profile impact:
 - Migration guidance:
 
-## Synchronized artifacts
+Write `none` only with a reason.
 
-- [ ] `README.md` semantics/usage
+## Synchronized projections
+
+Check every projection affected by this change.
+
+- [ ] `README.md` normative semantics
+- [ ] `METAPHORS.md` / `FOR_AGENTS.md` conceptual model
 - [ ] `SubseaCable.g4`
 - [ ] `SubseaCable.ebnf`
 - [ ] `conformance/`
-- [ ] conceptual documents where relevant
-- [ ] SCP status/final rationale
-- [ ] `git diff --check`
+- [ ] implementation-neutral contracts and plans
+- [ ] examples, diagnostics, compatibility, and migration notes
+- [ ] SCP status and final rationale
+- [ ] none of the above require changes; explanation provided below
 
-Explain every unchecked applicable item.
+## Verification
 
-## Owner decision
+List the exact commands and results used to verify this PR.
 
-- Owner decision required: yes/no
-- Question presented:
-- Recommendation and alternatives:
-- Recorded response/conditions:
+- [ ] Required `validate` check passes
+- [ ] `mkdocs build --strict` passes
+- [ ] `git diff --check` passes
+- [ ] Grammar and conformance checks pass when affected

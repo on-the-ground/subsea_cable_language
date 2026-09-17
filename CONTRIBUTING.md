@@ -78,6 +78,15 @@ test status. Listing is not endorsement.
 
 ## Review standard
 
+Every pull request is covered by `CODEOWNERS`. The protected `main` branch
+requires the language owner's review, a passing `validate` check, and resolved
+review conversations. Agents and external implementers may prepare evidence and
+proposals, but they cannot merge new language behavior by themselves.
+
+A maintainer bypass is reserved for repository recovery and owner-approved
+changes. It still requires a pull request so the decision and diff remain
+auditable.
+
 A language-changing PR is reviewed in this order:
 
 1. Does the problem have reproducible evidence?

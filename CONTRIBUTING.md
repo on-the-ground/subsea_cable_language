@@ -102,7 +102,7 @@ When applicable, one accepted change updates:
 - `SubseaCable.g4`;
 - `SubseaCable.ebnf`;
 - `conformance/`;
-- `METAPHORS.md` or `ToAgents.md` when concepts change;
+- `METAPHORS.md` or `FOR_AGENTS.md` when concepts change;
 - the accepted proposal and compatibility notes.
 
 Run all available conformance and grammar-generation checks. `git diff --check`

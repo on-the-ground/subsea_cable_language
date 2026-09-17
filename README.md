@@ -114,7 +114,7 @@ build the site to understand Subsea Cable.
 | Executable/neutral grammar | [SubseaCable.g4](SubseaCable.g4), [SubseaCable.ebnf](SubseaCable.ebnf) |
 | Validity and diagnostics | [conformance](conformance/README.md) |
 | Unsupported recursion questions | [Recursion.md](Recursion.md) |
-| Guidance for reasoning agents | [ToAgents.md](ToAgents.md) |
+| Guidance for reasoning and contributing agents | [FOR_AGENTS.md](FOR_AGENTS.md) |
 | Building an external implementation | [implementation](implementation/README.md) |
 | Proposing a language change | [proposals](proposals/README.md) |
 | Governance and contribution scope | [GOVERNANCE.md](GOVERNANCE.md), [CONTRIBUTING.md](CONTRIBUTING.md) |

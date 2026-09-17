@@ -234,15 +234,18 @@ scenario above.
 - Maintainer/agent recommendation: consume at first dispatch; count all
   unconsumed published leaves; compare the target directly; reattempts never
   re-enter the window.
-- Owner response: accepted all four recommendations (2026-09-17). This
-  acceptance covers the core decisions only.
-- Detailed contract: the acknowledgement results, replay rule, discard rule,
-  races, demand priority, over-target condition, trace fields, and
-  policy-neutral scenarios were written afterwards at the owner's review
-  request and are **submitted for confirmation** in
-  on-the-ground/subsea_cable_language#1. They are not yet confirmed.
+- Owner response: accepted all four core recommendations (2026-09-17).
+- Detailed contract: the acknowledgement results (including the same-attempt
+  replay that re-confirms authorization and the competing-attempt
+  `AlreadyConsumed` that authorizes nothing), the discard rule, races (the
+  first applied acknowledgement wins), demand priority, the after-count
+  over-target condition, the trace fields, and Carousel plan scenarios 15–23
+  as mandatory conformance were written afterwards at the owner's review
+  request in on-the-ground/subsea_cable_language#1 and **confirmed by the
+  owner** (2026-09-17).
 - Decision date: 2026-09-17
-- Conditions: prefetch scope and demand count stay open.
+- Conditions: prefetch scope and demand count (Carousel plan decisions 1 and 2)
+  stay open.
 
 ## Final rationale
 

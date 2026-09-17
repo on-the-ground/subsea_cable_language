@@ -120,7 +120,8 @@ build the site to understand Subsea Cable.
 | Unsupported recursion questions | [Recursion.md](Recursion.md) |
 | Guidance for reasoning and contributing agents | [FOR_AGENTS.md](FOR_AGENTS.md) |
 | Building an external implementation | [implementation](implementation/README.md) |
-| Carousel deduction engine and Touchdown prefetch plan | [implementation/CAROUSEL_ENGINE_PLAN.md](implementation/CAROUSEL_ENGINE_PLAN.md) |
+| Carousel deduction engine and Touchdown prefetch plan | [carousel/docs/CAROUSEL_ENGINE_PLAN.md](carousel/docs/CAROUSEL_ENGINE_PLAN.md) |
+| Carousel and Runtime proof of concept (owner-directed, non-normative) | [carousel/README.md](carousel/README.md) |
 | Proposing a language change | [proposals](proposals/README.md) |
 | Governance and contribution scope | [GOVERNANCE.md](GOVERNANCE.md), [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Independent implementations | [ECOSYSTEM.md](ECOSYSTEM.md) |

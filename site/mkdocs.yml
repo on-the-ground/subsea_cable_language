@@ -53,13 +53,18 @@ nav:
       - Implementation Guide: implementation/README.md
       - Starting Point: implementation/STATUS.md
       - Runtime Contract: implementation/RUNTIME_CONTRACT.md
-      - Carousel Engine Plan: implementation/CAROUSEL_ENGINE_PLAN.md
       - Migration Playbook: implementation/MIGRATION_PLAYBOOK.md
       - Policy Discovery: implementation/POLICY_DISCOVERY.md
       - Experiment Template: implementation/EXPERIMENT_TEMPLATE.md
       - Decision Records:
           - Guide: implementation/decisions/README.md
           - Template: implementation/decisions/TEMPLATE.md
+  - Carousel POC:
+      - Overview: carousel/README.md
+      - Carousel Engine Plan: carousel/docs/CAROUSEL_ENGINE_PLAN.md
+      - Runtime Orchestration Plan: carousel/docs/RUNTIME_ORCHESTRATION_PLAN.md
+      - POC Profile: carousel/docs/POC_PROFILE.md
+      - Findings: carousel/docs/FINDINGS.md
   - Project:
       - Governance: GOVERNANCE.md
       - Contributing: CONTRIBUTING.md

@@ -13,10 +13,15 @@
 - This repository contains no official Runtime and will not host one.
 - No concrete anchoring policy semantics have been accepted.
 - No open-source migration experiment has started.
-- No Carousel deduction engine implementation has started. Its objective,
-  Touchdown-prefetch model, design questions, and phased plan are recorded in
-  `CAROUSEL_ENGINE_PLAN.md`; the existing Vessel terminology remains normative
-  until the planned boundary decision is synchronized.
+- An owner-directed, non-normative proof of concept of the Carousel and the
+  orchestrating Runtime exists under `carousel/` (see `carousel/README.md`
+  and `carousel/docs/FINDINGS.md`). It is not an official Runtime and does
+  not settle any open decision.
+- No production Carousel deduction engine implementation has started. Its
+  objective, Touchdown-prefetch model, design questions, and phased plan are
+  recorded in `carousel/docs/CAROUSEL_ENGINE_PLAN.md`; the existing Vessel
+  terminology remains normative until the planned boundary decision is
+  synchronized.
 
 ## Starting phase for a new external implementation
 
@@ -25,7 +30,7 @@
 In a separate implementation repository, the next implementing agent should:
 
 1. read the files listed in `AGENTS.md`;
-2. read `CAROUSEL_ENGINE_PLAN.md` and inventory its unresolved boundary
+2. read `carousel/docs/CAROUSEL_ENGINE_PLAN.md` and inventory its unresolved boundary
    decisions together with any normative contradictions;
 3. copy the ADR template and create the eight Phase 0 decision records listed in
    `implementation/decisions/README.md` inside the external repository;

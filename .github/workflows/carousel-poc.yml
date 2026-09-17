@@ -1,0 +1,51 @@
+name: Carousel POC
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "carousel/**"
+      - "conformance/**"
+      - ".github/workflows/carousel-poc.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "carousel/**"
+      - "conformance/**"
+      - ".github/workflows/carousel-poc.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: go test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: carousel
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: carousel/go.mod
+
+      - name: Check formatting
+        run: test -z "$(gofmt -l .)"
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./...
+
+      - name: Run examples
+        run: |
+          go run ./cmd/subc-poc run --example-policies --prefetch 1 --fail editFiles=1 examples/fix.subc
+          go run ./cmd/subc-poc run --prefetch 2 --ticks work=2 --concurrency 1 examples/prefetch.subc

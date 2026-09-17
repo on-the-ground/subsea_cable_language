@@ -16,7 +16,7 @@ Before implementing a Subsea Cable consumer/runtime, read these files in order:
 5. `implementation/README.md` — phased execution strategy and completion gates.
 6. `implementation/RUNTIME_CONTRACT.md` — component boundaries and mandatory
    runtime behavior.
-7. `implementation/CAROUSEL_ENGINE_PLAN.md` — the owner-directed deduction
+7. `carousel/docs/CAROUSEL_ENGINE_PLAN.md` — the owner-directed deduction
    engine objective, Touchdown prefetch plan, and unresolved contract decisions.
 8. `implementation/MIGRATION_PLAYBOOK.md` — how to migrate a real project and
    discover policies from evidence.

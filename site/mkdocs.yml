@@ -38,12 +38,12 @@ theme:
 nav:
   - Start:
       - Overview: README.md
+      - Brand & Mascot: BRAND.md
       - The Subsea Cable World: METAPHORS.md
       - Manifesto: MANIFESTO.md
       - The Problem: TheProblem.md
       - For Agents: ToAgents.md
   - Language:
-      - Brand Contract: BRAND.md
       - Recursion — Deferred Notes: Recursion.md
       - Agent Instructions: AGENTS.md
   - Conformance:

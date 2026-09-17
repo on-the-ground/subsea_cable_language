@@ -109,7 +109,7 @@ build the site to understand Subsea Cable.
 |---|---|
 | Why the language exists | [MANIFESTO.md](MANIFESTO.md), [TheProblem.md](TheProblem.md) |
 | Core metaphors and boundaries | [METAPHORS.md](METAPHORS.md) |
-| Public naming and mark usage | [BRAND.md](BRAND.md) |
+| Public naming, mascot, and downloadable assets | [BRAND.md](BRAND.md) |
 | Semantics and usage | this `README.md` |
 | Executable/neutral grammar | [SubseaCable.g4](SubseaCable.g4), [SubseaCable.ebnf](SubseaCable.ebnf) |
 | Validity and diagnostics | [conformance](conformance/README.md) |

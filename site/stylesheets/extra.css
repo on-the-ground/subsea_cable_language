@@ -92,6 +92,67 @@ input {
   width: 100%;
 }
 
+.md-typeset .brand-scene {
+  margin: 2rem 0 2.5rem;
+}
+
+.md-typeset .brand-scene img {
+  border: 1px solid rgb(8 61 76 / 22%);
+  border-radius: 1rem;
+  box-shadow: 0 1.2rem 3rem rgb(4 20 42 / 22%);
+  display: block;
+  width: 100%;
+}
+
+.md-typeset .brand-scene figcaption {
+  color: var(--md-default-fg-color--light);
+  font-size: 0.75rem;
+  margin-top: 0.7rem;
+  text-align: center;
+}
+
+.md-typeset .brand-assets {
+  display: grid;
+  gap: 1.2rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 1.5rem 0 2.5rem;
+}
+
+.md-typeset .brand-asset {
+  background: color-mix(in srgb, var(--md-default-bg-color) 92%, var(--subsea-current));
+  border: 1px solid color-mix(in srgb, var(--md-default-fg-color) 14%, transparent);
+  border-radius: 1rem;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+}
+
+.md-typeset .brand-asset > p:first-child {
+  align-items: center;
+  aspect-ratio: 1;
+  background: #061722;
+  border-radius: 0.7rem;
+  display: flex;
+  justify-content: center;
+  margin: 0;
+  overflow: hidden;
+}
+
+.md-typeset .brand-asset > p:first-child img {
+  height: 100%;
+  margin: 0;
+  object-fit: contain;
+  width: 100%;
+}
+
+.md-typeset .brand-asset h3 {
+  margin-top: 1rem;
+}
+
+.md-typeset .brand-asset .md-button {
+  margin-top: auto;
+}
+
 .md-typeset code {
   border-radius: 0.3rem;
 }
@@ -107,5 +168,9 @@ input {
 @media screen and (max-width: 44.984375em) {
   .md-typeset h1 {
     font-size: 2.35rem;
+  }
+
+  .md-typeset .brand-assets {
+    grid-template-columns: 1fr;
   }
 }

@@ -6,7 +6,7 @@
 - Updated: 2026-09-17
 - Requires owner decision: yes
 - External implementation ADRs: [subsea_cable_runtime `0004-artifact-hash-value-closure.md`](https://github.com/on-the-ground/subsea_cable_runtime/blob/main/docs/decisions/0004-artifact-hash-value-closure.md)
-- Evidence repositories/revisions: `on-the-ground/subsea_cable_runtime` (Carousel POC, pinned to this repository at `cbc6f53`)
+- Evidence repositories/revisions: `on-the-ground/subsea_cable_runtime@d62f1c3` (Carousel POC; evidence gathered while pinned to this repository at `cbc6f53`)
 - Supersedes: —
 - Superseded by: —
 

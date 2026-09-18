@@ -16,4 +16,5 @@ validation	GoalNotFound	invalid-semantic/GoalNotFound.subc
 validation	NotCallable	invalid-semantic/NotCallable.subc
 validation	DuplicateMapKey	invalid-semantic/DuplicateMapKey.subc
 validation	DestructureMismatch	invalid-semantic/DestructureMismatch.subc
+validation	DestructureMismatch	invalid-semantic/DestructureMismatchEagerCall.subc
 validation	CycleDetected	invalid-semantic/CycleDetected.subc

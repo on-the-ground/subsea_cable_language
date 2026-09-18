@@ -21,3 +21,6 @@ validation	DestructureMismatch	invalid-semantic/DestructureMismatchEagerCall.vyg
 validation	CycleDetected	invalid-semantic/CycleDetected.vyg
 validation	CycleDetected	invalid-semantic/ConditionalCycleWithoutExit.vyg
 validation	InvalidStructuralContext	invalid-semantic/EffectfulConditionalSelector.vyg
+validation	KeyNotFound	invalid-semantic/ConditionalKeyNotFound.vyg
+validation	UnboundName	invalid-semantic/ConditionalUppercaseSelector.vyg
+validation	CycleDetected	invalid-semantic/ConditionalExitReentersCycle.vyg

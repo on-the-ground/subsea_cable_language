@@ -691,7 +691,9 @@ PipelineStageList    = GoalStage, ",", GoalStage,
 (* One effect-free selector Expression followed by a keyed structural branch
  * Map. The selector is evaluated through Host primitive semantics; exactly one
  * branch enters the realized structure. The Map is contextual structure, not
- * an ordinary value Map or a ResolvingMap. *)
+ * an ordinary value Map or a ResolvingMap. This form has exactly two elements,
+ * plus an optional trailing comma. A later stage nests the form as one
+ * SerialPipeline element: `[[selector, {...}], Next]`. *)
 ConditionalStage     = LogicalOr, ",", ConditionalBranchMap, [ "," ] ;
 ConditionalBranchMap = "{", ConditionalBranchEntry,
                        { ",", ConditionalBranchEntry }, [ "," ], "}" ;

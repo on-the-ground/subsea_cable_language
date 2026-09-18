@@ -442,6 +442,34 @@ Anchor occurrence or call. The conditional pipeline receives no implicit
 upstream value; bind an upstream value with an enclosing Goal arrow before
 using it in the selector or branch arguments.
 
+This conditional form has exactly two elements: the selector and the branch
+map, plus an optional trailing comma. `[selector, {true: Left[], false:
+Right[]}, Next]` is a syntax error. To continue after the selected branch, make
+the conditional pipeline one nested serial stage:
+
+```subsea
+[
+    [selector, {true: Left[], false: Right[]}],
+    Next,
+]
+```
+
+A bare uppercase Goal name is not a value selector. For example, if `Flag` is a
+Goal, `[Flag, {true: Left[], false: Right[]}]` reports `UnboundName` because
+Goal definitions never satisfy value lookup.
+
+If the selector requires an unresolved routed value, the containing deduction
+stops at the conservative value barrier. It selects no key, creates no branch
+occurrence or observation, and commits no placeholder. Explicit demand reports
+`DeductionBlocked(pendingValue)`; speculative consideration reports
+`PrefetchBlocked` until the value resolves.
+
+The resolved selector is a value observation for SCP-0004 reuse. Provenance
+records a stable selector-value slot, its canonical digest, the normalized key
+selected, and the Host primitive profile. A prior selected-branch segment may
+be reused only when that digest and the other SCP-0004 identity inputs match;
+matching only the selected key is insufficient.
+
 This contextual form is distinct from a reusable structure-valued ordinary map
 binding, whose general closure and routing rules remain a separate design
 question.
@@ -841,6 +869,18 @@ a fresh occurrence with its own arguments, lineage, policies, and deduction
 record. Non-termination is therefore a voyage execution/resource condition,
 not a validation-time cycle error. See [Recursion.md](Recursion.md) and
 [SCP-0005](proposals/0005-guarded-conditional-recursion.md).
+
+Each selected recursive child is an explicit-demand boundary. Carousel exposes
+the symbolic child but MUST NOT cross that edge during speculative Touchdown
+replenishment; Scheduler demand is required for every recursive step. This
+prevents an arbitrarily deep leafless recursion from bypassing the Touchdown
+window.
+
+For cycles that local validation cannot see, especially cycles introduced by a
+late unqualified alias, Carousel compares a demanded Goal's resolved
+`GoalNodeId` with its ancestor chain. Re-entry with no committed conditional
+branch selection on the intervening path is `CycleDetected`; re-entry with such
+a selection is guarded and creates another fresh occurrence.
 
 Names must be unique within one Goal parameter list or destructuring pattern.
 Each arrow creates a lexical scope. A nested structural arrow may shadow a

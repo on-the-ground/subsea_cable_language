@@ -125,7 +125,8 @@ first implementation must not become an accidental source of language law.
 - concrete retry, timeout, delivery, cancellation, and aggregation policies;
 - policy inheritance and policy-conflict rules;
 - unconditional definition cycles, static termination proofs, and a portable
-  default resource limit for non-terminating guarded recursion;
+  default resource limit or diagnostic for explicitly demanded non-terminating
+  guarded recursion;
 - distributed execution, durable queues, and production storage;
 - a standard package manager or import/export system;
 - cross-runtime canonical hash compatibility until its encoding ADR is accepted.
@@ -222,8 +223,9 @@ Required invariant tests:
   branches perform no alias or value observation;
 - every selected guarded-recursive step creates a fresh child occurrence while
   preserving shared `GoalNodeId` identity where applicable;
-- a non-terminating guarded input is bounded observably by the Runtime profile,
-  not misreported as `CycleDetected`;
+- speculative replenishment stops at every recursive child until explicit
+  Scheduler demand, so a non-terminating guarded input remains observable and
+  cancellable rather than spinning behind the Touchdown window;
 - resolving maps are the only maps that export named parallel results;
 - `NoOutput` is distinct from every ordinary value;
 - a hash-qualified occurrence remains pinned while an unqualified undeduced

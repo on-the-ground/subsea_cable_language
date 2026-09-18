@@ -758,7 +758,9 @@ pipelineStageList
 // Map. The selector is evaluated through Host primitive semantics; exactly one
 // branch enters the realized structure. The Map is contextual structure, not
 // an ordinary value Map or a resolving Map. Semantic validation forbids Goal
-// and Anchor occurrences/calls anywhere in the selector.
+// and Anchor occurrences/calls anywhere in the selector. This alternative has
+// exactly two elements (plus an optional trailing comma). Continue serially by
+// nesting it as one stage: `[[selector, {...}], Next]`.
 conditionalStage
     : logicalOr ',' conditionalBranchMap ','?
     ;

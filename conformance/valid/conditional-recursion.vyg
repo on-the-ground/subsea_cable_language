@@ -34,4 +34,16 @@ Choose = [key] -> [
     },
 ]
 
+After = [] -> $after
+Continue = [key] -> [
+    [
+        key,
+        {
+            "left": Left[],
+            _: Right[],
+        },
+    ],
+    After[],
+]
+
 CountDown[3]

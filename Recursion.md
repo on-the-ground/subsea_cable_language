@@ -2,7 +2,8 @@
 
 ## Status
 
-Guarded direct and mutual Goal recursion is part of Subsea Cable under
+The core direction for guarded direct and mutual Goal recursion is accepted;
+the detailed contract remains in Discussion under
 [SCP-0005](proposals/0005-guarded-conditional-recursion.md). Unconditional
 definition cycles, and recursive conditional components with no structural exit
 branch, remain `CycleDetected`.
@@ -39,6 +40,11 @@ The selector must be effect-free. Goal and Anchor occurrences or calls are
 invalid inside it. If branching depends on an evaluated leaf result, an
 enclosing Goal arrow first binds that explicit routed value and then uses it in
 the conditional selector.
+
+The conditional pipeline contains exactly the selector and branch map. A
+following serial stage must wrap it: `[[selector, {true: A[], false: B[]}],
+Next]`. If a required routed selector value is unresolved, the conservative
+value barrier leaves the deduction uncommitted and selects no branch.
 
 ## Definition recursion is not an occurrence cycle
 
@@ -81,13 +87,22 @@ B = [] -> A[]                 // unconditional mutual cycle
 A conditional whose every branch returns to the same recursive component is
 also `CycleDetected` because it provides no exit.
 
+Late alias selection can reveal a cycle absent from the local definition graph.
+If a demanded occurrence resolves to a `GoalNodeId` already on its ancestor
+chain, Carousel examines the intervening path. With no committed conditional
+selection on that path it reports `CycleDetected` before committing the new
+occurrence. With at least one such selection, the re-entry is guarded and a
+fresh occurrence is permitted.
+
 ## Non-termination
 
 A valid guarded recursive voyage may still fail to select its exit. That is
-ordinary non-termination, not a source or validation error. Carousel may pause
-speculative unfolding at a declared deduction-work budget. Scheduler policy may
-cancel or limit the voyage. Neither layer may fabricate a branch or rewrite a
-committed deduction.
+ordinary non-termination, not a source or validation error. A selected
+recursive child is always an explicit-demand boundary: speculative Touchdown
+replenishment may expose it but MUST NOT deduce it. Only successive Scheduler
+demands can continue an unbounded recursive path. Scheduler cancellation or a
+declared deduction-work budget may stop that sequence. Neither layer may
+fabricate a branch or rewrite a committed deduction.
 
 Subsea Cable does not require static termination proofs.
 
@@ -99,8 +114,11 @@ of one recursion may therefore select different `ArtifactHash` values across an
 alias update. Each selection and codebase revision is committed independently.
 
 Replay uses those immutable deduction records. Incremental reuse under SCP-0004
-also requires stable-slot alias and value observations for recursive segments;
-it never edits an earlier voyage.
+also requires stable-slot alias and value observations for recursive segments.
+The selector result has its own stable value slot, canonical digest, selected
+normalized key, and primitive profile. A selected segment is reusable only when
+that digest and the other dependency fingerprints match; reuse never edits an
+earlier voyage.
 
 ## Tail recursion
 
@@ -118,10 +136,17 @@ A conforming implementation covers at least:
 - direct guarded recursion with an exit;
 - guarded mutual recursion;
 - exact-key and wildcard branch selection;
+- `KeyNotFound` when neither an exact key nor `_` exists;
+- an unresolved routed selector value stopping before branch selection;
 - unselected branches creating no occurrence or alias observation;
 - fresh occurrence identity for every selected recursive step;
+- explicit Scheduler demand at every recursive edge;
 - an unconditional direct or mutual cycle remaining `CycleDetected`;
 - a conditional recursive component with no exit remaining `CycleDetected`;
-- non-termination stopped by an explicit Runtime budget or Scheduler action;
+- an apparent exit that re-enters the component remaining `CycleDetected`;
+- a late alias re-entry without an intervening conditional selection remaining
+  `CycleDetected`;
+- non-termination remaining observable and interruptible by Runtime budget or
+  Scheduler action;
 - demand-time alias changes across recursive steps; and
-- replay and provenance of the selected branch sequence.
+- replay, selector fingerprints, and provenance of the selected branch sequence.

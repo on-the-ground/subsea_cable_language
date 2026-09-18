@@ -23,8 +23,8 @@ Before implementing a Subsea Cable consumer/runtime, read these files in order:
 9. `proposals/0004-voyage-plans-and-touchdown-cable-artifacts.md` — the
    Voyage Plan input, Fully Touchdown Cable output, provenance, and incremental
    reuse contract.
-10. `proposals/0005-guarded-conditional-recursion.md` — selective structural
-    branching, guarded definition recursion, and fresh recursive occurrences.
+10. `proposals/0005-guarded-conditional-recursion.md` — the accepted core and
+    pending details for selective branching and guarded recursion.
 
 Use **Subsea Cable** as the language name, **`__C`** only as its visual short
 mark, `.vyg` for source files, and `subsea-cable` for portable slugs/language
@@ -75,7 +75,10 @@ with `reusedFrom`. Structural reuse never implies Host outcome or effect reuse.
 Never reject a guarded recursive definition merely because its definition graph
 is cyclic. A conditional branch selects one structure, and every selected
 recursive step creates a fresh child occurrence so the realized Cable remains a
-DAG. Unguarded or exitless definition cycles remain `CycleDetected`.
+DAG. Speculative replenishment never crosses that recursive child; every step
+requires explicit Scheduler demand. Unguarded or exitless definition cycles,
+and late ancestor re-entry with no intervening conditional selection, remain
+`CycleDetected`.
 
 Never hide an evaluation dependency inside an argument or other value
 expression. Outside a function-arrow leaf, `Goal(...)` and `$anchor(...)` must

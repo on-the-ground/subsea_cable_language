@@ -1,0 +1,12 @@
+Flag = [] -> $flag
+Done = [] -> $done
+
+Bad = [] -> [
+    Flag,
+    {
+        true: Done[],
+        false: Done[],
+    },
+]
+
+Bad[]

@@ -1,6 +1,7 @@
 # SCP-0005 — Guarded conditional recursion
 
-- Status: Accepted
+- Status: Discussion — core guarded-recursion direction accepted; detailed
+  contract awaiting owner confirmation
 - Author(s): Codex (agent) for on-the-ground
 - Created: 2026-09-18
 - Updated: 2026-09-18
@@ -34,6 +35,11 @@ A recursive definition component is valid when every definition-level cycle is
 guarded by such a conditional selection and the guarding map has at least one
 branch that exits the recursive component. An unconditional cycle, or a
 conditional cycle with no exit branch, remains `CycleDetected`.
+
+Crossing a selected recursive edge is an explicit-demand boundary. Carousel
+may expose the fresh symbolic child, but speculative replenishment MUST NOT
+demand or deduce it. This prevents a recursive path that has not yet published
+a Touchdown from bypassing SCP-0001's backpressure indefinitely.
 
 ## Motivation and reproduction
 
@@ -97,6 +103,21 @@ An optional trailing comma is permitted. The selector expression:
   Anchor call; and
 - produces one Subsea-representable value used only as the branch key.
 
+This pipeline has exactly two elements: the selector and its branch map. To
+continue serially after the selected branch, nest the conditional pipeline as
+one stage:
+
+```subsea
+[
+    [selector, {true: Left[], false: Right[]}],
+    Next,
+]
+```
+
+`[selector, {true: Left[], false: Right[]}, Next]` is a syntax error. A bare
+uppercase Goal name is not a value selector; unless a value binding of that
+name exists, value lookup reports `UnboundName`.
+
 The conditional branch map:
 
 - is contextual structure, not an ordinary map value and not a resolving map;
@@ -111,6 +132,14 @@ Every branch is structurally validated, but only the selected branch creates
 occurrences, resolves aliases, observes values, carries its occurrence policies
 into the realized Cable, or contributes Touchdowns. The selector expression
 creates no Goal occurrence or Scheduler work.
+
+The conservative value barrier applies before branch selection. If evaluation
+of the selector requires an unresolved routed value, the containing deduction
+MUST remain uncommitted: no key is selected, no branch occurrence or alias/value
+observation is created, and no placeholder is stored. Explicit demand reports
+`DeductionBlocked(pendingValue)`; speculative consideration reports the
+corresponding `PrefetchBlocked` reason. Selection occurs atomically only after
+the required value is resolved.
 
 The conditional pipeline may appear wherever Goal structure is permitted,
 including as a Goal-arrow body or a serial/parallel stage. It receives no
@@ -134,6 +163,23 @@ An SCC that does not satisfy both rules remains `CycleDetected`. This preserves
 the existing diagnostic for unconditional structural cycles while permitting
 direct and mutual guarded recursion.
 
+Local SCC analysis cannot see cycles introduced later by Codebase alias
+selection. When a demanded Goal resolves to a `GoalNodeId` already present on
+that occurrence's ancestor chain, Carousel MUST inspect the intervening
+root-to-child segment before committing the new occurrence:
+
+- if the segment contains no committed conditional branch selection,
+  deduction fails atomically with `CycleDetected`;
+- if the segment contains at least one committed conditional branch selection,
+  the re-entry is guarded, MUST NOT be rejected as `CycleDetected`, and uses a
+  fresh occurrence if deduction otherwise succeeds.
+
+This demand-time rule applies to unqualified aliases and any other cycle that
+could not be classified from the local definition graph. It detects a late
+unguarded cycle without reverting to the blanket “same `GoalNodeId` means
+cycle” rule that would reject every valid recursive step. A selected guard still
+does not prove termination.
+
 ### Deduction and identity
 
 When a recursive branch is selected:
@@ -147,6 +193,12 @@ When a recursive branch is selected:
   back to the ancestor occurrence; and
 - later alias changes affect only still-undeduced recursive occurrences.
 
+The fresh recursive child is also a demand boundary. Publishing or exposing
+that symbolic child does not authorize Carousel to deduce it while replenishing
+the Touchdown window. The Scheduler MUST issue explicit demand for the child;
+one recursive step then commits normally and may expose the next symbolic child.
+Non-recursive selected branches remain eligible for ordinary prefetch.
+
 The realized occurrence graph therefore remains a DAG. Definition recursion is
 not represented as an occurrence back-edge.
 
@@ -157,15 +209,45 @@ occurrence order established by SCP-0004.
 ### Non-termination and bounds
 
 Failure to reach an exit branch is not a validation error. It is observable
-non-termination or resource exhaustion of a voyage. Carousel deduction budgets
-may pause speculative unfolding, and Scheduler cancellation or explicit
-resource policies may terminate a voyage. No layer may fabricate an exit,
-retarget a committed occurrence, or classify non-termination as
-`CycleDetected` after valid guarded recursion has begun.
+non-termination or resource exhaustion of a voyage. Because speculative
+replenishment MUST stop at every recursive child, only an explicit sequence of
+Scheduler demands can continue an unbounded recursive path. Scheduler
+cancellation or an explicit Runtime deduction-work budget may stop that
+sequence. No layer may fabricate an exit, retarget a committed occurrence, or
+classify non-termination as `CycleDetected` after valid guarded recursion has
+begun.
+
+The mandatory recursive demand boundary is the portable safety rule. Runtime
+budgets remain additional profile safeguards; this SCP defines no portable
+numeric default or new budget-exhaustion diagnostic.
 
 Tail-recursion optimization is permitted only if all logical occurrences,
 deduction records, lineages, and Cable provenance remain observable as though no
 physical frame reuse occurred. It is not required by this SCP.
+
+### Selector provenance and incremental reuse
+
+The selector result is a value observation of the containing conditional
+occurrence under SCP-0004. Provenance MUST assign it a stable value slot and
+record its canonical value digest together with the active Host primitive
+profile. A selected branch segment is reusable in a later voyage only when that
+slot's digest and all other SCP-0004 identity inputs match. Equal selected keys
+alone are insufficient: two distinct selector values may choose the same `_`
+fallback while representing different deduction evidence.
+
+Every `ConditionalBranchSelected` trace event MUST carry at least:
+
+```text
+occurrenceId
+selectorValueSlot
+selectorValueDigest
+selectedKey
+primitiveProfile
+```
+
+The raw selector value may be redacted, but the canonical digest, selected
+normalized key, and primitive profile remain auditable. Unselected branches
+contribute no selector or branch-local value observations.
 
 ## Alternatives
 
@@ -203,8 +285,8 @@ physical frame reuse occurred. It is not required by this SCP.
 - Stored artifact/hash impact: conditional pipelines and guarded recursive terms
   require a new language/profile revision and new authored/structural hashes.
 - Diagnostic impact: `CycleDetected` narrows to unguarded definition cycles and
-  actual invalid occurrence back-edges; valid guarded recursion no longer
-  reports it.
+  late ancestor re-entry with no intervening conditional selection; valid
+  guarded recursion no longer reports it.
 - Migration strategy: replace hidden Host loops or recursion with an explicit
   selector and branch map when the dependency structure should be visible.
 - Version/profile requirement: consumers must advertise SCP-0005 support.
@@ -215,24 +297,31 @@ physical frame reuse occurred. It is not required by this SCP.
 - ANTLR/EBNF: add a selector-expression plus conditional-branch-map alternative
   to serial pipeline syntax.
 - valid cases: direct countdown recursion, mutual guarded recursion, exact and
-  wildcard branch selection.
+  wildcard branch selection, and nested continuation after a conditional stage.
 - invalid semantic cases: unconditional direct/mutual cycles, recursive
-  conditional maps with no exit, effectful selector expressions.
+  conditional maps with no exit, an apparent exit that re-enters its component,
+  effectful selectors, uppercase Goal names used as value selectors, and
+  statically evident `KeyNotFound` without `_`.
 - Runtime cases: selected-branch-only occurrence creation, fresh recursive
-  occurrence identity, lazy alias observation per step, non-termination budget,
-  and immutable deduction records.
+  occurrence identity, explicit demand at every recursive edge, dynamic
+  ancestor-chain cycle detection, unresolved-selector value barriers,
+  selector-value reuse fingerprints, and immutable deduction records.
 
 ## Reference experiment
 
 The existing external POC blocks structure-valued selection and recursion. It
-must add this path only after pinning the accepted language revision. The first
-experiment should reproduce countdown, mutual guarded recursion, an unselected
-missing alias, and a deliberately non-terminating input under a deduction-work
-budget.
+must add this path only after pinning the owner-confirmed language revision.
+The first experiment should reproduce countdown, mutual guarded recursion, an
+unselected missing alias, and a deliberately non-terminating input under a
+deduction-work budget. Its current same-`GoalNodeId` ancestor check must be
+replaced by the intervening-conditional-selection rule, and replenishment must
+yield at every recursive child until explicit demand arrives.
 
 ## Unresolved questions
 
-- A portable default deduction-work budget remains a Runtime-profile question.
+- A portable default deduction-work budget and its diagnostic remain a
+  Runtime-profile question; the recursive demand boundary does not depend on
+  either.
 - A future SCP may standardize compressed recursive lineage display; the full
   logical lineage remains normative meanwhile.
 - General reusable structure-valued ordinary map bindings remain separate from
@@ -243,17 +332,23 @@ budget.
 - Decision requested on: 2026-09-18
 - Maintainer/agent recommendation: accept contextual conditional pipelines and
   distinguish guarded definition recursion from occurrence cycles
-- Owner response: recursive structure must be permitted when a child branch map
-  provides a possible exit; the conditional countdown form must not be rejected
-  as a compile-time cycle
+- Owner response (accepted core): recursive structure must be permitted when a
+  child branch map provides a possible exit; the conditional countdown form
+  must not be rejected as a compile-time cycle
 - Decision date: 2026-09-18
-- Conditions: selected branches alone enter the realized structure; recursive
-  steps create fresh occurrences so the realized Cable remains a DAG
+- Conditions on accepted core: selected branches alone enter the realized
+  structure; recursive steps create fresh occurrences so the realized Cable
+  remains a DAG
+- Pending detailed confirmation: local SCC/exit analysis, the ancestor-chain
+  late-cycle rule, selector purity and value barriers, explicit demand at each
+  recursive edge, selector trace/reuse fields, and concrete conformance cases
 
 ## Final rationale
 
-Subsea Cable deduces occurrences, not a static definition graph. A recursive
-definition guarded by selective structure can unfold into a finite or infinite
-sequence of fresh occurrences without ever creating a cyclic realized Cable.
-Rejecting that definition solely because its name recurs discards the language's
-central distinction between shared Goal identity and occurrence identity.
+The detailed contract remains in Discussion. Its accepted core rationale is
+that Subsea Cable deduces occurrences, not a static definition graph. A
+recursive definition guarded by selective structure can unfold into a finite or
+infinite sequence of fresh occurrences without ever creating a cyclic realized
+Cable. Rejecting that definition solely because its name recurs discards the
+language's central distinction between shared Goal identity and occurrence
+identity.

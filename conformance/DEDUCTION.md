@@ -107,15 +107,19 @@ evaluate the selector through Host primitive semantics, commit the selected key,
 and expose one symbolic `A/0` child. It MUST NOT create a `B/0` occurrence,
 resolve that alias, or report `GoalNotFound` for the unselected branch.
 Structural validation still checks the authored branch form and statically
-available arity information.
+available arity information. `ConditionalBranchSelected` MUST record the
+selector's stable value slot, canonical digest, selected normalized key, and
+active primitive profile.
 
 ## 10. Guarded recursion creates fresh occurrences
 
 Demand `CountDown[2]` from `conformance/valid/conditional-recursion.vyg`.
-Successive selections MUST expose distinct occurrences for `CountDown[1]`,
-`CountDown[0]`, and `Done[]`. The three `CountDown/1` occurrences MAY share one
-`GoalNodeId`, but each MUST retain its own arguments, lineage, alias observation,
-and immutable deduction record. No edge points back to an ancestor occurrence.
+After each selection, explicitly demand the exposed recursive child. Successive
+demands MUST expose distinct occurrences for `CountDown[1]`, `CountDown[0]`, and
+`Done[]`. The three `CountDown/1` occurrences MAY share one `GoalNodeId`, but
+each MUST retain its own arguments, lineage, alias observation, and immutable
+deduction record. No edge points back to an ancestor occurrence. Prefetch MUST
+NOT cross any of the recursive edges without those explicit demands.
 
 ## 11. Recursive steps retain demand-time alias behavior
 
@@ -134,6 +138,43 @@ the first occurrence.
 Use a guarded recursive Goal whose selector never chooses its authored exit for
 the supplied input. Validation and deduction MUST NOT report `CycleDetected`
 merely because the same Goal definition is selected repeatedly. Each selected
-step commits normally until an explicit deduction-work budget pauses Carousel
-or Scheduler policy cancels the voyage. Every completed record remains
-immutable and no synthetic exit or partial deduction is permitted.
+step commits normally only after explicit Scheduler demand. Speculative
+replenishment MUST stop at each exposed recursive child even while the
+Touchdown window is empty. An explicit deduction-work budget may pause the
+demand sequence and Scheduler policy may cancel the voyage. Every completed
+record remains immutable and no synthetic exit or partial deduction is
+permitted.
+
+## 13. An unresolved selector crosses no value barrier
+
+1. Create a conditional occurrence whose selector depends on an unresolved
+   routed output from an earlier Host leaf.
+2. Explicitly demand the conditional occurrence before that output resolves.
+3. Resolve the output and demand the same occurrence again.
+
+Step 2 MUST report `DeductionBlocked(pendingValue)`, commit no deduction, select
+no key, create no branch occurrence or alias observation, and emit no
+`ConditionalBranchSelected`. A speculative pass reports the corresponding
+`PrefetchBlocked` reason. Step 3 evaluates the selector and commits exactly one
+selected branch atomically.
+
+## 14. Late alias cycles distinguish guarded re-entry
+
+Create a demanded unqualified occurrence whose alias resolves to a
+`GoalNodeId` already on its ancestor chain.
+
+- With no committed conditional branch selection between the ancestor and the
+  demanded occurrence, deduction MUST fail atomically with `CycleDetected`.
+- With at least one committed conditional selection on that path, Carousel MUST
+  allow a fresh occurrence. It MUST NOT reuse the ancestor occurrence or create
+  a back-edge.
+
+## 15. Conditional reuse requires selector-value evidence
+
+Record a conditional deduction that selected `_`, then start a later voyage
+whose corresponding selector produces a different value that also selects `_`.
+The two `ConditionalBranchSelected` events have the same selected key but
+different canonical selector-value digests. The later voyage MUST NOT reuse the
+earlier selected-branch segment. Reuse is permitted only when the stable value
+slot, digest, primitive profile, and every other SCP-0004 dependency fingerprint
+match.

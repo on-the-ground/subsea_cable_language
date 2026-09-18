@@ -272,9 +272,10 @@ Here is what is still open, so you know where the edges are.
 - **Anchoring policy semantics** are not designed yet. The `@policy` surface
   syntax and occurrence targeting exist, but conflict resolution, inheritance
   over composites, and the Scheduler behavior of individual policies remain open.
-- **Controlled data-dependent expansion** has one accepted core form: a pure
-  selector followed by a conditional structural branch map. It also guards
-  direct and mutual recursion by creating fresh child occurrences; see
+- **Controlled data-dependent expansion** has one accepted core direction: a
+  pure selector followed by a conditional structural branch map. Its detailed
+  contract remains in Discussion. It guards direct and mutual recursion by
+  creating fresh, explicitly demanded child occurrences; see
   [Recursion.md](Recursion.md) and [SCP-0005](proposals/0005-guarded-conditional-recursion.md).
   General reusable structure-valued ordinary map bindings remain open.
 - **Canonical encoding and hash mechanics**: Goals live in an abstract

@@ -215,6 +215,10 @@ part of the provenance explaining why those deductions committed when they did.
 - selecting exactly one conditional structural branch from a pure Host-provided
   selector value;
 - creating a fresh child occurrence for every selected guarded-recursive step;
+- treating every selected recursive child as an explicit-demand boundary that
+  speculative replenishment never crosses;
+- detecting late ancestor `GoalNodeId` re-entry without an intervening
+  conditional selection as `CycleDetected`;
 - tracking occurrences, dependencies, routing, lineages, and the frontier;
 - detecting newly grounded arrow-function and Anchor leaves;
 - maintaining and publishing the Touchdown window;
@@ -271,6 +275,13 @@ The implementation plan must therefore distinguish:
 Resource budgets are Runtime-profile safeguards, not permission to change Goal
 semantics. Reaching a budget yields an observable paused/blocked state, not a
 fabricated leaf or partial deduction.
+
+They are not the primary guard against leafless speculative recursion. Under
+SCP-0005, a selected recursive child may be exposed but MUST NOT be selected by
+replenishment; only a new explicit Scheduler demand crosses that edge. The
+optional per-pass budget therefore remains useful for width, non-recursive
+depth, time, memory, and explicitly demanded recursion without being required
+to make prefetch safe.
 
 ## Planned engine events
 
@@ -523,9 +534,21 @@ SCP-0005 adds these mandatory structural scenarios:
     only the still-undeduced child occurrence.
 27. **Exit branch:** selecting the non-recursive branch stops structural
     unfolding without fabricating or cancelling a recursive occurrence.
-28. **Non-termination budget:** an input that never selects its authored exit is
-    paused by an explicit deduction-work budget or cancelled by the Scheduler;
-    it is not reported as `CycleDetected` and all prior commits remain intact.
+28. **Recursive demand boundary:** prefetch with available window capacity may
+    expose a recursive child but never deduces it. Every recursive step requires
+    a new explicit Scheduler demand; an input that never selects its authored
+    exit remains observable and cancellable rather than spinning inside one
+    replenishment pass.
+29. **Unresolved selector barrier:** a selector waiting on a routed Host value
+    commits no deduction, selects no key, creates no branch, and reports the
+    ordinary demand/prefetch blocked state until the value resolves.
+30. **Late cycle distinction:** ancestor `GoalNodeId` re-entry without an
+    intervening committed conditional selection is `CycleDetected`; the same
+    re-entry after such a selection creates a fresh occurrence.
+31. **Conditional reuse evidence:** `ConditionalBranchSelected` records the
+    stable selector slot, canonical value digest, selected key, and primitive
+    profile; changing the digest invalidates selected-branch reuse even when the
+    same wildcard branch would be selected.
 
 ## Completion criteria
 

@@ -26,7 +26,10 @@ It is a language-agnostic, infrastructure-agnostic representation of programs.
 
 Instead of describing *how* computations should execute, Subsea Cable describes *what* a program is.
 
-A Subsea program is a dependency structure.
+A Subsea program is a dependency structure. In this specification,
+**Program** names that semantic Goal/dependency program, while **Voyage Plan**
+names the authored `.vyg` unit that describes it. Neither term is a synonym for
+the realized Cable.
 
 Everything else is an implementation strategy.
 
@@ -125,7 +128,8 @@ build the site to understand Subsea Cable.
 | Carousel deduction engine and Touchdown prefetch plan | [implementation/CAROUSEL_ENGINE_PLAN.md](implementation/CAROUSEL_ENGINE_PLAN.md) |
 | Runtime orchestration of Carousel, Host, and policy | [implementation/RUNTIME_ORCHESTRATION_PLAN.md](implementation/RUNTIME_ORCHESTRATION_PLAN.md) |
 | Findings from the external Carousel POC | [implementation/CAROUSEL_POC_FINDINGS.md](implementation/CAROUSEL_POC_FINDINGS.md) |
-| Accepted boundary and language decisions | [SCP-0002](proposals/0002-carousel-runtime-boundaries.md), [SCP-0003](proposals/0003-explicit-value-producing-call-staging.md), [SCP-0004](proposals/0004-voyage-plans-and-touchdown-cable-artifacts.md) |
+| Accepted boundary and language decisions | [SCP-0002](proposals/0002-carousel-runtime-boundaries.md), [SCP-0003](proposals/0003-explicit-value-producing-call-staging.md) |
+| Voyage/Cable contract under discussion | [SCP-0004](proposals/0004-voyage-plans-and-touchdown-cable-artifacts.md) — core direction accepted, details awaiting confirmation |
 | Proposing a language change | [proposals](proposals/README.md) |
 | Governance and contribution scope | [GOVERNANCE.md](GOVERNANCE.md), [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Independent implementations | [ECOSYSTEM.md](ECOSYSTEM.md) |
@@ -160,7 +164,7 @@ is not a binding. The Root must be a deferred Goal reduction such as
 `BuildProduct[input]` or `BuildProduct#7fa31c[input]`: its base identifier's first
 ASCII letter is uppercase, it has one `[...]` suffix, and it has no following
 call suffix. A bare name, map access, literal, map, Anchor, arrow, or eager
-`Goal(...)` call cannot be a Root. A Program may contain any number of bindings,
+`Goal(...)` call cannot be a Root. A Voyage Plan may contain any number of bindings,
 but a binding-only file or a file with multiple Root expressions is invalid.
 Root creates the voyage's first demand for deduction; it does not control codebase
 storage or visibility.
@@ -917,7 +921,7 @@ implementation.
 Subsea has no import, export, package, module, or public/private construct. Every
 named Goal definition in a valid source unit is stored in an abstract
 content-addressed codebase, including Goals not reachable from Root. Root is only
-the entrypoint selected for this Program.
+the entrypoint selected for this Voyage Plan.
 
 ```text
 Content store:       full ArtifactHash → authored Goal term

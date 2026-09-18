@@ -1,11 +1,11 @@
 # SCP-0004 — Voyage Plans and Fully Touchdown Cable artifacts
 
-- Status: Accepted
+- Status: Discussion — core direction accepted; detailed portable contract awaiting owner confirmation
 - Author(s): Codex (agent) for on-the-ground
 - Created: 2026-09-18
 - Updated: 2026-09-18
 - Requires owner decision: yes
-- External implementation ADRs: [runtime ADR 0007 — Voyage results and incremental reuse boundary](https://github.com/on-the-ground/subsea_cable_runtime/blob/docs-vessel-frame/docs/decisions/0007-voyage-results-and-incremental-reuse.md) (proposed)
+- External implementation ADRs: [runtime ADR 0007 — Voyage results and incremental reuse boundary](https://github.com/on-the-ground/subsea_cable_runtime/blob/main/docs/decisions/0007-voyage-results-and-incremental-reuse.md) (proposed; link becomes valid after the companion Runtime PR merges)
 - Evidence repositories/revisions: `on-the-ground/subsea_cable_runtime` POC and the owner-directed Vessel plan
 - Supersedes: the source-level equation “Program = Cable” and the `.subc` source extension
 - Superseded by: —
@@ -30,7 +30,7 @@ That separation lets a later voyage reuse unchanged cable segments after an
 intermediate Goal changes, without rewriting the earlier voyage or repeating
 every deduction.
 
-## Motivation
+## Motivation and reproduction
 
 The earlier documents used *Program* and *Cable* as synonyms. That was useful
 while specifying lazy deduction, but it leaves no precise name for the authored
@@ -57,7 +57,40 @@ deduction. A later edit should invalidate only the cable segments whose
 structure or required values changed. The immutable record of an earlier
 voyage must remain auditable.
 
-## Terminology and ownership
+The companion Runtime POC can already publish Touchdowns, retain immutable
+deduction records, and exercise alias timing and value barriers. It cannot yet
+persist a Voyage Plan, produce a Cable manifest, reverse-map the manifest to
+intermediate deductions, or reuse a segment across runs. Runtime ADR 0007 and
+`docs/VESSEL_PLAN.md` preserve that implementation gap as the reference
+experiment rather than silently choosing storage behavior.
+
+## Existing invariant under pressure
+
+- The former equation “Program = Cable” gives the authored input and realized
+  result one name, so it cannot express a persisted plan that produces an
+  auditable grounded artifact.
+- Deduction commits an exact artifact per demanded occurrence, while
+  unqualified descendants remain mutable until their own demand. A reuse key
+  based only on the parent artifact and arguments loses those later alias
+  observations.
+- `StructureHash` is policy-erased and shared, while occurrences, lineages,
+  evaluation instances, and outcomes have different lifecycles. Putting all of
+  them into one hash destroys either structural sharing or auditability.
+- Carousel owns structural commits; Scheduler and Host own execution. Reusing
+  structure must not silently become permission to reuse an outcome or effect.
+
+## Classification
+
+Voyage Plan naming, source extension, Cable identity, immutable deduction
+reuse, and the Vessel/Carousel public boundary are portable language and
+Runtime-contract questions. They cannot be repaired by changing one Goal,
+adding a Host Anchor, selecting a Scheduler profile, or choosing a storage
+backend. Merkle layout, indexes, persistence technology, Outcome Journal
+retention, and transport APIs remain implementation-specific Runtime work.
+
+## Proposed specification
+
+### Terminology and ownership
 
 ### Voyage Plan
 
@@ -133,10 +166,13 @@ following semantics are portable.
 ### Ordered hash list
 
 - `touchdownHashes` is an ordered **list**, not a set.
-- Order is the lexicographic order of stable structural occurrence paths. Each
-  committed reduction assigns child ordinals from its authored result order;
-  parallel children therefore retain authored branch order. Host completion,
-  Scheduler dispatch, and deduction wall-clock order never affect the list.
+- Order is the lexicographic order of each leaf's root-to-leaf vector of
+  non-negative child ordinals. Ordinal segments are compared numerically, not
+  as decimal strings: `[0, 2]` precedes `[0, 10]`. Each committed reduction
+  assigns child ordinals from its authored result order; parallel children
+  therefore retain authored branch order. An implementation MUST NOT sort a
+  serialized dotted occurrence path. Host completion, Scheduler dispatch, and
+  deduction wall-clock order never affect the list.
 - Structural sharing does not collapse evaluation instances. Distinct
   occurrences or argument tuples are preserved. If two evaluation instances
   have identical grounded content, the same hash may appear twice.
@@ -256,7 +292,19 @@ fingerprints still match. Implementations may use Merkle trees, interval
 indexes, or other internal structures; the portable outward cable remains the
 simple ordered hash list.
 
-## Boundary audit
+## Alternatives
+
+| Alternative | Benefits | Costs/reason rejected |
+|---|---|---|
+| Make no language change; keep Program and Cable synonymous | No migration | Cannot distinguish persisted input from grounded result and provides no portable incremental-reuse artifact |
+| Return a set of hashes | Simple membership | Loses authored order and duplicate evaluation instances, so it cannot reproduce the realized Cable |
+| Put run ID, occurrence ID, lineage, and position into item hashes | Direct lookup from each item | Makes identical structural work different in every voyage and prevents cross-run reuse |
+| Use only `ArtifactHash + arguments` | Small reuse key | Misses descendant lazy alias observations and value-dependent branches |
+| Put provenance inside the list | One object | Couples a simple portable result to Runtime-specific indexes and mutable audit detail |
+| Treat structural reuse as Host outcome reuse | Maximum apparent speedup | Can suppress effects and reuse results under the wrong Host or value evidence |
+| **Accepted core: ordered structural hashes plus provenance sidecar** | Simple outward artifact, duplicate preservation, bidirectional audit, and independent reuse policy | Requires versioned descriptor/fingerprint profiles and a separate Outcome Journal decision |
+
+## Philosophy and boundary audit
 
 - Carousel remains the sole deduction owner.
 - Scheduler still owns demand, eligibility, attempts, and policy.
@@ -278,8 +326,11 @@ simple ordered hash list.
   examples and user-facing commands.
 - Existing deduction ledgers remain historical evidence but lack the portable
   cable/provenance fields required for incremental reuse.
+- F9 still governs which captured top-level values enter `StructureHash`.
+  Cable artifacts produced before that rule is accepted are experimental and
+  MUST NOT be used as portable cross-version reuse evidence.
 
-## Conformance impact
+## Grammar and conformance impact
 
 - all canonical source fixtures use `.vyg`;
 - documentation and grammar comments use `.vyg`;
@@ -293,6 +344,29 @@ simple ordered hash list.
   capability as unsupported rather than returning an incomplete object under
   the Fully Touchdown Cable name.
 
+## Reference experiment
+
+The external `on-the-ground/subsea_cable_runtime` POC is pinned to this language
+PR by submodule while the two proposals are reviewed. It proves demand-time
+alias selection, immutable per-occurrence deductions, Touchdown publication,
+discard/consume acknowledgement, conservative value barriers, and strict
+Carousel/Host/Scheduler ownership. It deliberately reports SCP-0004 voyage
+artifacts and incremental reuse as unsupported. Runtime ADR 0007 and the Vessel
+plan define the staged experiment and its acceptance tests.
+
+## Unresolved questions
+
+- **Cable membership and empty Cable:** whether the manifest includes every
+  published Touchdown, only consumed/first-dispatched instances, or only
+  successful instances remains an owner decision. The answer also fixes failed
+  and cancelled voyages and the empty-list hash.
+- **F9 artifact value closure:** `StructureHash` does not yet have a decided
+  top-level value-closure rule. Cable descriptors and reuse decisions produced
+  before F9 is accepted are experimental and MUST NOT be used as portable
+  cross-version reuse evidence.
+- Concrete canonical encodings and algorithms remain profile-versioned even
+  after the semantic field sets are confirmed.
+
 ## Owner decision record
 
 - Decision requested on: 2026-09-18
@@ -302,8 +376,12 @@ simple ordered hash list.
   hashed list plus output, with lineage/provenance sufficient for incremental
   reuse after intermediate Goal edits
 - Decision date: 2026-09-18
-- Authorized specification changes: source extension, Program/Cable ontology,
-  Vessel outward boundary, voyage-result and provenance contracts
+- Accepted core: source extension, Program/Cable ontology, Vessel outward
+  boundary, ordered hashed-list result, and provenance sufficient for
+  incremental reuse
+- Detailed contract submitted for confirmation: numeric structural ordering,
+  descriptor fields, stable-slot fingerprints, immutable `reusedFrom`, policy
+  erasure, value evidence, and structural-versus-outcome reuse separation
 - Authorized conformance changes: rename all canonical source fixtures and add
   voyage-result scenarios as the external Vessel implements them
 

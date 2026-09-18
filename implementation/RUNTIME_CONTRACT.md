@@ -447,14 +447,20 @@ syntax. Changes must be versioned because migration comparisons depend on them.
 
 ## 12. Voyage result and incremental reuse
 
-The authored input to a Vessel is a `.vyg` **Voyage Plan**. A terminated voyage
-MUST expose both its Root outcome and a **Fully Touchdown Cable**. The Cable is
-a canonical ordered list of grounded evaluation-instance content hashes in the
-lexicographic order of stable structural occurrence paths. Child ordinals come
-from authored reduction-result order, so parallel branches retain authored
-branch order. Structural sharing MUST NOT collapse distinct evaluation
-instances, and duplicate hashes MUST remain duplicate list entries. Deduction,
-completion, and dispatch timing MUST NOT reorder the list.
+The authored input to a Vessel is a `.vyg` **Voyage Plan**. A Runtime claiming
+the `voyage-result` capability MUST expose both the Root outcome and a **Fully
+Touchdown Cable** when a voyage terminates. A Runtime that does not implement
+the complete contract MUST report the capability as unsupported and MUST NOT
+return a partial object under that name.
+
+The Cable is a canonical ordered list of grounded evaluation-instance content
+hashes. Order compares each leaf's root-to-leaf vector of non-negative child
+ordinals lexicographically, with each ordinal compared numerically rather than
+as a decimal string. Child ordinals come from authored reduction-result order,
+so parallel branches retain authored branch order. An implementation MUST NOT
+sort serialized dotted occurrence paths. Structural sharing MUST NOT collapse
+distinct evaluation instances, and duplicate hashes MUST remain duplicate list
+entries. Deduction, completion, and dispatch timing MUST NOT reorder the list.
 
 The Runtime MUST keep content identity separate from provenance. Run IDs,
 occurrence IDs, list positions, lineages, attempts, timestamps, and outcomes

@@ -166,21 +166,29 @@ the existing diagnostic for unconditional structural cycles while permitting
 direct and mutual guarded recursion.
 
 Local SCC analysis cannot see cycles introduced later by Codebase alias
-selection. When a demanded Goal resolves to a `GoalNodeId` already present on
-that occurrence's ancestor chain, Carousel MUST inspect the intervening
+selection. When a Goal resolves to a `GoalNodeId` already present on that
+occurrence's ancestor chain, Carousel MUST inspect the intervening
 root-to-child segment before committing the new occurrence:
 
-- if the segment contains no committed conditional branch selection,
-  deduction fails atomically with `CycleDetected`;
 - if the segment contains at least one committed conditional branch selection,
   the re-entry is guarded, MUST NOT be rejected as `CycleDetected`, and uses a
-  fresh occurrence if deduction otherwise succeeds.
+  fresh occurrence if deduction otherwise succeeds;
+- if the segment contains no committed conditional branch selection and the
+  occurrence was explicitly demanded, deduction fails atomically with
+  `CycleDetected`;
+- if the segment contains no committed conditional branch selection and the
+  occurrence was reached by speculative replenishment, Carousel abandons that
+  path without committing an occurrence and without reporting a diagnostic,
+  leaving the classification to the later explicit demand.
 
-This demand-time rule applies to unqualified aliases and any other cycle that
-could not be classified from the local definition graph. It detects a late
-unguarded cycle without reverting to the blanket “same `GoalNodeId` means
-cycle” rule that would reject every valid recursive step. A selected guard still
-does not prove termination.
+This rule applies to unqualified aliases and any other cycle that could not be
+classified from the local definition graph. It detects a late unguarded cycle
+without reverting to the blanket “same `GoalNodeId` means cycle” rule that
+would reject every valid recursive step. Keeping the diagnostic itself at
+explicit demand matters for portability: a speculative `CycleDetected` would
+let two Runtimes with different prefetch targets disagree about whether the
+same voyage fails, since a path that is never demanded never has to be
+classified. A selected guard still does not prove termination.
 
 ### Deduction and identity
 

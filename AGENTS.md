@@ -78,8 +78,10 @@ recursive step creates a fresh child occurrence so the realized Cable remains a
 DAG. Speculative replenishment may expose a selected child but never crosses any
 committed conditional branch edge; crossing requires explicit Scheduler demand
 whether or not local analysis classifies the edge as recursive. Unguarded or
-exitless definition cycles, and late ancestor re-entry with no intervening
-conditional selection, remain `CycleDetected`.
+exitless definition cycles, and explicitly demanded late ancestor re-entry with
+no intervening conditional selection, remain `CycleDetected`. Speculation never
+raises that diagnostic itself; it abandons the path and leaves the call to the
+later explicit demand.
 
 Never hide an evaluation dependency inside an argument or other value
 expression. Outside a function-arrow leaf, `Goal(...)` and `$anchor(...)` must

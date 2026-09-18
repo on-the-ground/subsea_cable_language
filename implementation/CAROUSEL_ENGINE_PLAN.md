@@ -219,7 +219,8 @@ part of the provenance explaining why those deductions committed when they did.
   that speculative replenishment never crosses, irrespective of local recursion
   classification;
 - detecting late ancestor `GoalNodeId` re-entry without an intervening
-  conditional selection as `CycleDetected`;
+  conditional selection as `CycleDetected` under explicit demand, and abandoning
+  that path silently when it is reached speculatively;
 - tracking occurrences, dependencies, routing, lineages, and the frontier;
 - detecting newly grounded arrow-function and Anchor leaves;
 - maintaining and publishing the Touchdown window;
@@ -545,8 +546,12 @@ SCP-0005 adds these mandatory structural scenarios:
     commits no deduction, selects no key, creates no branch, and reports the
     ordinary demand/prefetch blocked state until the value resolves.
 30. **Late cycle distinction:** ancestor `GoalNodeId` re-entry without an
-    intervening committed conditional selection is `CycleDetected`; the same
-    re-entry after such a selection creates a fresh occurrence.
+    intervening committed conditional selection is `CycleDetected` under
+    explicit demand; the same re-entry after such a selection creates a fresh
+    occurrence. Reached speculatively instead, the unguarded re-entry abandons
+    the path with no occurrence and no diagnostic, and only the later explicit
+    demand reports `CycleDetected`, so the diagnostic is independent of the
+    prefetch target.
 31. **Conditional reuse evidence:** `ConditionalBranchSelected` records the
     stable selector slot, canonical value digest, selected key, and primitive
     profile; changing the digest invalidates selected-branch reuse even when the

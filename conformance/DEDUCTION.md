@@ -169,7 +169,12 @@ Create a demanded unqualified occurrence whose alias resolves to a
 `GoalNodeId` already on its ancestor chain.
 
 - With no committed conditional branch selection between the ancestor and the
-  demanded occurrence, deduction MUST fail atomically with `CycleDetected`.
+  explicitly demanded occurrence, deduction MUST fail atomically with
+  `CycleDetected`.
+- Reaching that same unguarded re-entry during speculative replenishment MUST
+  instead abandon the path silently: no occurrence, no `CycleDetected`, and no
+  other diagnostic. Demanding it afterwards MUST report `CycleDetected`, so the
+  diagnostic does not depend on the prefetch target.
 - With at least one committed conditional selection on that path, Carousel MUST
   allow a fresh occurrence. It MUST NOT reuse the ancestor occurrence or create
   a back-edge.

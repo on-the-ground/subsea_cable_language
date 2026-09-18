@@ -88,11 +88,13 @@ A conditional whose every branch returns to the same recursive component is
 also `CycleDetected` because it provides no exit.
 
 Late alias selection can reveal a cycle absent from the local definition graph.
-If a demanded occurrence resolves to a `GoalNodeId` already on its ancestor
-chain, Carousel examines the intervening path. With no committed conditional
-selection on that path it reports `CycleDetected` before committing the new
-occurrence. With at least one such selection, the re-entry is guarded and a
-fresh occurrence is permitted.
+If an occurrence resolves to a `GoalNodeId` already on its ancestor chain,
+Carousel examines the intervening path. With at least one committed conditional
+selection on that path, the re-entry is guarded and a fresh occurrence is
+permitted. With no such selection, an explicitly demanded occurrence reports
+`CycleDetected` before committing, while a speculative pass abandons the path
+without committing or diagnosing it and leaves the classification to the later
+explicit demand.
 
 ## Non-termination
 

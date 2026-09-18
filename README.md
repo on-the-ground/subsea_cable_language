@@ -878,10 +878,12 @@ recursive. This prevents both statically visible and late alias-assembled
 leafless recursion from bypassing the Touchdown window.
 
 For cycles that local validation cannot see, especially cycles introduced by a
-late unqualified alias, Carousel compares a demanded Goal's resolved
-`GoalNodeId` with its ancestor chain. Re-entry with no committed conditional
-branch selection on the intervening path is `CycleDetected`; re-entry with such
-a selection is guarded and creates another fresh occurrence.
+late unqualified alias, Carousel compares a resolved `GoalNodeId` with its
+ancestor chain. Re-entry with a committed conditional branch selection on the
+intervening path is guarded and creates another fresh occurrence. Re-entry with
+no such selection is `CycleDetected` when the occurrence was explicitly
+demanded; reached speculatively, the path is abandoned with no occurrence and
+no diagnostic, so the diagnostic does not depend on the prefetch target.
 
 Names must be unique within one Goal parameter list or destructuring pattern.
 Each arrow creates a lexical scope. A nested structural arrow may shadow a

@@ -254,6 +254,17 @@ node.
 
 ## 7. Carousel and Runtime-value contract
 
+Two kinds of deduction request appear throughout this document:
+
+- **explicit demand**: the Scheduler asks for one specific occurrence;
+- **speculative deduction**: the Carousel deduces an occurrence on its own while
+  replenishing the Touchdown window toward its prefetch target.
+
+Unless a rule says *explicit*, "demanded" and "deduced" cover both. The two
+resolve aliases, commit deduction records, and obey every other law in this
+document identically; they differ only in who initiated the request, and rules
+that name *explicit* demand apply to the Scheduler-initiated case alone.
+
 The Carousel accepts a prepared Root occurrence and deduces only what is demanded.
 It MUST:
 
@@ -297,12 +308,20 @@ explicit demand may deduce that selected child; a recursive step may then expose
 the next symbolic child. Deduction-work budgets MAY additionally pause explicit
 unfolding, but every completed deduction remains an immutable checkpoint.
 
-When a demanded Goal resolves to a `GoalNodeId` already on its ancestor chain
-and local validation did not reject the cycle, Carousel MUST inspect the
-intervening path before commit. With no committed conditional branch selection
-on that path it MUST fail atomically with `CycleDetected`; with at least one
-selection it MUST NOT report `CycleDetected` for that re-entry and MUST create a
-fresh occurrence if deduction otherwise succeeds.
+When a Goal resolves to a `GoalNodeId` already on its ancestor chain and local
+validation did not reject the cycle, Carousel MUST inspect the intervening path
+before commit. With at least one committed conditional branch selection on that
+path the re-entry is guarded: Carousel MUST NOT report `CycleDetected` for it
+and MUST create a fresh occurrence if deduction otherwise succeeds.
+
+With no committed conditional branch selection on that path, the response
+depends on who asked. Under explicit demand, deduction MUST fail atomically
+with `CycleDetected`. Under speculative deduction, Carousel MUST abandon that
+path without committing an occurrence and without reporting a diagnostic, and
+the re-entry is classified only once the occurrence is explicitly demanded.
+Speculation therefore cannot spin inside an unguarded late alias cycle, and
+`CycleDetected` remains reproducible across Runtimes with different prefetch
+targets instead of depending on how far speculation happened to reach.
 
 The Carousel produces occurrence/containment events for all deduced structural
 occurrences, plus grounded leaf occurrences and dependency/readiness facts for

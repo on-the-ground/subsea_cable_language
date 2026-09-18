@@ -75,10 +75,11 @@ with `reusedFrom`. Structural reuse never implies Host outcome or effect reuse.
 Never reject a guarded recursive definition merely because its definition graph
 is cyclic. A conditional branch selects one structure, and every selected
 recursive step creates a fresh child occurrence so the realized Cable remains a
-DAG. Speculative replenishment never crosses that recursive child; every step
-requires explicit Scheduler demand. Unguarded or exitless definition cycles,
-and late ancestor re-entry with no intervening conditional selection, remain
-`CycleDetected`.
+DAG. Speculative replenishment may expose a selected child but never crosses any
+committed conditional branch edge; crossing requires explicit Scheduler demand
+whether or not local analysis classifies the edge as recursive. Unguarded or
+exitless definition cycles, and late ancestor re-entry with no intervening
+conditional selection, remain `CycleDetected`.
 
 Never hide an evaluation dependency inside an argument or other value
 expression. Outside a function-arrow leaf, `Goal(...)` and `$anchor(...)` must

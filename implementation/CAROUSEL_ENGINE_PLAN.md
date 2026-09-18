@@ -215,8 +215,9 @@ part of the provenance explaining why those deductions committed when they did.
 - selecting exactly one conditional structural branch from a pure Host-provided
   selector value;
 - creating a fresh child occurrence for every selected guarded-recursive step;
-- treating every selected recursive child as an explicit-demand boundary that
-  speculative replenishment never crosses;
+- treating every selected conditional child as an explicit-demand boundary
+  that speculative replenishment never crosses, irrespective of local recursion
+  classification;
 - detecting late ancestor `GoalNodeId` re-entry without an intervening
   conditional selection as `CycleDetected`;
 - tracking occurrences, dependencies, routing, lineages, and the frontier;
@@ -277,11 +278,11 @@ semantics. Reaching a budget yields an observable paused/blocked state, not a
 fabricated leaf or partial deduction.
 
 They are not the primary guard against leafless speculative recursion. Under
-SCP-0005, a selected recursive child may be exposed but MUST NOT be selected by
-replenishment; only a new explicit Scheduler demand crosses that edge. The
-optional per-pass budget therefore remains useful for width, non-recursive
-depth, time, memory, and explicitly demanded recursion without being required
-to make prefetch safe.
+SCP-0005, any selected conditional child may be exposed but MUST NOT be selected
+by replenishment; only a new explicit Scheduler demand crosses that edge,
+irrespective of local recursion classification. The optional per-pass budget
+therefore remains useful for width, non-conditional depth, time, memory, and
+explicitly demanded recursion without being required to make prefetch safe.
 
 ## Planned engine events
 
@@ -534,11 +535,12 @@ SCP-0005 adds these mandatory structural scenarios:
     only the still-undeduced child occurrence.
 27. **Exit branch:** selecting the non-recursive branch stops structural
     unfolding without fabricating or cancelling a recursive occurrence.
-28. **Recursive demand boundary:** prefetch with available window capacity may
-    expose a recursive child but never deduces it. Every recursive step requires
-    a new explicit Scheduler demand; an input that never selects its authored
-    exit remains observable and cancellable rather than spinning inside one
-    replenishment pass.
+28. **Conditional demand boundary:** prefetch with available window capacity may
+    commit selection and expose a conditional child but never deduces it. Test
+    both a locally non-recursive branch and a recursive branch assembled through
+    a late alias; each requires a new explicit Scheduler demand. An input that
+    never selects its authored exit remains observable and cancellable rather
+    than spinning inside one replenishment pass.
 29. **Unresolved selector barrier:** a selector waiting on a routed Host value
     commits no deduction, selects no key, creates no branch, and reports the
     ordinary demand/prefetch blocked state until the value resolves.

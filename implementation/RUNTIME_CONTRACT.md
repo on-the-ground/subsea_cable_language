@@ -288,14 +288,14 @@ observe no routed value, and publish no structural or Touchdown event. A valid
 guarded recursion that continues indefinitely is non-termination or resource
 exhaustion, not `CycleDetected`.
 
-A fresh child selected across a recursive conditional edge MUST remain
-undeduced until the Scheduler explicitly demands that child. Carousel MUST NOT
-cross the recursive edge during speculative Touchdown replenishment, regardless
-of available window capacity. Each explicit recursive demand may commit that
-step and expose the next symbolic child. Non-recursive selected branches remain
-eligible for ordinary prefetch. Deduction-work budgets MAY additionally pause
-explicit unfolding, but every completed recursive deduction remains an
-immutable checkpoint.
+A child selected across any committed conditional branch edge MUST remain
+undeduced until the Scheduler explicitly demands that child. Carousel MAY
+commit the selection and expose the symbolic child, but MUST NOT cross the edge
+during speculative Touchdown replenishment, regardless of available window
+capacity or whether local analysis classifies the edge as recursive. Each
+explicit demand may deduce that selected child; a recursive step may then expose
+the next symbolic child. Deduction-work budgets MAY additionally pause explicit
+unfolding, but every completed deduction remains an immutable checkpoint.
 
 When a demanded Goal resolves to a `GoalNodeId` already on its ancestor chain
 and local validation did not reject the cycle, Carousel MUST inspect the

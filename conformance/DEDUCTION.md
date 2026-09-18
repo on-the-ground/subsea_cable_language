@@ -109,7 +109,10 @@ resolve that alias, or report `GoalNotFound` for the unselected branch.
 Structural validation still checks the authored branch form and statically
 available arity information. `ConditionalBranchSelected` MUST record the
 selector's stable value slot, canonical digest, selected normalized key, and
-active primitive profile.
+active primitive profile. Even though the selected `A/0` edge is non-recursive,
+speculative replenishment MAY expose the symbolic child but MUST NOT deduce it;
+an explicit Scheduler demand is required to cross the committed conditional
+branch edge.
 
 ## 10. Guarded recursion creates fresh occurrences
 
@@ -119,7 +122,8 @@ demands MUST expose distinct occurrences for `CountDown[1]`, `CountDown[0]`, and
 `Done[]`. The three `CountDown/1` occurrences MAY share one `GoalNodeId`, but
 each MUST retain its own arguments, lineage, alias observation, and immutable
 deduction record. No edge points back to an ancestor occurrence. Prefetch MUST
-NOT cross any of the recursive edges without those explicit demands.
+NOT cross any of the committed conditional branch edges without those explicit
+demands.
 
 ## 11. Recursive steps retain demand-time alias behavior
 
@@ -139,8 +143,9 @@ Use a guarded recursive Goal whose selector never chooses its authored exit for
 the supplied input. Validation and deduction MUST NOT report `CycleDetected`
 merely because the same Goal definition is selected repeatedly. Each selected
 step commits normally only after explicit Scheduler demand. Speculative
-replenishment MUST stop at each exposed recursive child even while the
-Touchdown window is empty. An explicit deduction-work budget may pause the
+replenishment MUST stop at each exposed conditional child even while the
+Touchdown window is empty and even when local analysis did not classify the
+selected edge as recursive. An explicit deduction-work budget may pause the
 demand sequence and Scheduler policy may cancel the voyage. Every completed
 record remains immutable and no synthetic exit or partial deduction is
 permitted.

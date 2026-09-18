@@ -223,9 +223,9 @@ Required invariant tests:
   branches perform no alias or value observation;
 - every selected guarded-recursive step creates a fresh child occurrence while
   preserving shared `GoalNodeId` identity where applicable;
-- speculative replenishment stops at every recursive child until explicit
-  Scheduler demand, so a non-terminating guarded input remains observable and
-  cancellable rather than spinning behind the Touchdown window;
+- speculative replenishment stops at every selected conditional child until
+  explicit Scheduler demand, regardless of local recursion classification, so
+  late alias-assembled recursion cannot spin behind the Touchdown window;
 - resolving maps are the only maps that export named parallel results;
 - `NoOutput` is distinct from every ordinary value;
 - a hash-qualified occurrence remains pinned while an unqualified undeduced

@@ -97,12 +97,13 @@ fresh occurrence is permitted.
 ## Non-termination
 
 A valid guarded recursive voyage may still fail to select its exit. That is
-ordinary non-termination, not a source or validation error. A selected
-recursive child is always an explicit-demand boundary: speculative Touchdown
-replenishment may expose it but MUST NOT deduce it. Only successive Scheduler
-demands can continue an unbounded recursive path. Scheduler cancellation or a
-declared deduction-work budget may stop that sequence. Neither layer may
-fabricate a branch or rewrite a committed deduction.
+ordinary non-termination, not a source or validation error. Every selected
+conditional child is an explicit-demand boundary: speculative Touchdown
+replenishment may expose it but MUST NOT deduce it, regardless of whether local
+analysis recognizes the edge as recursive. Only successive Scheduler demands
+can continue an unbounded recursive path. Scheduler cancellation or a declared
+deduction-work budget may stop that sequence. Neither layer may fabricate a
+branch or rewrite a committed deduction.
 
 Subsea Cable does not require static termination proofs.
 
@@ -140,7 +141,7 @@ A conforming implementation covers at least:
 - an unresolved routed selector value stopping before branch selection;
 - unselected branches creating no occurrence or alias observation;
 - fresh occurrence identity for every selected recursive step;
-- explicit Scheduler demand at every recursive edge;
+- explicit Scheduler demand at every selected conditional branch edge;
 - an unconditional direct or mutual cycle remaining `CycleDetected`;
 - a conditional recursive component with no exit remaining `CycleDetected`;
 - an apparent exit that re-enters the component remaining `CycleDetected`;

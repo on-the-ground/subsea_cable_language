@@ -870,11 +870,12 @@ record. Non-termination is therefore a voyage execution/resource condition,
 not a validation-time cycle error. See [Recursion.md](Recursion.md) and
 [SCP-0005](proposals/0005-guarded-conditional-recursion.md).
 
-Each selected recursive child is an explicit-demand boundary. Carousel exposes
-the symbolic child but MUST NOT cross that edge during speculative Touchdown
-replenishment; Scheduler demand is required for every recursive step. This
-prevents an arbitrarily deep leafless recursion from bypassing the Touchdown
-window.
+Every selected conditional-branch child is an explicit-demand boundary.
+Carousel may commit the selection and expose the symbolic child, but MUST NOT
+cross that branch edge during speculative Touchdown replenishment; Scheduler
+demand is required whether or not local analysis classifies the edge as
+recursive. This prevents both statically visible and late alias-assembled
+leafless recursion from bypassing the Touchdown window.
 
 For cycles that local validation cannot see, especially cycles introduced by a
 late unqualified alias, Carousel compares a demanded Goal's resolved

@@ -275,7 +275,9 @@ Here is what is still open, so you know where the edges are.
 - **Controlled data-dependent expansion** has one accepted core direction: a
   pure selector followed by a conditional structural branch map. Its detailed
   contract remains in Discussion. It guards direct and mutual recursion by
-  creating fresh, explicitly demanded child occurrences; see
+  creating fresh child occurrences. Every selected conditional child is an
+  explicit-demand boundary, regardless of whether local analysis classifies its
+  edge as recursive; see
   [Recursion.md](Recursion.md) and [SCP-0005](proposals/0005-guarded-conditional-recursion.md).
   General reusable structure-valued ordinary map bindings remain open.
 - **Canonical encoding and hash mechanics**: Goals live in an abstract

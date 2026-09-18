@@ -36,10 +36,12 @@ guarded by such a conditional selection and the guarding map has at least one
 branch that exits the recursive component. An unconditional cycle, or a
 conditional cycle with no exit branch, remains `CycleDetected`.
 
-Crossing a selected recursive edge is an explicit-demand boundary. Carousel
-may expose the fresh symbolic child, but speculative replenishment MUST NOT
-demand or deduce it. This prevents a recursive path that has not yet published
-a Touchdown from bypassing SCP-0001's backpressure indefinitely.
+Crossing any selected conditional branch edge is an explicit-demand boundary.
+Carousel may commit the selection and expose the symbolic child, but speculative
+replenishment MUST NOT demand or deduce it, whether or not local analysis
+classifies the edge as recursive. This prevents both statically visible and late
+alias-assembled recursive paths that have not yet published a Touchdown from
+bypassing SCP-0001's backpressure indefinitely.
 
 ## Motivation and reproduction
 
@@ -193,11 +195,12 @@ When a recursive branch is selected:
   back to the ancestor occurrence; and
 - later alias changes affect only still-undeduced recursive occurrences.
 
-The fresh recursive child is also a demand boundary. Publishing or exposing
-that symbolic child does not authorize Carousel to deduce it while replenishing
-the Touchdown window. The Scheduler MUST issue explicit demand for the child;
-one recursive step then commits normally and may expose the next symbolic child.
-Non-recursive selected branches remain eligible for ordinary prefetch.
+Every child selected through a conditional branch is a demand boundary.
+Publishing or exposing that symbolic child does not authorize Carousel to
+deduce it while replenishing the Touchdown window. The Scheduler MUST issue
+explicit demand for the child, whether or not local analysis classifies the edge
+as recursive. One recursive step then commits normally and may expose the next
+symbolic child.
 
 The realized occurrence graph therefore remains a DAG. Definition recursion is
 not represented as an occurrence back-edge.
@@ -210,16 +213,16 @@ occurrence order established by SCP-0004.
 
 Failure to reach an exit branch is not a validation error. It is observable
 non-termination or resource exhaustion of a voyage. Because speculative
-replenishment MUST stop at every recursive child, only an explicit sequence of
-Scheduler demands can continue an unbounded recursive path. Scheduler
-cancellation or an explicit Runtime deduction-work budget may stop that
-sequence. No layer may fabricate an exit, retarget a committed occurrence, or
-classify non-termination as `CycleDetected` after valid guarded recursion has
-begun.
+replenishment MUST stop at every selected conditional child, only an explicit
+sequence of Scheduler demands can continue an unbounded recursive path,
+including one assembled by late alias resolution. Scheduler cancellation or an
+explicit Runtime deduction-work budget may stop that sequence. No layer may
+fabricate an exit, retarget a committed occurrence, or classify non-termination
+as `CycleDetected` after valid guarded recursion has begun.
 
-The mandatory recursive demand boundary is the portable safety rule. Runtime
-budgets remain additional profile safeguards; this SCP defines no portable
-numeric default or new budget-exhaustion diagnostic.
+The mandatory conditional-branch demand boundary is the portable safety rule.
+Runtime budgets remain additional profile safeguards; this SCP defines no
+portable numeric default or new budget-exhaustion diagnostic.
 
 Tail-recursion optimization is permitted only if all logical occurrences,
 deduction records, lineages, and Cable provenance remain observable as though no
@@ -255,6 +258,7 @@ contribute no selector or branch-local value observations.
 |---|---|---|
 | Reject all definition cycles | Simple finite validation | Confuses shared definitions with occurrences and prevents conditional escape |
 | Permit every recursive definition | Minimal validation | Admits accidental unconditional structural cycles without an explicit branching boundary |
+| Apply the demand boundary only to locally classified recursive edges | Preserves prefetch through visibly non-recursive selections | Late alias resolution can turn such an edge into recursion after speculative occurrences have already committed |
 | Require static termination proof | Strong termination guarantee | Undecidable in general and unlike ordinary programming-language behavior |
 | Use a Scheduler `@loop` policy | Avoids syntax changes | Topology and routed arguments would be hidden in execution policy |
 | Use an Anchor for the loop | Easy to implement | Hides dependency structure and defeats Carousel deduction/provenance |
@@ -303,7 +307,7 @@ contribute no selector or branch-local value observations.
   effectful selectors, uppercase Goal names used as value selectors, and
   statically evident `KeyNotFound` without `_`.
 - Runtime cases: selected-branch-only occurrence creation, fresh recursive
-  occurrence identity, explicit demand at every recursive edge, dynamic
+  occurrence identity, explicit demand at every conditional branch edge, dynamic
   ancestor-chain cycle detection, unresolved-selector value barriers,
   selector-value reuse fingerprints, and immutable deduction records.
 
@@ -315,12 +319,12 @@ The first experiment should reproduce countdown, mutual guarded recursion, an
 unselected missing alias, and a deliberately non-terminating input under a
 deduction-work budget. Its current same-`GoalNodeId` ancestor check must be
 replaced by the intervening-conditional-selection rule, and replenishment must
-yield at every recursive child until explicit demand arrives.
+yield at every selected conditional child until explicit demand arrives.
 
 ## Unresolved questions
 
 - A portable default deduction-work budget and its diagnostic remain a
-  Runtime-profile question; the recursive demand boundary does not depend on
+  Runtime-profile question; the conditional demand boundary does not depend on
   either.
 - A future SCP may standardize compressed recursive lineage display; the full
   logical lineage remains normative meanwhile.
@@ -341,7 +345,8 @@ yield at every recursive child until explicit demand arrives.
   remains a DAG
 - Pending detailed confirmation: local SCC/exit analysis, the ancestor-chain
   late-cycle rule, selector purity and value barriers, explicit demand at each
-  recursive edge, selector trace/reuse fields, and concrete conformance cases
+  selected conditional branch edge, selector trace/reuse fields, and concrete
+  conformance cases
 
 ## Final rationale
 

@@ -5,7 +5,7 @@
 - Created: 2026-09-18
 - Updated: 2026-09-18
 - Requires owner decision: yes
-- External implementation ADRs: pending in the Vessel implementation repository
+- External implementation ADRs: [runtime ADR 0007 — Voyage results and incremental reuse boundary](https://github.com/on-the-ground/subsea_cable_runtime/blob/docs-vessel-frame/docs/decisions/0007-voyage-results-and-incremental-reuse.md) (proposed)
 - Evidence repositories/revisions: `on-the-ground/subsea_cable_runtime` POC and the owner-directed Vessel plan
 - Supersedes: the source-level equation “Program = Cable” and the `.subc` source extension
 - Superseded by: —

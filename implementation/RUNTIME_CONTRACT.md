@@ -464,8 +464,8 @@ lookup.
 
 An implementation that reuses a segment in a later voyage MUST:
 
-- verify the selected artifact, canonical arguments, applicable profiles,
-  ordered policies, stable-slot alias observations, and required value digests;
+- verify the selected policy-erased structural identity, canonical arguments,
+  applicable profiles, stable-slot alias observations, and required value digests;
 - commit new immutable deduction records for the new voyage;
 - preserve new occurrence IDs, lineages, and positions rather than copying
   them into content identity; and
@@ -473,9 +473,12 @@ An implementation that reuses a segment in a later voyage MUST:
 
 A `Name/Arity` map is not a sufficient alias fingerprint: separate stable
 reference slots may observe different hashes for the same name during one
-voyage. Structural reuse also MUST NOT imply Host evaluation, outcome, or effect
-reuse. Skipping Host work requires a separately authorized Outcome Journal or
-cache policy. The complete portable contract is
+voyage. The provenance MUST still record each exact selected `ArtifactHash` and
+ordered policy list. A policy-only artifact change MAY reuse policy-erased
+structure, but MUST commit the new artifact and policy metadata. Structural
+reuse also MUST NOT imply Host evaluation, outcome, or effect reuse. Skipping
+Host work requires a separately authorized Outcome Journal or cache policy. The
+complete portable contract is
 [SCP-0004](../proposals/0004-voyage-plans-and-touchdown-cable-artifacts.md).
 
 ## 13. Run and recovery boundary

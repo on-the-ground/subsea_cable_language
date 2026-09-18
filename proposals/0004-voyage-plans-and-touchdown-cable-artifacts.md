@@ -99,9 +99,10 @@ does not force every merely possible or undemanded future occurrence to deduce,
 and it does not change lazy alias observation or Scheduler demand semantics.
 
 The artifact records the voyage that actually occurred. Different demand,
-prefetch, policy, alias timing, or Host-produced routing values may legitimately
-produce different cables from the same authored plan. The provenance record
-makes those differences auditable.
+prefetch, policy effects, alias timing, or Host-produced routing values may
+legitimately cause a voyage to reach different leaves. Policy metadata itself
+does not change a leaf's structural content hash. The provenance record makes
+both the structural result and the active policies auditable.
 
 ## Source extension
 
@@ -150,15 +151,16 @@ Each `touchdownHash` identifies a canonical grounded leaf descriptor. The
 descriptor contains enough structural content to distinguish at least:
 
 - function-leaf versus Anchor-leaf kind;
-- the selected authored artifact and artifact-local leaf path;
+- the selected policy-erased `StructureHash` and artifact-local leaf path;
 - the concrete Anchor identifier where applicable;
 - canonical resolved arguments;
-- ordered occurrence policy metadata; and
 - the language/value-encoding profile needed to interpret those fields.
 
 `runId`, runtime occurrence ID, list position, lineage, timestamps, attempt IDs,
-Host outcomes, and mutable storage locations are excluded. They are provenance,
-not reusable content identity.
+Host outcomes, ordered policies, and mutable storage locations are excluded.
+They are occurrence, execution, or provenance data—not reusable structural
+content identity. The exact selected `ArtifactHash` remains in the deduction
+record even when policy erasure permits structural reuse.
 
 A Touchdown hash identifies grounded structural work. It does **not** prove that
 two Host invocations have the same effects or result. Host implementation or
@@ -202,11 +204,16 @@ An alias fingerprint is therefore an ordered collection of observations keyed
 by a stable reference slot within the reusable segment:
 
 ```text
-referenceSlot, requested Name/Arity, selected ArtifactHash, observed revision
+referenceSlot, requested Name/Arity, selected ArtifactHash,
+selected StructureHash, observed revision
 ```
 
 It is not a map from `Name/Arity` to one hash and must not use a run-local
-occurrence ID as its portable key.
+occurrence ID as its portable key. The full tuple is audit evidence. Structural
+compatibility compares stable slot, requested `Name/Arity`, and selected
+`StructureHash`; if the exact `ArtifactHash` differs while that structural
+projection remains equal, the new deduction still records the newly selected
+artifact and its policies.
 
 ### Value observations
 
@@ -227,11 +234,16 @@ It never edits or retargets a committed record from an earlier voyage.
 
 A cable segment is structurally reusable only when all identity inputs match:
 
-- selected artifact and canonical arguments;
+- selected policy-erased structural identity and canonical arguments;
 - relevant language, encoding, and primitive profiles;
-- ordered policy-bearing structural content;
 - every alias observation at its stable reference slot; and
 - every required value observation at its stable value slot.
+
+A change that affects only policy metadata may therefore reuse the prior
+policy-erased structural segment while committing the new `ArtifactHash`, new
+occurrence metadata, and new Scheduler policy inputs. The new voyage can still
+produce a different overall Cable if those policies cause it to reach a
+different set of leaves.
 
 On reuse, the Vessel/Carousel boundary commits a new record for the new
 occurrence and may point to the prior immutable segment through `reusedFrom`.
@@ -274,7 +286,7 @@ simple ordered hash list.
 - conformance runners read the paths in `conformance/cases.tsv` rather than
   assuming an extension;
 - voyage-result conformance must cover ordered parallel entries, duplicate
-  hashes, policy-bearing descriptors, provenance in both directions, distinct
+  hashes, policy-erased descriptors with policy-bearing provenance, distinct
   alias observations for the same `Name/Arity`, pure-segment reuse,
   value-dependent invalidation, and immutable `reusedFrom` records;
 - a Runtime that has not implemented voyage-result artifacts must report that

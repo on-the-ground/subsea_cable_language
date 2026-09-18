@@ -307,6 +307,17 @@
  *   A zero-parameter wrapper may deliberately ignore upstream output:
  *       [A, [] -> {x: B, y: C}]
  *
+ * CONDITIONAL STRUCTURAL PIPELINE:
+ *   `[selector, {key: GoalBranch, ...}]` evaluates one effect-free selector
+ *   Expression through Host primitive semantics and exposes exactly the branch
+ *   selected by normalized Map-key rules. Exact keys precede `_`; no match is
+ *   `KeyNotFound`. The branch Map is contextual structure, not an ordinary Map
+ *   value or ResolvingMap. The selector may contain parameters, immutable
+ *   values, literals, ordinary value lookups, and primitive operators, but no
+ *   Goal or Anchor occurrence/call. Every branch is validated, while only the
+ *   selected branch creates occurrences or performs demand-time observations.
+ *   The selected branch's output is the conditional Pipeline's output.
+ *
  * COMPOSITION OUTPUT:
  *   A SerialPipeline contains at least two elements and exports exactly the
  *   output state of its final element. Thus `[A, B]` exports B's value when B
@@ -377,10 +388,14 @@
  *   reassignment, same-name/same-arity Goal definitions, and
  *   last-declaration-wins behavior do not exist.
  *   Violations are semantic errors and are not enforced by the grammar.
- *   Recursion is not currently supported. Direct self-reference and every
- *   mutual cycle in the binding dependency graph are semantic errors. The
- *   issues that must be resolved before enabling recursion are recorded in
- *   Recursion.md.
+ *   A direct or mutual definition cycle is valid only as guarded recursion.
+ *   Every cycle in its local Goal-definition component MUST cross a recursive
+ *   reference inside a conditional branch Map, and that Map MUST have at least
+ *   one branch that exits the component. An unconditional cycle, or a
+ *   conditional component with no exit branch, is `CycleDetected`.
+ *   Selecting a recursive branch creates a fresh child occurrence rather than
+ *   a back-edge to an ancestor occurrence. Validation does not prove that a
+ *   particular input terminates.
  *
  * ONE PROGRAM, ONE ROOT:
  *   A program contains exactly one top-level Statement that is not a Binding.
@@ -402,8 +417,10 @@
  *   designate one structural Goal node and add incoming edges to it; they do not
  *   clone that node. Occurrences that select different hashes remain different
  *   nodes. Serial/parallel placement, argument routing, and resolving keys
- *   belong to edges and composite structure. Direct and mutual cycles remain
- *   invalid because recursion is unsupported.
+ *   belong to edges and composite structure. Guarded recursive definitions
+ *   unfold as fresh child occurrences, so the realized occurrence graph stays
+ *   acyclic even when multiple occurrences share a recursive GoalNodeId.
+ *   Unguarded definition cycles remain invalid.
  *   Node sharing alone does not combine incoming values or create an all-parent
  *   barrier. Each edge retains its own routing and may produce a separate
  *   evaluation instance. Multiple upstream results feed one instance only when
@@ -445,9 +462,10 @@
  *   multigraph. Each occurrence/edge has stable identity so lineage and policy
  *   attachment can distinguish duplicates. Whether identical evaluation work
  *   is physically coalesced remains Scheduler policy.
- *   Data-dependent expansion, where structure branches on a value, would break
- *   definition-based structural expansion. It is deferred with recursion; see
- *   Recursion.md.
+ *   A conditional structural Pipeline selects one Goal branch from a pure
+ *   value during deduction. Only that branch enters the occurrence graph. The
+ *   Host primitive profile, selector value, selected key, and occurrence
+ *   provenance make this data-dependent expansion auditable.
  *
  * LEAVES (exactly two kinds):
  *   Successive deductions bottom out in either an arrow-function leaf belonging
@@ -666,9 +684,18 @@ NonIdentifierPrimary = SerialPipeline
                      | Boolean
                      | StringLiteral ;
 
-SerialPipeline       = "[", PipelineStageList, "]" ;
+SerialPipeline       = "[", ( PipelineStageList | ConditionalStage ), "]" ;
 PipelineStageList    = GoalStage, ",", GoalStage,
                        { ",", GoalStage }, [ "," ] ;
+
+(* One effect-free selector Expression followed by a keyed structural branch
+ * Map. The selector is evaluated through Host primitive semantics; exactly one
+ * branch enters the realized structure. The Map is contextual structure, not
+ * an ordinary value Map or a ResolvingMap. *)
+ConditionalStage     = LogicalOr, ",", ConditionalBranchMap, [ "," ] ;
+ConditionalBranchMap = "{", ConditionalBranchEntry,
+                       { ",", ConditionalBranchEntry }, [ "," ], "}" ;
+ConditionalBranchEntry = MapKey, ":", GoalStage ;
 
 GoalStage            = { PolicyPrefix }, GoalStageCore ;
 GoalStageCore        = GoalName, [ BracketSuffix | CallSuffix ]

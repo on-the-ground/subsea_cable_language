@@ -122,13 +122,13 @@ build the site to understand Subsea Cable.
 | Semantics and usage | this `README.md` |
 | Executable/neutral grammar | [SubseaCable.g4](SubseaCable.g4), [SubseaCable.ebnf](SubseaCable.ebnf) |
 | Validity and diagnostics | [conformance](conformance/README.md) |
-| Unsupported recursion questions | [Recursion.md](Recursion.md) |
+| Guarded conditional recursion | [Recursion.md](Recursion.md), [SCP-0005](proposals/0005-guarded-conditional-recursion.md) |
 | Guidance for reasoning and contributing agents | [FOR_AGENTS.md](FOR_AGENTS.md) |
 | Building an external implementation | [implementation](implementation/README.md) |
 | Carousel deduction engine and Touchdown prefetch plan | [implementation/CAROUSEL_ENGINE_PLAN.md](implementation/CAROUSEL_ENGINE_PLAN.md) |
 | Runtime orchestration of Carousel, Host, and policy | [implementation/RUNTIME_ORCHESTRATION_PLAN.md](implementation/RUNTIME_ORCHESTRATION_PLAN.md) |
 | Findings from the external Carousel POC | [implementation/CAROUSEL_POC_FINDINGS.md](implementation/CAROUSEL_POC_FINDINGS.md) |
-| Accepted boundary and language decisions | [SCP-0002](proposals/0002-carousel-runtime-boundaries.md), [SCP-0003](proposals/0003-explicit-value-producing-call-staging.md), [SCP-0004](proposals/0004-voyage-plans-and-touchdown-cable-artifacts.md) |
+| Accepted boundary and language decisions | [SCP-0002](proposals/0002-carousel-runtime-boundaries.md), [SCP-0003](proposals/0003-explicit-value-producing-call-staging.md), [SCP-0004](proposals/0004-voyage-plans-and-touchdown-cable-artifacts.md), [SCP-0005](proposals/0005-guarded-conditional-recursion.md) |
 | Proposing a language change | [proposals](proposals/README.md) |
 | Governance and contribution scope | [GOVERNANCE.md](GOVERNANCE.md), [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Independent implementations | [ECOSYSTEM.md](ECOSYSTEM.md) |
@@ -409,6 +409,43 @@ to the Host, not structural validation. Serial and parallel elements follow the
 same structural restriction, so a value cannot stand beside Goals merely because
 it parses as an expression.
 
+### Conditional structural pipelines
+
+A pure selector expression may be followed by a keyed branch map as one
+structural pipeline:
+
+```subsea
+CountDown = [n] -> [
+    n == 0,
+    {
+        true: Done[],
+        false: CountDown[n - 1],
+    },
+]
+```
+
+Carousel evaluates `n == 0` through the active Host primitive-semantics profile
+and exposes exactly one Goal-structure branch. The selector creates no Goal
+occurrence, leaf, or Scheduler work. The branch map is contextual structure: it
+is neither an ordinary value map nor a resolving map. It uses the ordinary
+normalized-key rules, including exact-match precedence and optional `_`
+fallback. A missing match reports `KeyNotFound` in the existing phase.
+
+All branches undergo structural validation, but an unselected branch creates no
+occurrence, resolves no alias, observes no routed value, and contributes no
+Touchdown. The selected branch's output state is the conditional pipeline's
+output state.
+
+The selector may contain parameters, immutable values, ordinary value
+maps/lookups, literals, and primitive operators. It may not contain a Goal or
+Anchor occurrence or call. The conditional pipeline receives no implicit
+upstream value; bind an upstream value with an enclosing Goal arrow before
+using it in the selector or branch arguments.
+
+This contextual form is distinct from a reusable structure-valued ordinary map
+binding, whose general closure and routing rules remain a separate design
+question.
+
 Outside a function-arrow leaf, an eager Goal call or Anchor call must itself be
 the direct structural occurrence: the complete Goal-arrow body, a serial or
 parallel element, or a resolving-map branch.
@@ -484,9 +521,12 @@ node. They add incoming dependency edges; they do not clone the node. Occurrence
 that resolve at different times may select different hashes and therefore point
 to different nodes even when their human-readable names are equal.
 
-Serial and parallel placement, argument routing, and resolving keys belong to
-edges and composite structure. Because recursion is currently unsupported, no
-edge may introduce a direct or mutual cycle.
+Serial and parallel placement, argument routing, conditional selection, and
+resolving keys belong to edges and composite structure. A guarded recursive
+definition creates a fresh child occurrence each time its recursive branch is
+selected. The child may share a `GoalNodeId` with an ancestor, but the committed
+edge points to the new occurrence rather than back to the ancestor. The realized
+Cable therefore remains a DAG.
 
 Sharing a Goal node does not combine incoming values or create an implicit
 all-parent barrier. Each edge keeps its own routing and may create a separate
@@ -789,9 +829,18 @@ arities differ. A Goal and a non-Goal binding cannot share a base name. There is
 no reassignment, same-name/same-arity redefinition, or last-declaration-wins
 behavior.
 
-Recursion is not currently supported. Direct and mutual cycles in the binding
-dependency graph are semantic errors. The design issues that must be resolved
-before recursion is enabled are tracked in [Recursion.md](Recursion.md).
+Direct and mutual Goal recursion is valid when it is structurally guarded by a
+conditional branch map. Every definition-level cycle must cross a recursive
+reference beneath a conditional selection, and that guarding map must contain
+at least one branch that exits the recursive component. Unconditional cycles
+and conditional cycles with no exit remain `CycleDetected`.
+
+Validation establishes only that an exit is structurally possible. It does not
+prove that a particular input selects it. Each selected recursive step creates
+a fresh occurrence with its own arguments, lineage, policies, and deduction
+record. Non-termination is therefore a voyage execution/resource condition,
+not a validation-time cycle error. See [Recursion.md](Recursion.md) and
+[SCP-0005](proposals/0005-guarded-conditional-recursion.md).
 
 Names must be unique within one Goal parameter list or destructuring pattern.
 Each arrow creates a lexical scope. A nested structural arrow may shadow a
@@ -873,6 +922,10 @@ and deduction-time errors carry active lineage information.
 provable, but their phase is `validation`; otherwise they arise during
 `deduction`. Late alias resolution can likewise move `GoalNotFound`,
 `ArityMismatch`, and `CycleDetected` to deduction without changing their kinds.
+`CycleDetected` applies to an unguarded definition cycle or an invalid attempt
+to introduce an occurrence back-edge; it does not apply merely because a
+guarded recursive branch selects the same Goal definition for a fresh child
+occurrence.
 `NotCallable` applies to a parsed call-shaped expression whose
 syntactic category cannot be called, such as `value(...)`. A Goal found under
 the wrong arity reports `ArityMismatch`, not `NotCallable`.

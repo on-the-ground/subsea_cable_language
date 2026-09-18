@@ -88,7 +88,8 @@ before deduction begins. It MUST cover at least:
 - callability;
 - map-key identity and duplicates;
 - statically decidable lookup/destructuring failures;
-- unsupported recursion/cycles;
+- conditional selector purity and branch-map structure;
+- guarded-recursion analysis and unguarded cycles;
 - all cases in `conformance/cases.tsv`.
 
 Outside a function-arrow leaf, validation MUST reject a `Goal(...)` or
@@ -98,6 +99,14 @@ Goal-arrow bodies, composition elements, and resolving-map branches remain
 valid call occurrences. Primitive expressions create no occurrence and remain
 valid in arguments. Inside a function-arrow leaf, nested Anchors remain Host
 call sites while every Subsea Goal reference remains forbidden.
+
+A conditional structural selector MUST be an effect-free value expression. A
+Goal or Anchor occurrence/call anywhere in that selector is
+`InvalidStructuralContext`. Every conditional branch is validated, but a
+guarded recursive definition component is valid when every definition cycle
+crosses a recursive branch beneath a conditional map and that map has at least
+one branch that exits the component. Validation MUST NOT attempt to prove that a
+particular input terminates.
 
 Anchor and policy argument expressions undergo ordinary validation. The external
 Anchor identifier, signature, policy identifier, applicability, and behavior do
@@ -147,6 +156,8 @@ The error ownership table in `README.md` is normative. In particular:
   deduction errors of the same stable kinds;
 - dynamically discovered `KeyNotFound`, `DestructureMismatch`, and cycles are
   deduction errors;
+- `CycleDetected` MUST NOT be reported solely because a selected guarded branch
+  creates a fresh child occurrence resolving to an ancestor's `GoalNodeId`;
 - Host primitive failures while routing are reported in the deduction context;
 - arrow-function and Anchor lookup/signature/implementation failures are Host
   errors;
@@ -246,6 +257,10 @@ It MUST:
   to remain lazy;
 - reduce composite Goals without executing grounded Host leaves;
 - obtain primitive value semantics needed by reduction from the Host Port;
+- evaluate conditional selectors through Host primitive semantics and expose
+  exactly the selected structural branch;
+- create a fresh child occurrence for every selected recursive step rather than
+  committing a back-edge to an ancestor occurrence;
 - preserve serial dependencies and independent parallel structure;
 - route only explicitly provided values;
 - distinguish unkeyed parallel NoOutput from keyed resolving-map results;
@@ -258,6 +273,13 @@ It MUST:
   Touchdown;
 - report occurrence-scoped deduction failures without inventing a run-level
   failure policy.
+
+An unselected conditional branch MUST create no occurrence, resolve no alias,
+observe no routed value, and publish no structural or Touchdown event. A valid
+guarded recursion that continues indefinitely is non-termination or resource
+exhaustion, not `CycleDetected`. Deduction-work budgets may pause speculative
+unfolding, but every completed recursive deduction remains an immutable
+checkpoint.
 
 The Carousel produces occurrence/containment events for all deduced structural
 occurrences, plus grounded leaf occurrences and dependency/readiness facts for
@@ -424,6 +446,7 @@ SourceValidated
 ArtifactCommitted
 DeductionDemanded
 AliasResolved
+ConditionalBranchSelected
 DeductionCommitted
 OccurrenceExposed
 LeafGrounded

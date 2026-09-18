@@ -184,7 +184,7 @@ The Carousel realizes the Cable from the Voyage Plan on demand. It owns:
 - explicit dependency and value routing;
 - lineage propagation;
 - incremental expansion and Touchdown publication;
-- future recursion/TCO mechanics, if recursion is later admitted.
+- guarded recursive unfolding and optional semantics-preserving TCO.
 
 Carousel does not invent primitive meanings, resolve Anchor implementations,
 store evaluation outcomes, or decide scheduling policy. When reduction needs a

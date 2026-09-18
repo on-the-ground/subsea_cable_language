@@ -212,6 +212,9 @@ part of the provenance explaining why those deductions committed when they did.
 - resolving an unqualified alias only when its occurrence is selected;
 - applying one reduction atomically and committing its record;
 - requesting Host primitive semantics when reduction needs them;
+- selecting exactly one conditional structural branch from a pure Host-provided
+  selector value;
+- creating a fresh child occurrence for every selected guarded-recursive step;
 - tracking occurrences, dependencies, routing, lineages, and the frontier;
 - detecting newly grounded arrow-function and Anchor leaves;
 - maintaining and publishing the Touchdown window;
@@ -509,6 +512,20 @@ Scheduler test doubles and assume no concrete policy semantics.
 23. **Competing first dispatch:** when a different attempt already consumed the
     Touchdown, a consume acknowledgement returns `AlreadyConsumed` naming the
     first attempt, and the losing attempt never reaches the Host.
+
+SCP-0005 adds these mandatory structural scenarios:
+
+24. **Selected branch only:** a conditional selector exposes exactly one branch;
+    unselected branches create no occurrence, alias observation, or Touchdown.
+25. **Recursive occurrence DAG:** a guarded countdown creates one fresh
+    occurrence per step while all steps may share one recursive `GoalNodeId`.
+26. **Recursive alias timing:** an alias update between recursive demands affects
+    only the still-undeduced child occurrence.
+27. **Exit branch:** selecting the non-recursive branch stops structural
+    unfolding without fabricating or cancelling a recursive occurrence.
+28. **Non-termination budget:** an input that never selects its authored exit is
+    paused by an explicit deduction-work budget or cancelled by the Scheduler;
+    it is not reported as `CycleDetected` and all prior commits remain intact.
 
 ## Completion criteria
 

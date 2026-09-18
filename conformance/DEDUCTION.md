@@ -87,3 +87,53 @@ to the Host:
 - the Host resolves and invokes the Anchor identifier.
 
 The Anchor registry is only one Host capability; it is not the whole Host.
+
+## 9. Conditional deduction exposes only the selected branch
+
+Validate and store the following while both `A/0` and `B/0` aliases exist:
+
+```subsea
+Choose = [flag] -> [
+    flag,
+    {
+        true: A[],
+        false: B[],
+    },
+]
+```
+
+Remove the current `B/0` alias, then demand `Choose[true]`. Carousel MUST
+evaluate the selector through Host primitive semantics, commit the selected key,
+and expose one symbolic `A/0` child. It MUST NOT create a `B/0` occurrence,
+resolve that alias, or report `GoalNotFound` for the unselected branch.
+Structural validation still checks the authored branch form and statically
+available arity information.
+
+## 10. Guarded recursion creates fresh occurrences
+
+Demand `CountDown[2]` from `conformance/valid/conditional-recursion.vyg`.
+Successive selections MUST expose distinct occurrences for `CountDown[1]`,
+`CountDown[0]`, and `Done[]`. The three `CountDown/1` occurrences MAY share one
+`GoalNodeId`, but each MUST retain its own arguments, lineage, alias observation,
+and immutable deduction record. No edge points back to an ancestor occurrence.
+
+## 11. Recursive steps retain demand-time alias behavior
+
+1. Demand a guarded recursive occurrence far enough to expose, but not demand,
+   its next symbolic recursive child.
+2. Rebind the recursive Goal's `Name/Arity` alias to a new artifact that
+   preserves a compatible guarded form.
+3. Demand the child.
+
+The child MUST select the new hash. The parent and every earlier recursive step
+retain their committed hashes. Guarded recursion never pins all future steps at
+the first occurrence.
+
+## 12. A valid recursive voyage may not terminate
+
+Use a guarded recursive Goal whose selector never chooses its authored exit for
+the supplied input. Validation and deduction MUST NOT report `CycleDetected`
+merely because the same Goal definition is selected repeatedly. Each selected
+step commits normally until an explicit deduction-work budget pauses Carousel
+or Scheduler policy cancels the voyage. Every completed record remains
+immutable and no synthetic exit or partial deduction is permitted.

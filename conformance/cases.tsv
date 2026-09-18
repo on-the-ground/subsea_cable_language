@@ -2,6 +2,7 @@ phase	expected	file
 syntax	accept	valid/core.vyg
 syntax	accept	valid/continuations.vyg
 syntax	accept	valid/unicode-strings.vyg
+syntax	accept	valid/conditional-recursion.vyg
 syntax	SyntaxError	invalid-syntax/unicode-identifier.vyg
 syntax	SyntaxError	invalid-syntax/inline-function.vyg
 syntax	SyntaxError	invalid-syntax/empty-program.vyg
@@ -18,3 +19,5 @@ validation	DuplicateMapKey	invalid-semantic/DuplicateMapKey.vyg
 validation	DestructureMismatch	invalid-semantic/DestructureMismatch.vyg
 validation	DestructureMismatch	invalid-semantic/DestructureMismatchEagerCall.vyg
 validation	CycleDetected	invalid-semantic/CycleDetected.vyg
+validation	CycleDetected	invalid-semantic/ConditionalCycleWithoutExit.vyg
+validation	InvalidStructuralContext	invalid-semantic/EffectfulConditionalSelector.vyg

@@ -166,6 +166,19 @@ supplies the concrete computations reached at Touchdown. Nobody authors a
 Fully Touchdown Cable directly: it is the content-addressed structural record
 of the voyage that actually occurred.
 
+The Vessel therefore remains a logical participant while the voyage is under
+way. Carousel reaches Touchdown, Scheduler offers eligible work to the Host,
+the Host returns outcomes and values, and those values may let Carousel
+continue unfolding the route. A compiler that emits Host code and permanently
+leaves this loop is not the Vessel. Generated code may still be a Vessel
+deployment when it embeds, links, or communicates with the same live lifecycle.
+
+“Remains” does not mean “runs as a daemon.” Vessel and Host may be one process,
+two processes, a library and its caller, an embedded module, or a remote pair.
+The metaphor fixes who carries the unfinished voyage, not how components are
+packaged. See
+[SCP-0006](proposals/0006-live-vessel-host-cooperation.md).
+
 Because the Vessel is the whole that holds the route, the engine, the store,
 and the ports, it is also the thing an outside operator or agent addresses. An
 agent asks a Vessel to validate, store, or sail a route; it never operates

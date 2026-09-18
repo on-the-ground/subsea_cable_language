@@ -58,6 +58,35 @@ separable in interfaces and tests.
   deductions.
 - The Frontend and Codebase MUST NOT depend on one Scheduler or Host registry.
 
+### 1.1 Live Vessel–Host cooperation
+
+A general-purpose Vessel is not a compiler that emits Host code or a prospective
+Cable and then relinquishes the voyage. From initial Root demand until a
+terminal Root outcome, it MUST remain the logical owner of the voyage lifecycle:
+
+```text
+Carousel deduction -> Touchdown -> Scheduler eligibility -> Host evaluation
+                   -> outcome/value -> resumed deduction
+```
+
+The Host returns typed outcomes to the Runtime-owned Outcome & Value Store.
+Accepted outputs may resolve explicit routed values, and Carousel may read those
+values to unblock or select later deductions. This loop repeats without
+rewriting any committed deduction until the voyage terminates.
+
+This is a semantic boundary, not a process-topology requirement. Vessel and
+Host MAY run in one process, link statically or dynamically, communicate by
+callback or FFI, embed a module, or use local or remote messaging. A suspended
+Vessel remains logically live if its state can resume the same unfinished
+voyage.
+
+A compiler or partial evaluator MAY prepare statically known structure and MAY
+generate code linked with this Runtime loop. A producer that permanently hands
+all later control to a detached Host is not by itself a conforming
+general-purpose Vessel. It MUST NOT present prospective output as the terminated
+voyage's Fully Touchdown Cable or Root outcome. See
+[SCP-0006](../proposals/0006-live-vessel-host-cooperation.md).
+
 ## 2. Frontend contract
 
 ### 2.1 Source decoding and preprocessing

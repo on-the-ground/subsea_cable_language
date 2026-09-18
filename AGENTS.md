@@ -25,6 +25,8 @@ Before implementing a Subsea Cable consumer/runtime, read these files in order:
    reuse contract.
 10. `proposals/0005-guarded-conditional-recursion.md` — the accepted core and
     pending details for selective branching and guarded recursion.
+11. `proposals/0006-live-vessel-host-cooperation.md` — the live, bidirectional
+    Vessel–Host voyage lifecycle and deployment-neutral compiler boundary.
 
 Use **Subsea Cable** as the language name, **`__C`** only as its visual short
 mark, `.vyg` for source files, and `subsea-cable` for portable slugs/language
@@ -61,6 +63,14 @@ Keep these terms separate:
 - **Host**: primitive semantics, arrow-function leaf evaluation, and `$Anchor`
   resolution/invocation.
 - **Scheduler**: execution eligibility, outcomes, and `@policy` only.
+
+A general-purpose Vessel is not a compiler that emits Host code or a prospective
+Cable and then disappears. It remains the logical owner of the voyage while
+Carousel publishes Touchdowns, Scheduler dispatches eligible instances, Host
+returns outcomes, and routed values enable later deductions. This may all occur
+inside one process or library; the rule fixes lifecycle ownership, not process
+topology. Generated code is conforming only when it embeds, links, or
+communicates with the same live feedback loop.
 
 Never resolve an unqualified Goal reference to a hash merely because its parent
 was parsed, stored, or deduced. It remains a symbolic `Name/Arity` occurrence

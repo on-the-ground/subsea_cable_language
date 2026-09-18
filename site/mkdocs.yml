@@ -74,6 +74,7 @@ nav:
           - "SCP-0003: Explicit call staging": proposals/0003-explicit-value-producing-call-staging.md
           - "SCP-0004: Voyage and Cable artifacts": proposals/0004-voyage-plans-and-touchdown-cable-artifacts.md
           - "SCP-0005: Guarded conditional recursion": proposals/0005-guarded-conditional-recursion.md
+          - "SCP-0006: Live Vessel–Host cooperation": proposals/0006-live-vessel-host-cooperation.md
 
 plugins:
   - search

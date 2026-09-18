@@ -1,6 +1,10 @@
 # Runtime Orchestration — Coordinating Carousel, Host, and Policy
 
-> **Status:** proposed design. Not normative. It extends
+> **Status:** proposed operational design. The live Vessel–Host feedback-loop
+> boundary is accepted in
+> [SCP-0006](../proposals/0006-live-vessel-host-cooperation.md); concrete APIs,
+> baseline outcome rules, and policy mechanics in this document remain
+> non-normative. It extends
 > [CAROUSEL_ENGINE_PLAN.md](CAROUSEL_ENGINE_PLAN.md) and must not be implemented
 > on any path marked **Owner decision** until that decision is recorded.
 > Concrete policy semantics are still undiscovered; every policy name below is
@@ -23,6 +27,12 @@ Host       gives concrete meaning: primitives, function leaves, $Anchors
 
 The `?` is the **Subsea Cable Runtime**. This document designs how it
 orchestrates Carousel and Host from the run command to the final Root outcome.
+
+SCP-0006 fixes one architectural answer before the remaining details: the
+Runtime remains a logical participant across this loop. It does not produce a
+complete Cable or Host program, hand off all control, and disappear. This does
+not require a separate process; an in-process library, embedded module, linked
+generated program, or remote service can implement the same boundary.
 
 The Runtime does not own new language semantics. It owns:
 

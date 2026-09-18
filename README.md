@@ -128,7 +128,7 @@ build the site to understand Subsea Cable.
 | Carousel deduction engine and Touchdown prefetch plan | [implementation/CAROUSEL_ENGINE_PLAN.md](implementation/CAROUSEL_ENGINE_PLAN.md) |
 | Runtime orchestration of Carousel, Host, and policy | [implementation/RUNTIME_ORCHESTRATION_PLAN.md](implementation/RUNTIME_ORCHESTRATION_PLAN.md) |
 | Findings from the external Carousel POC | [implementation/CAROUSEL_POC_FINDINGS.md](implementation/CAROUSEL_POC_FINDINGS.md) |
-| Accepted boundary and language decisions | [SCP-0002](proposals/0002-carousel-runtime-boundaries.md), [SCP-0003](proposals/0003-explicit-value-producing-call-staging.md), [SCP-0004](proposals/0004-voyage-plans-and-touchdown-cable-artifacts.md), [SCP-0005](proposals/0005-guarded-conditional-recursion.md) |
+| Accepted boundary and language decisions | [SCP-0002](proposals/0002-carousel-runtime-boundaries.md), [SCP-0003](proposals/0003-explicit-value-producing-call-staging.md), [SCP-0004](proposals/0004-voyage-plans-and-touchdown-cable-artifacts.md), [SCP-0005](proposals/0005-guarded-conditional-recursion.md), [SCP-0006](proposals/0006-live-vessel-host-cooperation.md) |
 | Proposing a language change | [proposals](proposals/README.md) |
 | Governance and contribution scope | [GOVERNANCE.md](GOVERNANCE.md), [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Independent implementations | [ECOSYSTEM.md](ECOSYSTEM.md) |
@@ -174,6 +174,15 @@ returns the Root outcome and a Fully Touchdown Cable: a canonical ordered list
 of hashes for the grounded leaves that the voyage actually reached. Provenance
 keeps the reverse mapping to intermediate deductions so later voyages can reuse
 unchanged segments without mutating old records. See [SCP-0004](proposals/0004-voyage-plans-and-touchdown-cable-artifacts.md).
+
+The Vessel remains a logical participant until that voyage terminates. It
+coordinates Carousel deduction, Scheduler eligibility, Host evaluation, and
+the return of outcomes and routed values that may unlock later structure. It is
+not merely a compiler that hands a completed Cable or generated Host program to
+a detached executor. This requirement does not prescribe deployment: Vessel
+and Host may share one process, link as a library, embed generated code, or
+communicate remotely. See
+[SCP-0006](proposals/0006-live-vessel-host-cooperation.md).
 
 ---
 

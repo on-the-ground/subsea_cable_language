@@ -427,7 +427,7 @@
  *         PrepareOrder/2.ValidateOrder/1[{..}] }
  *   The dotted `Name/Arity` form is human-readable explanatory pretty-printing
  *   of one lineage,
- *   NOT `.subc` syntax, a reparsable deduction output, or a unique address.
+ *   NOT `.vyg` syntax, a reparsable deduction output, or a unique address.
  *   For example, `Root/0.B/1.D/1` and `Root/0.C/1.D/1` are two lineages of the
  *   same structural D/1 node when B and C both reduce to D. Values such as leaf
  *   parameters, map values, and literals remain lexically scoped and inherit

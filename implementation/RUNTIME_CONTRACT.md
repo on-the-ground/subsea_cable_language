@@ -36,9 +36,9 @@ Host Port
 ```
 
 The assembled whole is the **Vessel**, the complete Consumer Runtime. Vessel
-is a name for that whole and for the product an operator or agent addresses; no
-component, package, or interface inside it MUST be presented as the Vessel, and
-none other than Carousel MUST deduce.
+is a name for that whole and for the product an operator or agent addresses.
+No individual component, package, or interface inside it may claim to be the
+whole Vessel, and no component other than Carousel MUST deduce.
 
 The deployment MAY package these together. Their responsibilities MUST remain
 separable in interfaces and tests.
@@ -445,7 +445,38 @@ redaction without erasing structural identity.
 Trace event names are a Runtime-profile diagnostic contract, not Subsea source
 syntax. Changes must be versioned because migration comparisons depend on them.
 
-## 12. Run and recovery boundary
+## 12. Voyage result and incremental reuse
+
+The authored input to a Vessel is a `.vyg` **Voyage Plan**. A terminated voyage
+MUST expose both its Root outcome and a **Fully Touchdown Cable**. The Cable is
+a canonical ordered list of grounded Touchdown content hashes in committed
+structural occurrence order. Parallel branches retain authored branch order;
+duplicate hashes MUST remain duplicate list entries. Completion or dispatch
+timing MUST NOT reorder it.
+
+The Runtime MUST keep content identity separate from provenance. Run IDs,
+occurrence IDs, list positions, lineages, attempts, timestamps, and outcomes
+MUST NOT enter a Touchdown content hash. A provenance index MUST support both
+intermediate-deduction-to-cable-range and cable-position-to-deduction-ancestry
+lookup.
+
+An implementation that reuses a segment in a later voyage MUST:
+
+- verify the selected artifact, canonical arguments, applicable profiles,
+  ordered policies, stable-slot alias observations, and required value digests;
+- commit new immutable deduction records for the new voyage;
+- preserve new occurrence IDs, lineages, and positions rather than copying
+  them into content identity; and
+- record the prior segment through an auditable `reusedFrom` reference.
+
+A `Name/Arity` map is not a sufficient alias fingerprint: separate stable
+reference slots may observe different hashes for the same name during one
+voyage. Structural reuse also MUST NOT imply Host evaluation, outcome, or effect
+reuse. Skipping Host work requires a separately authorized Outcome Journal or
+cache policy. The complete portable contract is
+[SCP-0004](../proposals/0004-voyage-plans-and-touchdown-cable-artifacts.md).
+
+## 13. Run and recovery boundary
 
 For the first local runtime:
 
@@ -463,7 +494,7 @@ Durability, distributed leases, and exactly/at-least-once delivery are not
 implied by this contract. They may become concrete policies or runtime profiles
 only after evidence-driven design.
 
-## 13. Minimum test doubles
+## 14. Minimum test doubles
 
 A Runtime used for conformance and discovery MUST provide:
 
@@ -478,7 +509,7 @@ A Runtime used for conformance and discovery MUST provide:
 These doubles are mandatory because ordinary happy-path tests cannot discover
 policy requirements.
 
-## 14. Explicit non-conformance
+## 15. Explicit non-conformance
 
 An implementation is not suitable as conformance or proposal evidence if it:
 
@@ -494,7 +525,7 @@ An implementation is not suitable as conformance or proposal evidence if it:
 - reports original tests as evidence while weakening their assertions;
 - exposes implementation-language exceptions as the only diagnostic contract.
 
-## 15. Contract-change protocol
+## 16. Contract-change protocol
 
 An implementation experiment may reveal that this contract is incomplete or
 internally inconsistent. That finding is evidence, not permission to choose a

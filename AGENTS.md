@@ -20,9 +20,12 @@ Before implementing a Subsea Cable consumer/runtime, read these files in order:
    engine objective, Touchdown prefetch plan, and unresolved contract decisions.
 8. `implementation/MIGRATION_PLAYBOOK.md` — how to migrate a real project and
    discover policies from evidence.
+9. `proposals/0004-voyage-plans-and-touchdown-cable-artifacts.md` — the
+   Voyage Plan input, Fully Touchdown Cable output, provenance, and incremental
+   reuse contract.
 
 Use **Subsea Cable** as the language name, **`__C`** only as its visual short
-mark, `.subc` for source files, and `subsea-cable` for portable slugs/language
+mark, `.vyg` for source files, and `subsea-cable` for portable slugs/language
 IDs. Never call the language “SubC” or use `__C` as a code identifier.
 
 Build the Host/Runtime in a separate repository. This language repository does
@@ -37,6 +40,8 @@ playbook.
 
 Keep these terms separate:
 
+- **Voyage Plan**: the authored `.vyg` source input. It describes dependency
+  and routing precedence; it is not the realized Cable or an execution trace.
 - **Vessel / Consumer Runtime**: the whole runtime metaphor—frontend, validator,
   codebase, Carousel, Outcome & Value Store, Scheduler port, and Host port taken
   together. Vessel is not a second deduction component. It is the whole an
@@ -46,6 +51,9 @@ Keep these terms separate:
   occurrence's reduction rule.
 - **Carousel**: lazy deduction, structural reduction, occurrences, routing,
   lineages, the frontier, and Touchdown publication.
+- **Fully Touchdown Cable**: the canonical ordered list of grounded leaf
+  content hashes produced by a terminated voyage. Occurrence identity,
+  lineages, positions, and reverse lookup live in provenance, not item hashes.
 - **Outcome & Value Store**: Runtime-owned attempt outcomes, scope outputs, and
   routed values; Carousel may only read resolved values through a narrow port.
 - **Host**: primitive semantics, arrow-function leaf evaluation, and `$Anchor`
@@ -57,6 +65,10 @@ was parsed, stored, or deduced. It remains a symbolic `Name/Arity` occurrence
 until that occurrence is demanded. Deduction atomically records the selected
 full hash and resulting structure; later alias changes affect only undeduced
 occurrences.
+
+Never edit an earlier deduction ledger to represent reuse. An incremental
+voyage commits new occurrence records and may refer to prior immutable segments
+with `reusedFrom`. Structural reuse never implies Host outcome or effect reuse.
 
 Never hide an evaluation dependency inside an argument or other value
 expression. Outside a function-arrow leaf, `Goal(...)` and `$anchor(...)` must

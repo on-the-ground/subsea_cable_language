@@ -36,13 +36,13 @@ The Runtime does not own new language semantics. It owns:
 
 ## 2. The run command is not source syntax
 
-A `.subc` Root must be a deferred reduction: `RootGoal[args]`. `RootGoal(args)`
+A `.vyg` Root must be a deferred reduction: `RootGoal[args]`. `RootGoal(args)`
 is not a valid Root. Preparing a valid Program creates that Root occurrence;
 starting a run makes the prepared occurrence the run's first deduction demand,
 as required by the language specification.
 
 The run command is therefore a **Runtime API act**, not an alternative spelling
-inside `.subc` source:
+inside `.vyg` source:
 
 ```text
 source Root:     RootGoal[args]      the Program's sole prepared Root occurrence

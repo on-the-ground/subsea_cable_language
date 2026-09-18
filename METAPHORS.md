@@ -1,7 +1,7 @@
 # The Subsea Cable World
 
-> **A program is not a sequence of function calls. A program is a Subsea
-> Cable.**
+> **A program is not a sequence of function calls. A Subsea source file is a
+> Voyage Plan for a Cable.**
 
 ![The original Subsea Cable concept sketch](assets/subsea-cable-concept.jpg)
 
@@ -14,9 +14,11 @@ Every metaphor corresponds to an actual responsibility or state transition.
 ## The complete picture
 
 ```text
-Surface: intent and the one Root
+Surface: authored intent and the one Root
+                     Voyage Plan (.vyg)
+                          |
                     Vessel / Consumer Runtime
-               [ Carousel + Store + Scheduler ]
+       [ Frontend + Codebase + Carousel + Store + Scheduler + Host ports ]
                           |
                       Folded Cable
 ~~~~~~~~~~~~~~~~~~~~~~~~~~|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -26,7 +28,9 @@ Surface: intent and the one Root
  committed deductions ────●──── deduction frontier
  =========================|====================================
  Seafloor: Host-provided concrete computation
-        Touchdown Cable = paths deduced all the way to leaves
+        Touchdown Cable = grounded leaves of the realized voyage
+
+Voyage result = Fully Touchdown Cable (ordered hash list) + Root outcome
 ```
 
 The real frontier is not one global point. A Goal DAG can have many branches,
@@ -48,28 +52,32 @@ to execute the entire Program eagerly.
 
 ## The Sea: Goal Space
 
-The Sea is the entire Goal Space occupied by the Program. At any moment it
+The Sea is the entire Goal Space addressed by the Voyage Plan. At any moment it
 contains both:
 
 ```text
 Goal Space = committed deductions + still-mutable Goal occurrences
 ```
 
-The Program exists from the start as a deferred Cable. Its eventual concrete
+The Voyage Plan exists from the start; the concrete Cable does not. Its eventual
 Goal DAG is not required to be fully materialized or permanently fixed from the
-start. It is disclosed incrementally by deduction.
+start. Carousel realizes it incrementally by deduction.
 
-## The Cable: the Program
+## Voyage Plan and Cable
 
-The Cable is the Program representation itself. It contains Goals,
-dependencies, routing, Anchors, and policies. It is not an instruction stream,
-bytecode, a virtual machine, or a Scheduler.
+The **Voyage Plan** is the authored source unit. It contains Goals,
+dependencies, routing, Anchors, and policy metadata. It selects a route through
+Goal Space, but it is not itself the Cable.
+
+The **Cable** is the structural result progressively realized from that plan by
+deduction. It is not an instruction stream, bytecode, a virtual machine, or a
+Scheduler.
 
 The Cable can exist in three related states:
 
 | State | Precise meaning |
 |---|---|
-| Folded | The Goal occurrence has not been demanded for deduction. |
+| Folded | The planned structure beyond an undeduced occurrence has not yet been exposed. |
 | Partially unfolded | Some deduction results are committed, while newly exposed descendant occurrences remain undeduced and mutable. |
 | Touchdown | Successive deductions have reached a concrete leaf. |
 
@@ -152,13 +160,11 @@ Frontend, Codebase and Deduction Ledger, Carousel, Outcome & Value Store,
 Scheduler, and Host connection. It is not a separately implementable deduction
 component and never competes with Carousel for ownership of a transition.
 
-The Vessel is also what steers. The Seafloor is a given three-dimensional
-terrain, and the Program is the route across it: writing the Root and the Goals
-beneath it says where this Vessel sails. Carousel then pays out Cable along
-that route, and the two-dimensional Touchdown Cable that results is the section
-of the Seafloor the chosen route reaches. Nobody authors the Touchdown shape:
-the route selects where the Cable lands, the Seafloor decides what is there,
-and Carousel records what actually happened.
+The Vessel is also what sails. The Voyage Plan supplies the route through Goal
+Space. Carousel pays out Cable along the demanded route, while the Seafloor
+supplies the concrete computations reached at Touchdown. Nobody authors a
+Fully Touchdown Cable directly: it is the content-addressed structural record
+of the voyage that actually occurred.
 
 Because the Vessel is the whole that holds the route, the engine, the store,
 and the ports, it is also the thing an outside operator or agent addresses. An
@@ -170,7 +176,7 @@ any component or interface Vessel.
 
 ## Carousel
 
-The Carousel unfolds the Program on demand. It owns:
+The Carousel realizes the Cable from the Voyage Plan on demand. It owns:
 
 - demand-driven deduction;
 - structural reduction;
@@ -189,7 +195,7 @@ resolved value through the Runtime-owned Outcome & Value Store port.
 
 ## Folded Cable and the undeduced frontier
 
-The **Folded Cable** is the part of the Program not yet exposed as occurrences.
+The **Folded Cable** is planned structure not yet exposed as occurrences.
 The **undeduced frontier** is different: those occurrences already exist in
 committed structure, but their own reductions have not committed.
 
@@ -217,6 +223,15 @@ available to the Scheduler.
 The Touchdown Cable is the collection of paths currently deduced all the way to
 leaves. Committed intermediate deductions outside those completed paths are
 still committed even though their descendants have not yet reached Touchdown.
+
+A terminated voyage publishes a **Fully Touchdown Cable** as a canonical
+ordered list of Touchdown content hashes. “Fully” describes every item in that
+list: each is a grounded leaf, not an intermediate Goal. It does not force
+deduction of merely possible or undemanded future occurrences. Occurrence IDs,
+lineages, cable positions, and reverse mappings from intermediate deductions
+belong to a provenance sidecar, not to Touchdown content identity. This lets a
+later voyage reuse unchanged segments while recording new immutable deductions
+for its new occurrences. See [SCP-0004](proposals/0004-voyage-plans-and-touchdown-cable-artifacts.md).
 
 ## Seafloor: Host Language
 
@@ -290,10 +305,10 @@ discarding structural identity and provenance.
 
 ## Source representation
 
-Subsea Cable source uses the `.subc` extension:
+Subsea Cable Voyage Plans use the `.vyg` extension:
 
 ```text
-deploy.subc
+deploy.vyg
 ```
 
 The official language name is **Subsea Cable**. Its visual short mark is
@@ -302,8 +317,8 @@ or generated symbol.
 
 ## The three sentences
 
-> **A program is not a sequence of function calls. A program is a Subsea
-> Cable.**
+> **A program is not a sequence of function calls. A Subsea source file is a
+> Voyage Plan for a Cable.**
 
 > **Functions implement Goals. Schedulers execute Goals. Subsea Cable
 > represents Goals.**

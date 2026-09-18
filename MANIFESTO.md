@@ -114,5 +114,5 @@ Programs should outlive languages.
 
 Subsea Cable is an attempt to make that possible.
 
-Its visual short mark is `__C`; its source files use `.subc`. The name remains
+Its visual short mark is `__C`; its source files use `.vyg`. The name remains
 Subsea Cable.

@@ -46,7 +46,7 @@ component ownership, and value-store questions.
 
 ## Classification
 
-This is a portable component-boundary decision. It changes no `.subc` syntax or
+This is a portable component-boundary decision. It changes no `.vyg` syntax or
 Goal topology, but every conforming consumer must expose the same ownership
 seams so implementations do not build competing Vessel and Carousel engines or
 store live outcomes in incompatible layers.

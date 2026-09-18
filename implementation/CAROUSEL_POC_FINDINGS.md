@@ -27,15 +27,15 @@ ADR paths are relative to the runtime repository.
 
 | ID | Finding | Resolution |
 |---|---|---|
-| F1 | `conformance/DEDUCTION.md` scenario 1 used `Upper/0 = [] -> B`, which the grammar rejects | Scenario corrected to `Upper = [] -> B[]`; invalid-syntax case `bare-goal-body.subc` added |
-| F2 | Empty source unit | The grammar requires at least one statement (confirmed with ANTLR). Invalid-syntax case `empty-program.subc` added |
+| F1 | `conformance/DEDUCTION.md` scenario 1 used `Upper/0 = [] -> B`, which the grammar rejects | Scenario corrected to `Upper = [] -> B[]`; invalid-syntax case `bare-goal-body.vyg` added |
+| F2 | Empty source unit | The grammar requires at least one statement (confirmed with ANTLR). Invalid-syntax case `empty-program.vyg` added |
 | F4 | Policy-erasure invariant lacked a condition | Orchestration plan §8.5 and §16 scenario 11 now condition it on the same selected artifact and arguments |
 | F5 | `Hold` on a composite target | Orchestration plan §8.4 leaves it undefined as part of R9 |
 | F6 | Timing of failures found by speculative prefetch | A Scheduler decision tied to explicit demand; the POC surfaces them only on demand |
 | F6a | Consumption point and window counting | [SCP-0001](../proposals/0001-touchdown-consumption-and-window-counting.md) (Accepted) |
 | F7 | Routing into a nested serial stage | Already specified: explicit brackets never receive an implicit argument, so in `[A, [B, C]]` the inner `B` is `/0`. The POC tests this |
 | F11 | Bare uppercase names outside compositions | Already specified: a bare uppercase identifier is a Goal stage only inside serial or parallel composition. The POC's fallback was a defect and was removed |
-| F12 | Staging of value-producing calls in argument positions | [SCP-0003](../proposals/0003-explicit-value-producing-call-staging.md) (Accepted): nested Goal/Anchor calls outside function leaves are `InvalidStructuralContext`; use an explicit direct structural stage. The external POC implements this in [subsea_cable_runtime#2](https://github.com/on-the-ground/subsea_cable_runtime/pull/2) (runtime ADR 0006); its published `main` still reports `UnsupportedByProfile` until that pull request merges. Applying the rule exposed that the `DestructureMismatch` fixture used a nested call; the fixture now uses the deferred form and an eager variant is a separate case |
+| F12 | Staging of value-producing calls in argument positions | [SCP-0003](../proposals/0003-explicit-value-producing-call-staging.md) (Accepted): nested Goal/Anchor calls outside function leaves are `InvalidStructuralContext`; use an explicit direct structural stage. The external POC implements this on its published `main` (runtime ADR 0006). Applying the rule exposed that the `DestructureMismatch` fixture used a nested call; the fixture now uses the deferred form and an eager variant is a separate case |
 | F13 | Deduction-engine and live-value ownership | [SCP-0002](../proposals/0002-carousel-runtime-boundaries.md) (Accepted): Carousel alone owns deduction; the Runtime owns the Outcome & Value Store; Vessel names the whole Runtime metaphor |
 
 The orchestration plan's internal inconsistencies noted in earlier revisions of

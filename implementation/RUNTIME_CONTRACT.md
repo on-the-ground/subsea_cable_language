@@ -35,6 +35,11 @@ Host Port
   primitive semantics + arrow-function evaluation + $Anchor resolution/invocation
 ```
 
+The assembled whole is the **Vessel**, the complete Consumer Runtime. Vessel
+is a name for that whole and for the product an operator or agent addresses.
+No individual component, package, or interface inside it may claim to be the
+whole Vessel, and every component other than Carousel MUST NOT deduce.
+
 The deployment MAY package these together. Their responsibilities MUST remain
 separable in interfaces and tests.
 
@@ -440,7 +445,70 @@ redaction without erasing structural identity.
 Trace event names are a Runtime-profile diagnostic contract, not Subsea source
 syntax. Changes must be versioned because migration comparisons depend on them.
 
-## 12. Run and recovery boundary
+## 12. Voyage result and incremental reuse
+
+The authored input to a Vessel is a `.vyg` **Voyage Plan**. A Runtime claiming
+the `voyage-result` capability MUST expose both the Root outcome and a **Fully
+Touchdown Cable** when a voyage terminates. A Runtime that does not implement
+the complete contract MUST report the capability as unsupported and MUST NOT
+return a partial object under that name.
+
+The Cable is a canonical ordered list of grounded evaluation-instance content
+hashes. Order compares each leaf's root-to-leaf vector of non-negative child
+ordinals lexicographically, with each ordinal compared numerically rather than
+as a decimal string. Child ordinals come from authored reduction-result order,
+so parallel branches retain authored branch order. An implementation MUST NOT
+sort serialized dotted occurrence paths. Structural sharing MUST NOT collapse
+distinct evaluation instances, and duplicate hashes MUST remain duplicate list
+entries. Deduction, completion, and dispatch timing MUST NOT reorder the list.
+
+Cable membership begins exactly when Carousel publishes
+`TouchdownPublished` for the grounded evaluation instance. Once published, the
+member MUST remain in that voyage's Cable whether it is speculative, withheld,
+consumed, discarded, never dispatched, failed, or cancelled. Attempt and Root
+success MUST NOT determine structural membership. `DiscardTouchdown` changes
+window accounting only and MUST NOT undo a deduction or remove a Cable member.
+
+A failed or cancelled voyage MUST expose the Cable accumulated through its
+terminal boundary together with its separate Root outcome. A voyage with no
+published Touchdown MUST expose a valid empty ordered list. Its Cable hash MUST
+use the ordinary profile-tagged, length-framed list encoding with an item count
+of zero; it MUST NOT use absence, `null`, or an unframed empty-byte hash.
+
+The voyage-result envelope MUST identify the Scheduler profile and MUST carry a
+reference to canonical deduction-control provenance containing the demand mode,
+explicit demand sequence, initial prefetch target, and every later prefetch
+reconfiguration. These fields MUST NOT enter an individual Touchdown content
+hash. Equal-Cable conformance comparisons are meaningful only when that control
+context and the other structure-affecting profiles, alias observations, and
+routed input evidence are fixed.
+
+The Runtime MUST keep content identity separate from provenance. Run IDs,
+occurrence IDs, list positions, lineages, attempts, timestamps, and outcomes
+MUST NOT enter a Touchdown content hash. A provenance index MUST support both
+intermediate-deduction-to-cable-range and cable-position-to-deduction-ancestry
+lookup.
+
+An implementation that reuses a segment in a later voyage MUST:
+
+- verify the selected policy-erased structural identity, canonical arguments,
+  applicable profiles, stable-slot alias observations, and required value digests;
+- commit new immutable deduction records for the new voyage;
+- preserve new occurrence IDs, lineages, and positions rather than copying
+  them into content identity; and
+- record the prior segment through an auditable `reusedFrom` reference.
+
+A `Name/Arity` map is not a sufficient alias fingerprint: separate stable
+reference slots may observe different hashes for the same name during one
+voyage. The provenance MUST still record each exact selected `ArtifactHash` and
+ordered policy list. A policy-only artifact change MAY reuse policy-erased
+structure, but MUST commit the new artifact and policy metadata. Structural
+reuse also MUST NOT imply Host evaluation, outcome, or effect reuse. Skipping
+Host work requires a separately authorized Outcome Journal or cache policy. The
+complete portable contract is
+[SCP-0004](../proposals/0004-voyage-plans-and-touchdown-cable-artifacts.md).
+
+## 13. Run and recovery boundary
 
 For the first local runtime:
 
@@ -458,7 +526,7 @@ Durability, distributed leases, and exactly/at-least-once delivery are not
 implied by this contract. They may become concrete policies or runtime profiles
 only after evidence-driven design.
 
-## 13. Minimum test doubles
+## 14. Minimum test doubles
 
 A Runtime used for conformance and discovery MUST provide:
 
@@ -473,7 +541,7 @@ A Runtime used for conformance and discovery MUST provide:
 These doubles are mandatory because ordinary happy-path tests cannot discover
 policy requirements.
 
-## 14. Explicit non-conformance
+## 15. Explicit non-conformance
 
 An implementation is not suitable as conformance or proposal evidence if it:
 
@@ -489,7 +557,7 @@ An implementation is not suitable as conformance or proposal evidence if it:
 - reports original tests as evidence while weakening their assertions;
 - exposes implementation-language exceptions as the only diagnostic contract.
 
-## 15. Contract-change protocol
+## 16. Contract-change protocol
 
 An implementation experiment may reveal that this contract is incomplete or
 internally inconsistent. That finding is evidence, not permission to choose a

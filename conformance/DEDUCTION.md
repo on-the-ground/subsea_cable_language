@@ -1,6 +1,6 @@
 # Deduction Conformance Scenarios
 
-These scenarios specify observable Runtime behavior that syntax-only `.subc`
+These scenarios specify observable Runtime behavior that syntax-only `.vyg`
 fixtures cannot express. They are normative for implementations claiming the
 demand-time alias and deduction profile.
 

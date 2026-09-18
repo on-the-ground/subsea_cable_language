@@ -13,10 +13,11 @@
 ![The original Subsea Cable concept sketch](assets/subsea-cable-concept.jpg)
 
 The sketch above is the conceptual anchor for the language. The Sea is Goal
-Space; the Cable is the Program; the Vessel is the complete Consumer Runtime;
-its Carousel unfolds the Cable; each demand-driven deduction commits one
-occurrence; and Touchdown is reached when successive deductions arrive at a
-Host-provided concrete leaf. See
+Space; a `.vyg` source file is a Voyage Plan; the Vessel is the complete
+Consumer Runtime; its Carousel realizes the Cable by demand-driven deductions;
+and Touchdown is reached when successive deductions arrive at a Host-provided
+concrete leaf. A terminated voyage returns a Fully Touchdown Cable and its Root
+outcome. See
 [METAPHORS.md](METAPHORS.md) for the precise textual model.
 
 Subsea Cable is not another programming language.
@@ -25,12 +26,15 @@ It is a language-agnostic, infrastructure-agnostic representation of programs.
 
 Instead of describing *how* computations should execute, Subsea Cable describes *what* a program is.
 
-A Subsea program is a dependency structure.
+A Subsea program is a dependency structure. In this specification,
+**Program** names that semantic Goal/dependency program, while **Voyage Plan**
+names the authored `.vyg` unit that describes it. Neither term is a synonym for
+the realized Cable.
 
 Everything else is an implementation strategy.
 
 The official language name is **Subsea Cable**. **`__C`** is its visual short
-mark, `.subc` is its source-file extension, and `subsea-cable` is the portable
+mark, `.vyg` is its source-file extension, and `subsea-cable` is the portable
 slug and language identifier. `__C` is branding, not a source identifier,
 namespace, package, CLI name, or generated symbol. The language is not called
 “SubC.”
@@ -124,7 +128,7 @@ build the site to understand Subsea Cable.
 | Carousel deduction engine and Touchdown prefetch plan | [implementation/CAROUSEL_ENGINE_PLAN.md](implementation/CAROUSEL_ENGINE_PLAN.md) |
 | Runtime orchestration of Carousel, Host, and policy | [implementation/RUNTIME_ORCHESTRATION_PLAN.md](implementation/RUNTIME_ORCHESTRATION_PLAN.md) |
 | Findings from the external Carousel POC | [implementation/CAROUSEL_POC_FINDINGS.md](implementation/CAROUSEL_POC_FINDINGS.md) |
-| Accepted boundary and language decisions | [SCP-0002](proposals/0002-carousel-runtime-boundaries.md), [SCP-0003](proposals/0003-explicit-value-producing-call-staging.md) |
+| Accepted boundary and language decisions | [SCP-0002](proposals/0002-carousel-runtime-boundaries.md), [SCP-0003](proposals/0003-explicit-value-producing-call-staging.md), [SCP-0004](proposals/0004-voyage-plans-and-touchdown-cable-artifacts.md) |
 | Proposing a language change | [proposals](proposals/README.md) |
 | Governance and contribution scope | [GOVERNANCE.md](GOVERNANCE.md), [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Independent implementations | [ECOSYSTEM.md](ECOSYSTEM.md) |
@@ -133,9 +137,9 @@ Subsea Cable is licensed under the [Apache License 2.0](LICENSE).
 
 ---
 
-## Programs are Blueprints
+## Voyage Plans are Blueprints
 
-A `.subc` file is not executable code.
+A `.vyg` file is not executable code.
 
 It is not bytecode.
 
@@ -143,7 +147,7 @@ It is not a virtual machine instruction set.
 
 It is not another runtime.
 
-A `.subc` file is a blueprint.
+A `.vyg` file is a Voyage Plan: an authored blueprint for a Cable.
 
 It describes
 
@@ -154,15 +158,22 @@ It describes
 
 Nothing more.
 
-Each `.subc` Program has exactly one Root: its sole top-level expression that
+Each `.vyg` Voyage Plan has exactly one Root: its sole top-level expression that
 is not a binding. The Root must be a deferred Goal reduction such as
 `BuildProduct[input]` or `BuildProduct#7fa31c[input]`: its base identifier's first
 ASCII letter is uppercase, it has one `[...]` suffix, and it has no following
 call suffix. A bare name, map access, literal, map, Anchor, arrow, or eager
-`Goal(...)` call cannot be a Root. A Program may contain any number of bindings,
+`Goal(...)` call cannot be a Root. A Voyage Plan may contain any number of bindings,
 but a binding-only file or a file with multiple Root expressions is invalid.
-Root creates the program's first demand for deduction; it does not control codebase
+Root creates the voyage's first demand for deduction; it does not control codebase
 storage or visibility.
+
+The plan is input, not the realized Cable. The Vessel validates and stores it,
+then Carousel progressively commits the demanded structure. A terminated voyage
+returns the Root outcome and a Fully Touchdown Cable: a canonical ordered list
+of hashes for the grounded leaves that the voyage actually reached. Provenance
+keeps the reverse mapping to intermediate deductions so later voyages can reuse
+unchanged segments without mutating old records. See [SCP-0004](proposals/0004-voyage-plans-and-touchdown-cable-artifacts.md).
 
 ---
 
@@ -179,7 +190,7 @@ It complements them.
 Every language can become a Subsea consumer simply by implementing the specification.
 
 ```
-.subc
+.vyg
 
         ↓
 
@@ -459,10 +470,10 @@ satisfied and supplies every value that the instance structurally requires.
 
 ---
 
-## The Program Materializes as a Goal DAG
+## A Voyage Plan Materializes as a Goal DAG
 
-The Program exists from the start as a deferred Cable. Demand-driven deductions
-materialize its reachable structure as a directed acyclic graph (DAG), not
+The Voyage Plan exists from the start; its realized Cable does not.
+Demand-driven deductions materialize reachable structure as a directed acyclic graph (DAG), not
 necessarily a tree. The complete future graph need not exist or remain fixed in
 advance because every undeduced unqualified occurrence still observes a mutable
 `Name/Arity` alias when it is demanded.
@@ -507,7 +518,7 @@ not to bare `GetUserInfo` / `ValidateOrder` Goals.
 
 Each path segment contains the Goal's name and arity. The dotted `Name/Arity`
 form is explanatory pretty-printing of one Root-to-occurrence lineage held by the
-Carousel. It is not `.subc` source syntax, a unique node address, or reparsable
+Carousel. It is not `.vyg` source syntax, a unique node address, or reparsable
 deduction output. Path `.` and `/arity` are not source-language syntax.
 
 Each incoming lineage is extended across the outgoing edges committed by a
@@ -909,7 +920,7 @@ implementation.
 Subsea has no import, export, package, module, or public/private construct. Every
 named Goal definition in a valid source unit is stored in an abstract
 content-addressed codebase, including Goals not reachable from Root. Root is only
-the entrypoint selected for this Program.
+the entrypoint selected for this Voyage Plan.
 
 ```text
 Content store:       full ArtifactHash → authored Goal term
@@ -955,8 +966,8 @@ policy discovery is maintained in [implementation](implementation/README.md).
 
 Subsea Cable intentionally ships without an official scheduler.
 
-Host, Carousel, Scheduler, and Runtime implementations are independent external
-projects. This repository neither vendors nor designates an official one.
+Host, Carousel, Scheduler, and complete Vessel (Consumer Runtime)
+implementations are independent external projects. This repository neither vendors nor designates an official one.
 
 Every project is free to provide execution strategies that fit its own runtime.
 

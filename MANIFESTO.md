@@ -52,8 +52,8 @@ Schedulers decide execution.
 
 No single layer should own all three.
 
-The Program exists as a deferred Cable. Inside the Vessel—the complete Consumer
-Runtime—the Carousel discloses its Goal DAG lazily: each demanded deduction
+The authored Program is a Voyage Plan. Inside the Vessel—the complete Consumer
+Runtime—the Carousel realizes its Cable lazily: each demanded deduction
 commits the artifact chosen for one occurrence and the structure produced by
 its reduction rule. Human-readable aliases remain mutable for occurrences that
 have not yet been deduced, while committed history stays fixed.
@@ -114,5 +114,5 @@ Programs should outlive languages.
 
 Subsea Cable is an attempt to make that possible.
 
-Its visual short mark is `__C`; its source files use `.subc`. The name remains
+Its visual short mark is `__C`; its source files use `.vyg`. The name remains
 Subsea Cable.

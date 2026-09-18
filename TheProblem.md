@@ -30,8 +30,8 @@ A program first describes **what goals exist** and **how those goals depend on o
 
 Only afterwards should a scheduler decide **how** those goals are executed.
 
-When separated, the program itself becomes a deferred structural Cable whose
-dependency graph is disclosed through demand-driven deduction.
+When separated, the authored program becomes a Voyage Plan whose structural
+Cable is realized through demand-driven deduction.
 
 Execution order, evaluation strategy, parallelism, batching, cancellation, locality, and resource allocation become responsibilities of the scheduler—not of the program.
 

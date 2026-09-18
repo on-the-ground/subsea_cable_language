@@ -52,8 +52,10 @@ configuration, a reversible Runtime profile, or a deferred feature?
 - [ ] Goal composition remains separate from function implementation.
 - [ ] Value routing stays explicit.
 - [ ] Host, deduction engine, and Scheduler ownership remains distinct.
-- [ ] The Vessel-to-Carousel terminology migration is not treated as complete
-      before its boundary SCP and synchronized normative update.
+- [ ] Terminology follows the accepted SCP-0002 boundary: Carousel is the only
+      deduction engine, the Runtime owns the Outcome & Value Store, and Vessel
+      names the complete Consumer Runtime rather than any component or
+      interface.
 - [ ] Unqualified Goal aliases remain lazy until occurrence demand, and no
       committed deduction can be retargeted.
 - [ ] Policy erasure preserves topology, or the SCP explicitly changes and

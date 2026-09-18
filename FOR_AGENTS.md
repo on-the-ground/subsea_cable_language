@@ -178,8 +178,8 @@ What this does for you:
 
 This is the part that matters most for agents.
 
-A Subsea program is not expanded all at once. The **Carousel** unfolds the Cable
-one demanded occurrence at a time.
+A Subsea `.vyg` source is a Voyage Plan, not an already realized Cable. The
+**Carousel** realizes the Cable one demanded occurrence at a time.
 
 ```
 committed deductions ─────● undeduced frontier ───── Folded Cable
@@ -203,6 +203,12 @@ At any moment, a path can contain all three states:
 | Committed deduction | Its occurrence selected a hash and committed its reduction result | No |
 | Undeduced frontier | The occurrence exists, but its unqualified alias has not selected a hash | Yes |
 | Folded Cable | The occurrence has not yet been exposed | Yes |
+
+A terminated voyage exposes the grounded result as a Fully Touchdown Cable—an
+ordered list of leaf content hashes—plus the Root outcome. Provenance maps that
+list back to intermediate deductions. Reusing a structural segment never by
+itself permits an agent or Runtime to skip Host effects; see
+[SCP-0004](proposals/0004-voyage-plans-and-touchdown-cable-artifacts.md).
 | Touchdown | A path of committed deductions has reached a concrete leaf | Structurally no; execution has not necessarily occurred |
 
 Partially unfolded does not mean partially committed. It means that a path has a

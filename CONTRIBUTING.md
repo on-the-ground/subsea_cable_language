@@ -16,7 +16,8 @@ language with real programs, and bring the resulting design evidence back here.
 
 ## What this repository does not accept
 
-- production Carousel, Host, Scheduler, or complete Runtime implementations;
+- production Carousel, Host, Scheduler, or complete Vessel (Consumer Runtime)
+  implementations;
 - language-specific SDKs, adapters, registries, or deployment backends;
 - framework integrations;
 - policy implementations without an accepted language proposal;

@@ -10,7 +10,7 @@ in this repository so people and agents can use the same source assets.
 |---|---|
 | Official language name | **Subsea Cable** |
 | Visual short mark | **`__C`** |
-| Source extension | **`.subc`** |
+| Source extension | **`.vyg`** |
 | Portable slug/language ID | **`subsea-cable`** |
 | Markdown code-fence alias | **`subsea`** |
 
@@ -22,7 +22,7 @@ wordmark:
 __C — Subsea Cable
 ```
 
-Use `.subc` only for Subsea Cable source files, for example `deploy.subc`.
+Use `.vyg` only for Subsea Cable source files, for example `deploy.vyg`.
 External implementations may choose their own executable and package names; the
 language does not reserve `subc` as a CLI.
 

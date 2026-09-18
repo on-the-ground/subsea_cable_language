@@ -1,6 +1,6 @@
 # SCP-0004 — Voyage Plans and Fully Touchdown Cable artifacts
 
-- Status: Accepted
+- Status: Discussion — core direction and publication-time membership accepted; remaining detailed contract submitted for confirmation
 - Author(s): Codex (agent) for on-the-ground
 - Created: 2026-09-18
 - Updated: 2026-09-18
@@ -154,6 +154,8 @@ A terminated voyage exposes an envelope equivalent to:
 ```text
 VoyageResult
   voyagePlanHash
+  schedulerProfile
+  deductionControlRef
   touchdownCableHash
   touchdownHashes[]
   rootOutcome
@@ -162,6 +164,12 @@ VoyageResult
 
 The concrete serialization and hash algorithm are profile-versioned, but the
 following semantics are portable.
+
+`schedulerProfile` identifies the Scheduler semantics active for the voyage.
+`deductionControlRef` refers to canonical provenance for the demand mode,
+explicit demand sequence, initial prefetch target, and every prefetch
+reconfiguration. These envelope fields MUST NOT enter an individual Touchdown
+content hash.
 
 ### Ordered hash list
 
@@ -203,6 +211,14 @@ A voyage that publishes no Touchdowns has a valid empty Cable. Its
 length-framed list encoding used for every Cable, with item count zero. The
 empty Cable is not represented by a missing hash, `null`, or the hash of an
 unframed empty byte sequence.
+
+Publication-time membership intentionally records **all structure the voyage
+actually grounded**, rather than only work later handed to or completed by the
+Host. Consequently, the same Voyage Plan, Codebase state, Host behavior, and
+inputs may produce different Cable hashes under different demand or prefetch
+histories. Meaningful Cable comparison therefore requires the same Scheduler
+profile and the same deduction-control provenance, including every prefetch
+change.
 
 ### Touchdown content identity
 
@@ -325,6 +341,7 @@ simple ordered hash list.
 | Use only `ArtifactHash + arguments` | Small reuse key | Misses descendant lazy alias observations and value-dependent branches |
 | Put provenance inside the list | One object | Couples a simple portable result to Runtime-specific indexes and mutable audit detail |
 | Treat structural reuse as Host outcome reuse | Maximum apparent speedup | Can suppress effects and reuse results under the wrong Host or value evidence |
+| Begin membership at consume/first dispatch | Excludes speculative work and reduces prefetch sensitivity | Makes a structural deduction artifact depend on Scheduler dispatch and erases published, committed Touchdown structure that was withheld or discarded |
 | **Accepted core: ordered structural hashes plus provenance sidecar** | Simple outward artifact, duplicate preservation, bidirectional audit, and independent reuse policy | Requires versioned descriptor/fingerprint profiles and a separate Outcome Journal decision |
 
 ## Philosophy and boundary audit
@@ -365,6 +382,10 @@ simple ordered hash list.
   value-dependent invalidation, immutable `reusedFrom` records, published but
   withheld/discarded/failed/cancelled membership, failed and cancelled voyage
   results, and the canonical empty Cable;
+- comparisons asserting equal Cable hashes must fix the Scheduler profile,
+  demand mode and sequence, initial prefetch target, every prefetch
+  reconfiguration, applicable Host/primitive profiles, alias-observation
+  timeline, and routed input evidence;
 - a Runtime that has not implemented voyage-result artifacts must report that
   capability as unsupported rather than returning an incomplete object under
   the Fully Touchdown Cable name.
@@ -387,6 +408,11 @@ plan define the staged experiment and its acceptance tests.
   cross-version reuse evidence.
 - Concrete canonical encodings and algorithms remain profile-versioned even
   after the semantic field sets are confirmed.
+- Numeric structural ordering, descriptor fields, stable-slot fingerprints,
+  immutable `reusedFrom`, policy erasure, value evidence, envelope comparison
+  metadata, and structural-versus-outcome reuse separation are submitted for
+  owner confirmation in language PR #5. They are not confirmed merely because
+  this proposal describes them.
 
 ## Owner decision record
 
@@ -400,11 +426,12 @@ plan define the staged experiment and its acceptance tests.
 - Accepted core: source extension, Program/Cable ontology, Vessel outward
   boundary, ordered hashed-list result, and provenance sufficient for
   incremental reuse
-- Detailed contract confirmed: numeric structural ordering, published-
-  Touchdown membership, failed/cancelled and empty Cable behavior,
-  descriptor fields, stable-slot fingerprints, immutable `reusedFrom`, policy
-  erasure, value evidence, and structural-versus-outcome reuse separation
-- Detailed contract confirmation: accepted by the owner on 2026-09-18
+- Additional owner response: confirmed publication-time monotonic membership,
+  failed/cancelled voyage behavior, and canonical empty Cable on 2026-09-18
+- Remaining detailed contract submitted for confirmation in language PR #5:
+  numeric structural ordering, descriptor fields, stable-slot fingerprints,
+  immutable `reusedFrom`, policy erasure, value evidence, envelope comparison
+  metadata, and structural-versus-outcome reuse separation
 - Authorized conformance changes: rename all canonical source fixtures and add
   voyage-result scenarios as the external Vessel implements them
 

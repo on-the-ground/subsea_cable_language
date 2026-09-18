@@ -38,7 +38,7 @@ Host Port
 The assembled whole is the **Vessel**, the complete Consumer Runtime. Vessel
 is a name for that whole and for the product an operator or agent addresses.
 No individual component, package, or interface inside it may claim to be the
-whole Vessel, and no component other than Carousel MUST deduce.
+whole Vessel, and every component other than Carousel MUST NOT deduce.
 
 The deployment MAY package these together. Their responsibilities MUST remain
 separable in interfaces and tests.
@@ -474,6 +474,14 @@ terminal boundary together with its separate Root outcome. A voyage with no
 published Touchdown MUST expose a valid empty ordered list. Its Cable hash MUST
 use the ordinary profile-tagged, length-framed list encoding with an item count
 of zero; it MUST NOT use absence, `null`, or an unframed empty-byte hash.
+
+The voyage-result envelope MUST identify the Scheduler profile and MUST carry a
+reference to canonical deduction-control provenance containing the demand mode,
+explicit demand sequence, initial prefetch target, and every later prefetch
+reconfiguration. These fields MUST NOT enter an individual Touchdown content
+hash. Equal-Cable conformance comparisons are meaningful only when that control
+context and the other structure-affecting profiles, alias observations, and
+routed input evidence are fixed.
 
 The Runtime MUST keep content identity separate from provenance. Run IDs,
 occurrence IDs, list positions, lineages, attempts, timestamps, and outcomes

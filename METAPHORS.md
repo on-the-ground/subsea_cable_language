@@ -225,8 +225,10 @@ leaves. Committed intermediate deductions outside those completed paths are
 still committed even though their descendants have not yet reached Touchdown.
 
 A terminated voyage publishes a **Fully Touchdown Cable** as a canonical
-ordered list of Touchdown content hashes. “Fully” describes every item in that
-list: each is a grounded leaf, not an intermediate Goal. It does not force
+ordered list of grounded evaluation-instance content hashes. Structural sharing
+of a Goal node does not collapse instances reached through distinct occurrences
+or routed arguments. “Fully” describes every item in that list: each is a
+grounded leaf, not an intermediate Goal. It does not force
 deduction of merely possible or undemanded future occurrences. Occurrence IDs,
 lineages, cable positions, and reverse mappings from intermediate deductions
 belong to a provenance sidecar, not to Touchdown content identity. This lets a

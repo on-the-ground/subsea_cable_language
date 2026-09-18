@@ -449,10 +449,12 @@ syntax. Changes must be versioned because migration comparisons depend on them.
 
 The authored input to a Vessel is a `.vyg` **Voyage Plan**. A terminated voyage
 MUST expose both its Root outcome and a **Fully Touchdown Cable**. The Cable is
-a canonical ordered list of grounded Touchdown content hashes in committed
-structural occurrence order. Parallel branches retain authored branch order;
-duplicate hashes MUST remain duplicate list entries. Completion or dispatch
-timing MUST NOT reorder it.
+a canonical ordered list of grounded evaluation-instance content hashes in the
+lexicographic order of stable structural occurrence paths. Child ordinals come
+from authored reduction-result order, so parallel branches retain authored
+branch order. Structural sharing MUST NOT collapse distinct evaluation
+instances, and duplicate hashes MUST remain duplicate list entries. Deduction,
+completion, and dispatch timing MUST NOT reorder the list.
 
 The Runtime MUST keep content identity separate from provenance. Run IDs,
 occurrence IDs, list positions, lineages, attempts, timestamps, and outcomes

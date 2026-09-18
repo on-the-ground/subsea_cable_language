@@ -91,8 +91,10 @@ engine merely because it owns the outward control surface.
 ### Fully Touchdown Cable
 
 A Fully Touchdown Cable is the finalized projection of every grounded
-Touchdown occurrence committed by one terminated voyage. “Fully” means that
-every list item is a terminal grounded leaf, never an intermediate Goal. It
+evaluation instance reached by one terminated voyage. Under SCP-0001's current
+conservative value barrier, each grounded Touchdown occurrence has exactly one
+evaluation instance. “Fully” means that every list item is a terminal grounded
+leaf, never an intermediate Goal. It
 does not force every merely possible or undemanded future occurrence to deduce,
 and it does not change lazy alias observation or Scheduler demand semantics.
 
@@ -130,10 +132,13 @@ following semantics are portable.
 ### Ordered hash list
 
 - `touchdownHashes` is an ordered **list**, not a set.
-- Order is the committed structural occurrence order, never Host completion or
-  Scheduler dispatch order. Parallel children retain authored branch order.
-- Distinct occurrences are preserved. If two occurrences have identical
-  grounded content, the same hash may appear twice.
+- Order is the lexicographic order of stable structural occurrence paths. Each
+  committed reduction assigns child ordinals from its authored result order;
+  parallel children therefore retain authored branch order. Host completion,
+  Scheduler dispatch, and deduction wall-clock order never affect the list.
+- Structural sharing does not collapse evaluation instances. Distinct
+  occurrences or argument tuples are preserved. If two evaluation instances
+  have identical grounded content, the same hash may appear twice.
 - `touchdownCableHash` hashes a version tag and a length-framed encoding of the
   ordered list.
 - The Root outcome is not folded into the cable hash. Structure and execution
@@ -166,13 +171,13 @@ Every cable artifact has a provenance sidecar. It supports both directions:
 
 ```text
 deduction / intermediate Goal occurrence -> cable list positions or ranges
-cable list position                      -> deduction ancestry + lineages
+cable list position                      -> evaluation instance + deduction ancestry + lineages
 ```
 
 The sidecar records at least:
 
 - the source voyage and language/profile revisions;
-- each new voyage occurrence and its active lineages;
+- each new voyage occurrence, grounded evaluation instance, and active lineages;
 - selected `ArtifactHash`, canonical arguments, primitive profile, and
   committed reduction-result hash for each deduction;
 - the ordered cable positions or ranges contributed by that deduction;

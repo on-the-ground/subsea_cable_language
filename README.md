@@ -467,10 +467,10 @@ satisfied and supplies every value that the instance structurally requires.
 
 ---
 
-## The Program Materializes as a Goal DAG
+## A Voyage Plan Materializes as a Goal DAG
 
-The Program exists from the start as a deferred Cable. Demand-driven deductions
-materialize its reachable structure as a directed acyclic graph (DAG), not
+The Voyage Plan exists from the start; its realized Cable does not.
+Demand-driven deductions materialize reachable structure as a directed acyclic graph (DAG), not
 necessarily a tree. The complete future graph need not exist or remain fixed in
 advance because every undeduced unqualified occurrence still observes a mutable
 `Name/Arity` alias when it is demanded.

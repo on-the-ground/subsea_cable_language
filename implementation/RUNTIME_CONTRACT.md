@@ -462,6 +462,19 @@ sort serialized dotted occurrence paths. Structural sharing MUST NOT collapse
 distinct evaluation instances, and duplicate hashes MUST remain duplicate list
 entries. Deduction, completion, and dispatch timing MUST NOT reorder the list.
 
+Cable membership begins exactly when Carousel publishes
+`TouchdownPublished` for the grounded evaluation instance. Once published, the
+member MUST remain in that voyage's Cable whether it is speculative, withheld,
+consumed, discarded, never dispatched, failed, or cancelled. Attempt and Root
+success MUST NOT determine structural membership. `DiscardTouchdown` changes
+window accounting only and MUST NOT undo a deduction or remove a Cable member.
+
+A failed or cancelled voyage MUST expose the Cable accumulated through its
+terminal boundary together with its separate Root outcome. A voyage with no
+published Touchdown MUST expose a valid empty ordered list. Its Cable hash MUST
+use the ordinary profile-tagged, length-framed list encoding with an item count
+of zero; it MUST NOT use absence, `null`, or an unframed empty-byte hash.
+
 The Runtime MUST keep content identity separate from provenance. Run IDs,
 occurrence IDs, list positions, lineages, attempts, timestamps, and outcomes
 MUST NOT enter a Touchdown content hash. A provenance index MUST support both

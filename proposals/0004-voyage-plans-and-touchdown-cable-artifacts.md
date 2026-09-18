@@ -1,6 +1,6 @@
 # SCP-0004 — Voyage Plans and Fully Touchdown Cable artifacts
 
-- Status: Discussion — core direction accepted; detailed portable contract awaiting owner confirmation
+- Status: Accepted
 - Author(s): Codex (agent) for on-the-ground
 - Created: 2026-09-18
 - Updated: 2026-09-18
@@ -181,6 +181,29 @@ following semantics are portable.
 - The Root outcome is not folded into the cable hash. Structure and execution
   outcome remain different lifecycles.
 
+### Membership and termination
+
+An evaluation instance becomes a Cable member when Carousel commits its
+grounded leaf and publishes `TouchdownPublished`. Membership is monotonic for
+that voyage:
+
+- speculative and explicitly demanded Touchdowns use the same rule;
+- a published instance remains a member if it is withheld, consumed,
+  discarded, never dispatched, failed, or cancelled;
+- attempt success and Root success do not determine membership;
+- an occurrence that never reaches `TouchdownPublished` is not a member.
+
+`DiscardTouchdown` changes the prefetch-window lifecycle; it does not undo the
+deduction commit or remove a Cable member. A failed or cancelled voyage exposes
+the ordered Cable accumulated through its terminal boundary together with the
+separate failed or cancelled Root outcome.
+
+A voyage that publishes no Touchdowns has a valid empty Cable. Its
+`touchdownCableHash` is the hash of the same profile/version tag and canonical
+length-framed list encoding used for every Cable, with item count zero. The
+empty Cable is not represented by a missing hash, `null`, or the hash of an
+unframed empty byte sequence.
+
 ### Touchdown content identity
 
 Each `touchdownHash` identifies a canonical grounded leaf descriptor. The
@@ -339,7 +362,9 @@ simple ordered hash list.
 - voyage-result conformance must cover ordered parallel entries, duplicate
   hashes, policy-erased descriptors with policy-bearing provenance, distinct
   alias observations for the same `Name/Arity`, pure-segment reuse,
-  value-dependent invalidation, and immutable `reusedFrom` records;
+  value-dependent invalidation, immutable `reusedFrom` records, published but
+  withheld/discarded/failed/cancelled membership, failed and cancelled voyage
+  results, and the canonical empty Cable;
 - a Runtime that has not implemented voyage-result artifacts must report that
   capability as unsupported rather than returning an incomplete object under
   the Fully Touchdown Cable name.
@@ -356,10 +381,6 @@ plan define the staged experiment and its acceptance tests.
 
 ## Unresolved questions
 
-- **Cable membership and empty Cable:** whether the manifest includes every
-  published Touchdown, only consumed/first-dispatched instances, or only
-  successful instances remains an owner decision. The answer also fixes failed
-  and cancelled voyages and the empty-list hash.
 - **F9 artifact value closure:** `StructureHash` does not yet have a decided
   top-level value-closure rule. Cable descriptors and reuse decisions produced
   before F9 is accepted are experimental and MUST NOT be used as portable
@@ -379,9 +400,11 @@ plan define the staged experiment and its acceptance tests.
 - Accepted core: source extension, Program/Cable ontology, Vessel outward
   boundary, ordered hashed-list result, and provenance sufficient for
   incremental reuse
-- Detailed contract submitted for confirmation: numeric structural ordering,
+- Detailed contract confirmed: numeric structural ordering, published-
+  Touchdown membership, failed/cancelled and empty Cable behavior,
   descriptor fields, stable-slot fingerprints, immutable `reusedFrom`, policy
   erasure, value evidence, and structural-versus-outcome reuse separation
+- Detailed contract confirmation: accepted by the owner on 2026-09-18
 - Authorized conformance changes: rename all canonical source fixtures and add
   voyage-result scenarios as the external Vessel implements them
 

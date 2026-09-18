@@ -1,6 +1,6 @@
 # SCP-0004 — Voyage Plans and Fully Touchdown Cable artifacts
 
-- Status: Discussion — core direction and publication-time membership accepted; remaining detailed contract submitted for confirmation
+- Status: Accepted
 - Author(s): Codex (agent) for on-the-ground
 - Created: 2026-09-18
 - Updated: 2026-09-18
@@ -408,11 +408,6 @@ plan define the staged experiment and its acceptance tests.
   cross-version reuse evidence.
 - Concrete canonical encodings and algorithms remain profile-versioned even
   after the semantic field sets are confirmed.
-- Numeric structural ordering, descriptor fields, stable-slot fingerprints,
-  immutable `reusedFrom`, policy erasure, value evidence, envelope comparison
-  metadata, and structural-versus-outcome reuse separation are submitted for
-  owner confirmation in language PR #5. They are not confirmed merely because
-  this proposal describes them.
 
 ## Owner decision record
 
@@ -428,10 +423,15 @@ plan define the staged experiment and its acceptance tests.
   incremental reuse
 - Additional owner response: confirmed publication-time monotonic membership,
   failed/cancelled voyage behavior, and canonical empty Cable on 2026-09-18
-- Remaining detailed contract submitted for confirmation in language PR #5:
-  numeric structural ordering, descriptor fields, stable-slot fingerprints,
-  immutable `reusedFrom`, policy erasure, value evidence, envelope comparison
-  metadata, and structural-versus-outcome reuse separation
+- Detailed contract: numeric structural ordering, descriptor fields,
+  stable-slot fingerprints, immutable `reusedFrom`, policy erasure, value
+  evidence, envelope comparison metadata, and structural-versus-outcome reuse
+  separation were written after the core response, reviewed in language PR #5,
+  and **confirmed by the owner on 2026-09-18** in that pull request's review
+  thread. They are confirmed by that record, not by this proposal describing
+  them.
+- Conditions: the F9 dependency in Unresolved questions stands. Cable
+  descriptors produced before F9 is accepted are experimental.
 - Authorized conformance changes: rename all canonical source fixtures and add
   voyage-result scenarios as the external Vessel implements them
 

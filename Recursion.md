@@ -1,139 +1,155 @@
-# Recursion — Deferred Design Notes
+# Guarded Conditional Recursion
 
-## Current Status
+## Status
 
-Recursion is not part of the current Subsea Cable language.
+The core direction for guarded direct and mutual Goal recursion is accepted;
+the detailed contract remains in Discussion under
+[SCP-0005](proposals/0005-guarded-conditional-recursion.md). Unconditional
+definition cycles, and recursive conditional components with no structural exit
+branch, remain `CycleDetected`.
 
-Direct self-reference and every form of mutual cycle are unsupported. A cycle
-visible entirely within one source unit is a validation error. Because
-unqualified Goal aliases resolve only when an occurrence is demanded, a cycle
-introduced by later alias rebinding is a deduction error. Forward references
-remain valid as long as the selected artifacts stay acyclic.
-
-This restriction is intentional. Recursion cannot be added as a local syntax
-feature because it affects the identity, expansion, evaluation, and
-observability of the entire Goal structure.
-
-## Why It Is Deferred
-
-Resolved definition identity is currently shared by `GoalNodeId`, the
-policy-erased `StructureHash` plus arity selected during deduction, while
-deduction records remain occurrence-specific and evaluation instances are
-distinguished by their routed arguments. A Goal node may have multiple incoming
-edges and therefore
-multiple lineage paths. Each committed deduction extends its incoming lineages
-across the outgoing edges produced by the selected artifact's reduction rule.
-
-The current Program structure is a DAG. Enabling recursion would add a back-edge
-to an existing Goal node and turn that DAG into a cyclic graph. Traversing such
-a cycle naively would produce an unbounded lineage:
+The governing distinction is:
 
 ```text
-Loop/1
-Loop/1.Loop/1
-Loop/1.Loop/1.Loop/1
-...
+recursive definition graph  may contain a guarded cycle
+realized occurrence Cable   remains a DAG
 ```
 
-A value-dependent base case also means that continued traversal can depend on
-runtime data. Carousel may request pure primitive semantics from the
-Host while applying a reduction rule, but it does not evaluate grounded leaves;
-the Scheduler sees those grounded evaluation instances. Recursion must preserve
-that boundary.
+## Conditional deduction
 
-## Questions That Must Be Resolved
+A pure selector expression and a keyed branch map form one conditional
+structural pipeline:
 
-### 1. Supported recursion forms
+```subsea
+CountDown = [n] -> [
+    n == 0,
+    {
+        true: Done[],
+        false: CountDown[n - 1],
+    },
+]
+```
 
-- Direct recursion only, or mutual recursion as well?
-- May Goals resolved from the content-addressed codebase participate in a
-  recursive component?
-- Are recursive edges limited to definitions authored in one source unit, or may
-  both late-bound aliases and pinned full-hash references participate? Function
-  arrows remain terminal leaf implementations;
-  they cannot carry or invoke recursive Subsea Goal structure.
+Carousel asks the Host primitive-semantics profile to evaluate `n == 0`, then
+selects exactly one branch using ordinary normalized map-key rules. Only the
+selected branch creates occurrences or performs demand-time observations. The
+other branch remains authored structure and does not enter this voyage's
+realized Cable.
 
-### 2. Branching and termination
+The selector must be effect-free. Goal and Anchor occurrences or calls are
+invalid inside it. If branching depends on an evaluated leaf result, an
+enclosing Goal arrow first binds that explicit routed value and then uses it in
+the conditional selector.
 
-- What language construct selects the base case?
-- Does selection depend on a runtime value?
-- If a map or future conditional selects the branch, which layer performs that
-  selection without collapsing expansion into evaluation?
+The conditional pipeline contains exactly the selector and branch map. A
+following serial stage must wrap it: `[[selector, {true: A[], false: B[]}],
+Next]`. If a required routed selector value is unresolved, the conservative
+value barrier leaves the deduction uncommitted and selects no branch.
 
-### 3. Recursive Goal identity
+## Definition recursion is not an occurrence cycle
 
-- A back-edge can reuse an existing `GoalNodeId`; how is each logical recursive
-  invocation distinguished from that structurally shared node?
-- Content hashes are trivial over the current acyclic dependency graph; how are
-  hashes assigned to a mutually recursive strongly connected component?
-- Does each traversal of the back-edge append another logical lineage segment,
-  or is recursive lineage represented in a compressed form?
+For input `2`, the example realizes:
 
-### 4. Expansion memoization
+```text
+CountDown[2]
+    -> CountDown[1]
+        -> CountDown[0]
+            -> Done[]
+```
 
-- Can `GoalNodeId` remain the complete structural expansion key in a cyclic
-  graph?
-- Does recursive expansion additionally need lexical environment or structural
-  recursion context?
-- Which data may influence deduction beyond the Host primitive semantics the
-  Carousel already requests for ordinary value routing?
+The occurrences may resolve to one shared `CountDown/1` `GoalNodeId`, but each
+has its own occurrence identity, arguments, lineage, policies, alias observation,
+and deduction record. A recursive reduction creates a fresh child occurrence;
+it never points an edge back to the parent or another ancestor occurrence.
 
-### 5. Evaluation identity
+This preserves the directed acyclic occurrence graph while allowing the
+definition reference graph to be recursive.
 
-- How does the Scheduler distinguish recursive invocations with different
-  argument values?
-- When may two invocations share evaluation results?
-- How are concurrent invocations, retries, and cancellation isolated?
+## Guard validation
 
-### 6. Incremental expansion
+Validation computes strongly connected components over local Goal-definition
+references. A recursive component is accepted only when:
 
-- How much of a recursive structure may Carousel unfold ahead of demand?
-- What backpressure or depth boundary prevents unbounded expansion?
-- Which component requests the next increment?
+1. every cycle crosses a recursive reference located beneath a conditional
+   branch map; and
+2. that guarding map has at least one branch that leaves the recursive component
+   without re-entering it.
 
-### 7. Tail-call optimization
+The analysis proves the presence of a possible structural exit, not termination
+for every input. These remain invalid:
 
-- What is a tail position in a pipeline, resolving-map branch, and nested Goal
-  arrow?
-- Does TCO reuse an evaluation frame, a structural Goal node, or both?
-- How is complete logical lineage retained for tracing when physical frames are
-  reused?
-- Is TCO guaranteed by the specification or merely permitted for a Carousel or
-  Scheduler implementation?
+```subsea
+A = [] -> A[]                 // unconditional direct cycle
+A = [] -> B[]
+B = [] -> A[]                 // unconditional mutual cycle
+```
 
-### 8. Errors and resource limits
+A conditional whose every branch returns to the same recursive component is
+also `CycleDetected` because it provides no exit.
 
-- How are non-terminating expansion and non-terminating evaluation reported
-  separately?
-- Are depth, step, time, or memory limits part of the language contract or a
-  Scheduler policy?
-- What lineage is attached to an error after optimized tail calls?
+Late alias selection can reveal a cycle absent from the local definition graph.
+If an occurrence resolves to a `GoalNodeId` already on its ancestor chain,
+Carousel examines the intervening path. With at least one committed conditional
+selection on that path, the re-entry is guarded and a fresh occurrence is
+permitted. With no such selection, an explicitly demanded occurrence reports
+`CycleDetected` before committing, while a speculative pass abandons the path
+without committing or diagnosing it and leaves the classification to the later
+explicit demand.
 
-### 9. Serialization and observability
+## Non-termination
 
-- How are recursive back-edges represented in inspection and visualization
-  formats?
-- How are logical call histories displayed when one shared Goal node has
-  multiple lineages and a cycle may extend them without bound?
-- Can a finite recursive structure be serialized without serializing runtime
-  invocation history?
+A valid guarded recursive voyage may still fail to select its exit. That is
+ordinary non-termination, not a source or validation error. Every selected
+conditional child is an explicit-demand boundary: speculative Touchdown
+replenishment may expose it but MUST NOT deduce it, regardless of whether local
+analysis recognizes the edge as recursive. Only successive Scheduler demands
+can continue an unbounded recursive path. Scheduler cancellation or a declared
+deduction-work budget may stop that sequence. Neither layer may fabricate a
+branch or rewrite a committed deduction.
 
-### 10. Determinism
+Subsea Cable does not require static termination proofs.
 
-- Must the same `GoalNodeId` always expand to the same recursive structure?
-- How do runtime-dependent branches interact with replay, caching, distributed
-  scheduling, and retries?
+## Identity, aliases, and replay
 
-## Minimum Acceptance Criteria
+Every recursive child follows the ordinary demand-time alias law. An unqualified
+`Name/Arity` remains symbolic until that child occurrence is demanded. Two steps
+of one recursion may therefore select different `ArtifactHash` values across an
+alias update. Each selection and codebase revision is committed independently.
 
-Recursion should not be enabled until the specification provides:
+Replay uses those immutable deduction records. Incremental reuse under SCP-0004
+also requires stable-slot alias and value observations for recursive segments.
+The selector result has its own stable value slot, canonical digest, selected
+normalized key, and primitive profile. A selected segment is reusable only when
+that digest and the other dependency fingerprints match; reuse never edits an
+earlier voyage.
 
-1. A finite structural representation for recursive Goals.
-2. A precise identity model for expansion nodes and runtime invocations.
-3. A branching model that preserves the Carousel/Scheduler separation.
-4. Defined memoization behavior for recursive and value-dependent structures.
-5. Termination, cancellation, resource-limit, and error semantics.
-6. A precise definition of tail position and the status of TCO guarantees.
-7. Stable inspection and tracing semantics that retain logical lineage.
-8. Conformance tests for direct recursion, mutual recursion, base cases,
-   non-termination, incremental expansion, and tail calls.
+## Tail recursion
+
+A Carousel may reuse physical frames or storage for a tail-recursive reduction,
+but the optimization is invisible to language semantics. Logical occurrences,
+lineages, deduction records, selected hashes, and Fully Touchdown Cable
+provenance must remain equivalent to an unoptimized unfolding.
+
+No tail-call optimization is required by the language.
+
+## Conformance requirements
+
+A conforming implementation covers at least:
+
+- direct guarded recursion with an exit;
+- guarded mutual recursion;
+- exact-key and wildcard branch selection;
+- `KeyNotFound` when neither an exact key nor `_` exists;
+- an unresolved routed selector value stopping before branch selection;
+- unselected branches creating no occurrence or alias observation;
+- fresh occurrence identity for every selected recursive step;
+- explicit Scheduler demand at every selected conditional branch edge;
+- an unconditional direct or mutual cycle remaining `CycleDetected`;
+- a conditional recursive component with no exit remaining `CycleDetected`;
+- an apparent exit that re-enters the component remaining `CycleDetected`;
+- a late alias re-entry without an intervening conditional selection remaining
+  `CycleDetected`;
+- non-termination remaining observable and interruptible by Runtime budget or
+  Scheduler action;
+- demand-time alias changes across recursive steps; and
+- replay, selector fingerprints, and provenance of the selected branch sequence.

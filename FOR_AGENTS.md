@@ -272,10 +272,14 @@ Here is what is still open, so you know where the edges are.
 - **Anchoring policy semantics** are not designed yet. The `@policy` surface
   syntax and occurrence targeting exist, but conflict resolution, inheritance
   over composites, and the Scheduler behavior of individual policies remain open.
-- **Controlled data-dependent expansion** is the key open problem for agents: how
-  an observed value is allowed to shape the not-yet-unfolded structure without
-  collapsing the Carousel/Scheduler separation. It is deferred together with
-  recursion; see [Recursion.md](Recursion.md).
+- **Controlled data-dependent expansion** has one accepted core direction: a
+  pure selector followed by a conditional structural branch map. Its detailed
+  contract remains in Discussion. It guards direct and mutual recursion by
+  creating fresh child occurrences. Every selected conditional child is an
+  explicit-demand boundary, regardless of whether local analysis classifies its
+  edge as recursive; see
+  [Recursion.md](Recursion.md) and [SCP-0005](proposals/0005-guarded-conditional-recursion.md).
+  General reusable structure-valued ordinary map bindings remain open.
 - **Canonical encoding and hash mechanics**: Goals live in an abstract
   content-addressed codebase. Hash-qualified references are pinned; unqualified
   `Name/Arity` references remain symbolic until occurrence deduction. The exact
@@ -291,7 +295,8 @@ Here is what is still open, so you know where the edges are.
   Concrete policy semantics remain intentionally undiscovered.
 - **Carousel deduction engine**: Carousel owns demand-time alias resolution,
   deduction commits, occurrences, routing, lineages, and Touchdown publication.
-  Vessel is only the metaphor for the complete Consumer Runtime. The engine's
+  Vessel is the complete Consumer Runtime and outward product boundary, not a
+  second deduction engine. The engine's
   remaining prefetch and traversal decisions are tracked in
   [CAROUSEL_ENGINE_PLAN.md](implementation/CAROUSEL_ENGINE_PLAN.md); agents must
   never implement a second Vessel deduction engine.

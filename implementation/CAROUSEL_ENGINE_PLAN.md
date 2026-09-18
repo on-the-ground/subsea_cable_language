@@ -212,6 +212,15 @@ part of the provenance explaining why those deductions committed when they did.
 - resolving an unqualified alias only when its occurrence is selected;
 - applying one reduction atomically and committing its record;
 - requesting Host primitive semantics when reduction needs them;
+- selecting exactly one conditional structural branch from a pure Host-provided
+  selector value;
+- creating a fresh child occurrence for every selected guarded-recursive step;
+- treating every selected conditional child as an explicit-demand boundary
+  that speculative replenishment never crosses, irrespective of local recursion
+  classification;
+- detecting late ancestor `GoalNodeId` re-entry without an intervening
+  conditional selection as `CycleDetected` under explicit demand, and abandoning
+  that path silently when it is reached speculatively;
 - tracking occurrences, dependencies, routing, lineages, and the frontier;
 - detecting newly grounded arrow-function and Anchor leaves;
 - maintaining and publishing the Touchdown window;
@@ -268,6 +277,13 @@ The implementation plan must therefore distinguish:
 Resource budgets are Runtime-profile safeguards, not permission to change Goal
 semantics. Reaching a budget yields an observable paused/blocked state, not a
 fabricated leaf or partial deduction.
+
+They are not the primary guard against leafless speculative recursion. Under
+SCP-0005, any selected conditional child may be exposed but MUST NOT be selected
+by replenishment; only a new explicit Scheduler demand crosses that edge,
+irrespective of local recursion classification. The optional per-pass budget
+therefore remains useful for width, non-conditional depth, time, memory, and
+explicitly demanded recursion without being required to make prefetch safe.
 
 ## Planned engine events
 
@@ -509,6 +525,37 @@ Scheduler test doubles and assume no concrete policy semantics.
 23. **Competing first dispatch:** when a different attempt already consumed the
     Touchdown, a consume acknowledgement returns `AlreadyConsumed` naming the
     first attempt, and the losing attempt never reaches the Host.
+
+SCP-0005 adds these mandatory structural scenarios:
+
+24. **Selected branch only:** a conditional selector exposes exactly one branch;
+    unselected branches create no occurrence, alias observation, or Touchdown.
+25. **Recursive occurrence DAG:** a guarded countdown creates one fresh
+    occurrence per step while all steps may share one recursive `GoalNodeId`.
+26. **Recursive alias timing:** an alias update between recursive demands affects
+    only the still-undeduced child occurrence.
+27. **Exit branch:** selecting the non-recursive branch stops structural
+    unfolding without fabricating or cancelling a recursive occurrence.
+28. **Conditional demand boundary:** prefetch with available window capacity may
+    commit selection and expose a conditional child but never deduces it. Test
+    both a locally non-recursive branch and a recursive branch assembled through
+    a late alias; each requires a new explicit Scheduler demand. An input that
+    never selects its authored exit remains observable and cancellable rather
+    than spinning inside one replenishment pass.
+29. **Unresolved selector barrier:** a selector waiting on a routed Host value
+    commits no deduction, selects no key, creates no branch, and reports the
+    ordinary demand/prefetch blocked state until the value resolves.
+30. **Late cycle distinction:** ancestor `GoalNodeId` re-entry without an
+    intervening committed conditional selection is `CycleDetected` under
+    explicit demand; the same re-entry after such a selection creates a fresh
+    occurrence. Reached speculatively instead, the unguarded re-entry abandons
+    the path with no occurrence and no diagnostic, and only the later explicit
+    demand reports `CycleDetected`, so the diagnostic is independent of the
+    prefetch target.
+31. **Conditional reuse evidence:** `ConditionalBranchSelected` records the
+    stable selector slot, canonical value digest, selected key, and primitive
+    profile; changing the digest invalidates selected-branch reuse even when the
+    same wildcard branch would be selected.
 
 ## Completion criteria
 

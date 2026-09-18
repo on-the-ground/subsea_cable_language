@@ -124,7 +124,9 @@ first implementation must not become an accidental source of language law.
 
 - concrete retry, timeout, delivery, cancellation, and aggregation policies;
 - policy inheritance and policy-conflict rules;
-- recursion and data-dependent recursive expansion;
+- unconditional definition cycles, static termination proofs, and a portable
+  default resource limit or diagnostic for explicitly demanded non-terminating
+  guarded recursion;
 - distributed execution, durable queues, and production storage;
 - a standard package manager or import/export system;
 - cross-runtime canonical hash compatibility until its encoding ADR is accepted.
@@ -183,6 +185,8 @@ Required evidence:
 - hash-qualified references are expanded to one pinned full hash;
 - `@policy` and `$Anchor` arguments are structurally validated without resolving
   their external names.
+- conditional selectors reject effects, guarded recursive components are
+  accepted, and unconditional or exitless cycles remain `CycleDetected`.
 
 ### Gate 1
 
@@ -215,6 +219,13 @@ Required invariant tests:
 - every committed intermediate deduction is immutable whether or not its path
   has reached Touchdown;
 - unselected lookup-map branches never enter the structure;
+- conditional selectors expose exactly one structural branch and unselected
+  branches perform no alias or value observation;
+- every selected guarded-recursive step creates a fresh child occurrence while
+  preserving shared `GoalNodeId` identity where applicable;
+- speculative replenishment stops at every selected conditional child until
+  explicit Scheduler demand, regardless of local recursion classification, so
+  late alias-assembled recursion cannot spin behind the Touchdown window;
 - resolving maps are the only maps that export named parallel results;
 - `NoOutput` is distinct from every ordinary value;
 - a hash-qualified occurrence remains pinned while an unqualified undeduced
@@ -225,7 +236,7 @@ Required invariant tests:
 A deterministic golden trace demonstrates parse → prepare → store → demand →
 resolve alias → commit deduction → ground leaves for representative serial,
 parallel, shared-node, resolving-map, explicit direct-call stage, and Anchor
-cases. Nested
+cases, plus conditional selection and guarded recursion. Nested
 value-producing calls such as `D[C(x)]` must fail validation as
 `InvalidStructuralContext` under SCP-0003.
 Every scenario in `conformance/DEDUCTION.md` passes automatically.

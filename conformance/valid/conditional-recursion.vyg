@@ -1,0 +1,49 @@
+Done = [] -> $done
+
+CountDown = [n] -> [
+    n == 0,
+    {
+        true: Done[],
+        false: CountDown[n - 1],
+    },
+]
+
+Even = [n] -> [
+    n == 0,
+    {
+        true: Done[],
+        false: Odd[n - 1],
+    },
+]
+
+Odd = [n] -> [
+    n == 0,
+    {
+        true: Done[],
+        false: Even[n - 1],
+    },
+]
+
+Left = [] -> $left
+Right = [] -> $right
+Choose = [key] -> [
+    key,
+    {
+        "left": Left[],
+        _: Right[],
+    },
+]
+
+After = [] -> $after
+Continue = [key] -> [
+    [
+        key,
+        {
+            "left": Left[],
+            _: Right[],
+        },
+    ],
+    After[],
+]
+
+CountDown[3]

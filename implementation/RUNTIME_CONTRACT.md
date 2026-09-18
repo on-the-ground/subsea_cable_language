@@ -88,7 +88,8 @@ before deduction begins. It MUST cover at least:
 - callability;
 - map-key identity and duplicates;
 - statically decidable lookup/destructuring failures;
-- unsupported recursion/cycles;
+- conditional selector purity and branch-map structure;
+- guarded-recursion analysis and unguarded cycles;
 - all cases in `conformance/cases.tsv`.
 
 Outside a function-arrow leaf, validation MUST reject a `Goal(...)` or
@@ -98,6 +99,19 @@ Goal-arrow bodies, composition elements, and resolving-map branches remain
 valid call occurrences. Primitive expressions create no occurrence and remain
 valid in arguments. Inside a function-arrow leaf, nested Anchors remain Host
 call sites while every Subsea Goal reference remains forbidden.
+
+A conditional structural selector MUST be an effect-free value expression. A
+Goal or Anchor occurrence/call anywhere in that selector is
+`InvalidStructuralContext`. Every conditional branch is validated, but a
+guarded recursive definition component is valid when every definition cycle
+crosses a recursive branch beneath a conditional map and that map has at least
+one branch that exits the component. Validation MUST NOT attempt to prove that a
+particular input terminates.
+
+The conditional pipeline contains exactly the selector and branch map, with an
+optional trailing comma. A later serial stage must contain that pipeline as one
+nested stage. A bare Goal name in selector position is value lookup, not Goal
+shorthand, and reports `UnboundName` when no value binding exists.
 
 Anchor and policy argument expressions undergo ordinary validation. The external
 Anchor identifier, signature, policy identifier, applicability, and behavior do
@@ -147,6 +161,12 @@ The error ownership table in `README.md` is normative. In particular:
   deduction errors of the same stable kinds;
 - dynamically discovered `KeyNotFound`, `DestructureMismatch`, and cycles are
   deduction errors;
+- `CycleDetected` MUST NOT be reported solely because a selected guarded branch
+  creates a fresh child occurrence resolving to an ancestor's `GoalNodeId`;
+- when late resolution re-enters an ancestor `GoalNodeId`, the absence of an
+  intervening committed conditional selection MUST report occurrence-scoped
+  `CycleDetected`, while at least one intervening selection MUST NOT report that
+  diagnostic and uses a fresh occurrence if deduction otherwise succeeds;
 - Host primitive failures while routing are reported in the deduction context;
 - arrow-function and Anchor lookup/signature/implementation failures are Host
   errors;
@@ -234,6 +254,17 @@ node.
 
 ## 7. Carousel and Runtime-value contract
 
+Two kinds of deduction request appear throughout this document:
+
+- **explicit demand**: the Scheduler asks for one specific occurrence;
+- **speculative deduction**: the Carousel deduces an occurrence on its own while
+  replenishing the Touchdown window toward its prefetch target.
+
+Unless a rule says *explicit*, "demanded" and "deduced" cover both. The two
+resolve aliases, commit deduction records, and obey every other law in this
+document identically; they differ only in who initiated the request, and rules
+that name *explicit* demand apply to the Scheduler-initiated case alone.
+
 The Carousel accepts a prepared Root occurrence and deduces only what is demanded.
 It MUST:
 
@@ -246,6 +277,10 @@ It MUST:
   to remain lazy;
 - reduce composite Goals without executing grounded Host leaves;
 - obtain primitive value semantics needed by reduction from the Host Port;
+- evaluate conditional selectors through Host primitive semantics and expose
+  exactly the selected structural branch;
+- create a fresh child occurrence for every selected recursive step rather than
+  committing a back-edge to an ancestor occurrence;
 - preserve serial dependencies and independent parallel structure;
 - route only explicitly provided values;
 - distinguish unkeyed parallel NoOutput from keyed resolving-map results;
@@ -258,6 +293,35 @@ It MUST:
   Touchdown;
 - report occurrence-scoped deduction failures without inventing a run-level
   failure policy.
+
+An unselected conditional branch MUST create no occurrence, resolve no alias,
+observe no routed value, and publish no structural or Touchdown event. A valid
+guarded recursion that continues indefinitely is non-termination or resource
+exhaustion, not `CycleDetected`.
+
+A child selected across any committed conditional branch edge MUST remain
+undeduced until the Scheduler explicitly demands that child. Carousel MAY
+commit the selection and expose the symbolic child, but MUST NOT cross the edge
+during speculative Touchdown replenishment, regardless of available window
+capacity or whether local analysis classifies the edge as recursive. Each
+explicit demand may deduce that selected child; a recursive step may then expose
+the next symbolic child. Deduction-work budgets MAY additionally pause explicit
+unfolding, but every completed deduction remains an immutable checkpoint.
+
+When a Goal resolves to a `GoalNodeId` already on its ancestor chain and local
+validation did not reject the cycle, Carousel MUST inspect the intervening path
+before commit. With at least one committed conditional branch selection on that
+path the re-entry is guarded: Carousel MUST NOT report `CycleDetected` for it
+and MUST create a fresh occurrence if deduction otherwise succeeds.
+
+With no committed conditional branch selection on that path, the response
+depends on who asked. Under explicit demand, deduction MUST fail atomically
+with `CycleDetected`. Under speculative deduction, Carousel MUST abandon that
+path without committing an occurrence and without reporting a diagnostic, and
+the re-entry is classified only once the occurrence is explicitly demanded.
+Speculation therefore cannot spin inside an unguarded late alias cycle, and
+`CycleDetected` remains reproducible across Runtimes with different prefetch
+targets instead of depending on how far speculation happened to reach.
 
 The Carousel produces occurrence/containment events for all deduced structural
 occurrences, plus grounded leaf occurrences and dependency/readiness facts for
@@ -283,6 +347,12 @@ Carousel MUST stop at a value barrier when the required value is unresolved. It
 MUST NOT commit a placeholder, invoke a leaf to obtain the value, or hold a
 deduction half-committed across evaluation. The Scheduler and Host MUST NOT
 rewrite a deduction when they deliver an outcome.
+
+This rule includes conditional selectors. Until every value required by the
+selector is resolved, Carousel MUST select no key, create no branch occurrence
+or observation, and emit no `ConditionalBranchSelected`. Explicit demand
+reports `DeductionBlocked(pendingValue)` and speculative consideration reports
+the corresponding `PrefetchBlocked` reason.
 
 ## 8. Occurrence envelopes
 
@@ -424,6 +494,7 @@ SourceValidated
 ArtifactCommitted
 DeductionDemanded
 AliasResolved
+ConditionalBranchSelected
 DeductionCommitted
 OccurrenceExposed
 LeafGrounded
@@ -441,6 +512,11 @@ Each event MUST include the relevant run, artifact, occurrence, lineage, and
 monotonic sequence information. Wall-clock timestamps MAY be included but MUST
 NOT be the only ordering evidence. Values containing secrets MUST support
 redaction without erasing structural identity.
+
+`ConditionalBranchSelected` MUST additionally include the selector's stable
+value slot, canonical value digest, selected normalized key, and active Host
+primitive profile. The raw selector value MAY be redacted. These fields are the
+audit and SCP-0004 reuse evidence for value-dependent structural selection.
 
 Trace event names are a Runtime-profile diagnostic contract, not Subsea source
 syntax. Changes must be versioned because migration comparisons depend on them.
@@ -497,6 +573,11 @@ An implementation that reuses a segment in a later voyage MUST:
 - preserve new occurrence IDs, lineages, and positions rather than copying
   them into content identity; and
 - record the prior segment through an auditable `reusedFrom` reference.
+
+For a conditional segment, the selector result is a required value observation.
+Its stable value-slot digest and primitive profile MUST match before the prior
+selected branch segment can be reused. Matching only the selected key, including
+the same `_` fallback, is insufficient.
 
 A `Name/Arity` map is not a sufficient alias fingerprint: separate stable
 reference slots may observe different hashes for the same name during one

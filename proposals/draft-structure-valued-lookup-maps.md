@@ -14,6 +14,11 @@
 
 Specify where an ordinary map whose entries are Goal structure may be bound, how its entries are validated, and how a selected entry receives routed input.
 
+[SCP-0005](0005-guarded-conditional-recursion.md) separately accepts the
+contextual `[selector, {key: GoalBranch}]` form. This draft now concerns only
+reusable structure-valued ordinary map bindings outside that conditional
+pipeline.
+
 ## Motivation and reproduction
 
 README allows "an ordinary-map lookup whose selectable entries are all valid Goal structure" as a Goal-arrow body, but the grammar parses map entries as value expressions, and nothing says where such a map may be defined or how a selected entry is routed. The POC originally accepted a top-level map literal and checked entries at the lookup site; that choice is now blocked in the POC pending this proposal.

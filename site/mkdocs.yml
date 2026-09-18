@@ -44,7 +44,7 @@ nav:
       - The Problem: TheProblem.md
       - For Agents: FOR_AGENTS.md
   - Language:
-      - Recursion — Deferred Notes: Recursion.md
+      - Guarded Conditional Recursion: Recursion.md
       - Agent Instructions: AGENTS.md
   - Conformance:
       - Conformance Corpus: conformance/README.md
@@ -73,6 +73,7 @@ nav:
           - "SCP-0002: Carousel boundaries": proposals/0002-carousel-runtime-boundaries.md
           - "SCP-0003: Explicit call staging": proposals/0003-explicit-value-producing-call-staging.md
           - "SCP-0004: Voyage and Cable artifacts": proposals/0004-voyage-plans-and-touchdown-cable-artifacts.md
+          - "SCP-0005: Guarded conditional recursion": proposals/0005-guarded-conditional-recursion.md
 
 plugins:
   - search

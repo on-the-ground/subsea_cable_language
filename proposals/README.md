@@ -19,3 +19,7 @@ See `GOVERNANCE.md` for statuses and decision procedure.
 - [SCP-0002 — Carousel and Runtime ownership boundaries](0002-carousel-runtime-boundaries.md)
 - [SCP-0003 — Explicit staging of value-producing calls](0003-explicit-value-producing-call-staging.md)
 - [SCP-0004 — Voyage Plans and Fully Touchdown Cable artifacts](0004-voyage-plans-and-touchdown-cable-artifacts.md)
+
+## Proposals under discussion
+
+- [SCP-0005 — Guarded conditional recursion](0005-guarded-conditional-recursion.md) — core direction accepted; SCC, demand, selector, provenance, and conformance details awaiting confirmation

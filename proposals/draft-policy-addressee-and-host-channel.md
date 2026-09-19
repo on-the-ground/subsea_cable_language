@@ -3,7 +3,7 @@
 - Status: Discussion — addressee model and double-claim handling accepted by the owner; the remaining contract is submitted for confirmation
 - Author(s): Claude (agent) for on-the-ground
 - Created: 2026-09-18
-- Updated: 2026-09-19
+- Updated: 2026-09-20
 - Requires owner decision: yes (Owner decision R9 stays open; this proposal decides only the addressee question)
 - External implementation ADRs: pending (subsea_cable_runtime, Host policy channel)
 - Evidence repositories/revisions: `on-the-ground/subsea_cable_runtime` POC; owner design review 2026-09-18
@@ -126,8 +126,9 @@ Resolution outcomes:
 
 ### Pinned declarations and resolution time
 
-Both declarations are **pinned at run start**: a Runtime MUST record a versioned
-Scheduler registry identity and a Host capability snapshot/profile identity for
+Three declarations are **pinned at run start**: a Runtime MUST record a
+versioned Scheduler registry identity, a Host capability snapshot/profile
+identity, and the forwarding-allowlist revision (see *Deployment allowlist*) for
 the run, and MUST resolve every occurrence's policies against those pinned
 declarations, not against whatever is registered when the occurrence happens to
 be disclosed.
@@ -136,14 +137,14 @@ This matters because occurrences are disclosed lazily. Without pinning, a
 registry or capability change mid-voyage could route the same identifier to a
 different addressee for a later occurrence, or turn it into a double claim
 partway through, and neither provenance nor replay would be deterministic. With
-pinning, addressee resolution is a function of the source plus two recorded
+pinning, addressee resolution is a function of the source plus the recorded
 version identities.
 
-Provenance records both identities. A Runtime MUST NOT re-resolve an already
-disclosed occurrence's addressee.
+Provenance records all three identities. A Runtime MUST NOT re-resolve an
+already disclosed occurrence's addressee.
 
-Pinning is a portable safety rule, so it has no permissive branch: when either
-declaration cannot be pinned, the run **MUST refuse to start**, before any
+Pinning is a portable safety rule, so it has no permissive branch: when any of
+the three cannot be pinned, the run **MUST refuse to start**, before any
 occurrence is disclosed and before deduction begins. That refusal is a profile
 negotiation / run-start failure, not a new language diagnostic — this proposal
 adds no kind for it — but whether the run may proceed is single-valued. Leaving
@@ -231,12 +232,18 @@ contradict the Host contract and the cancellation forwarding this proposal
 itself requires.
 
 What a Host-addressed policy MUST NOT have is **authority over the attempt
-lifecycle**:
+lifecycle**, and that is enforced by non-exposure rather than by refusing calls:
 
-- it MAY read the current invocation's attempt identity and cancellation
-  context, and MAY use them for delegation, tracing, and idempotency;
-- it MUST NOT create, retry, settle, extend, or abandon an attempt, and MUST NOT
-  interpret a Scheduler-addressed policy in order to do so.
+- the Host-policy context exposes **read-only** access to the current
+  invocation's attempt identity and cancellation signal, which a policy MAY use
+  for delegation, tracing, and idempotency;
+- it exposes **no** operation to create, retry, settle, extend, or abandon an
+  attempt, and none to read or interpret a Scheduler-addressed policy. Those
+  operations do not exist on this surface, so there is nothing to call and no
+  refusal to specify;
+- consequently a Host-addressed policy changes Runtime attempt state only the
+  way any Host invocation does — by the outcome it returns, which the Scheduler
+  then interprets.
 
 Observation is inside one invocation; lifecycle control is the Scheduler's.
 
@@ -295,6 +302,32 @@ failed is the deployment's permission to forward it.
 This matters where agents commit source through an MCP surface: without it,
 source text is an unmediated channel into the Host.
 
+**The allowlist is pinned like the other two declarations.** It decides whether
+a real Host effect happens, so its lifetime cannot be left implicit: a Runtime
+MUST pin an allowlist snapshot/revision identity at run start, alongside the
+Scheduler registry version and the Host capability snapshot, and MUST evaluate
+every forwarding decision in the run against that pinned revision. The pinned
+revision is recorded in provenance and is part of the granted-capability
+material in the Outcome Journal key. A run whose allowlist cannot be pinned
+refuses to start, exactly as for the other two declarations.
+
+Without pinning, the same Host-addressed policy on a later-disclosed occurrence
+could be forwarded by one Runtime and refused with `PolicyDenied` by another,
+and a change landing between disclosure and dispatch would leave the moment the
+`policy` phase is decided undefined. Pinning makes the decision a function of
+the source plus one recorded revision, and fixes it at disclosure.
+
+**Live revocation is deliberately out of scope here.** An operator who must stop
+an in-flight run's Host effects today cancels the run, which is already defined
+and already cooperative. Making the allowlist revocable *within* a run is a
+separate proposal, and it would have to define at least: atomic observation and
+commit of the revision at each occurrence disclosure; what a revocation means
+for an occurrence already disclosed but not yet dispatched, and for one already
+in flight; how that interacts with cooperative cancellation and a late
+`Succeeded`; and how the journal is keyed when two attempts in one run saw
+different revisions. This proposal does not answer those, so it does not permit
+the behavior.
+
 ### Identity, provenance, and reuse
 
 - Ordered policies of **both** kinds remain part of the authored `ArtifactHash`
@@ -302,11 +335,13 @@ source text is an unmediated channel into the Host.
 - A Touchdown content descriptor stays policy-erased (SCP-0004).
 - Provenance records the split: which policies were Scheduler-addressed, which
   were Host-addressed, the pinned Scheduler registry version, the pinned Host
-  capability snapshot and Host identity, and the granted capabilities.
+  capability snapshot and Host identity, the pinned forwarding-allowlist
+  revision, and the granted capabilities.
 - Consequently a future Outcome Journal MUST key an outcome by at least the
   Touchdown descriptor, the Host identity, the **pinned Host capability
   snapshot/profile identity and its version**, the Host-addressed policy digest,
-  and the granted capabilities. Two attempts with identical structure but
+  and the granted capabilities including the pinned allowlist revision. Two
+  attempts with identical structure but
   different Host-addressed policies — `@dryRun` and a real run — MUST NOT share
   a journal entry, and neither may two attempts that differ only in the Host's
   implementation or capability profile version.
@@ -320,8 +355,9 @@ source text is an unmediated channel into the Host.
 
 A Runtime reports, for the attached Host and Scheduler: Anchor identifiers,
 Host-addressed policy identifiers with schemas, Scheduler-addressed policy
-identifiers, the pinned registry and capability versions, and the forwarding
-allowlist in effect.
+identifiers, and the three pinned identities — Scheduler registry version, Host
+capability snapshot/profile version, and forwarding-allowlist revision — with
+the allowlist contents in effect.
 
 ## Alternatives
 
@@ -394,20 +430,23 @@ allowlist in effect.
      later-disclosed occurrence, and provenance records the pinned versions; a
      run whose declarations cannot be pinned refuses to start before any
      occurrence is disclosed;
-  7. a Host-addressed policy reads the attempt identity and cancellation
-     context of its own invocation, and an attempt at lifecycle control —
-     retrying, settling, or extending the attempt — is refused;
-  8. cancellation of an attempt carrying a delegating Host-addressed policy is
+  7. an allowlist change mid-run alters no forwarding decision in that run: the
+     pinned revision governs throughout, and provenance records it;
+  8. the Host-policy context exposes read-only attempt identity and the
+     cancellation signal and exposes no retry/settle/extend operation at all;
+     a Host outcome is the only way that invocation changes Runtime attempt
+     state;
+  9. cancellation of an attempt carrying a delegating Host-addressed policy is
      forwarded to the worker and traced; a late `Succeeded` is recorded
      alongside the cancellation request and the Scheduler decides its meaning;
-  9. conditional policy erasure: for corresponding occurrences that select the
-     same artifact with the same arguments and required routed values, erasing
-     policy metadata leaves the structural reduction result unchanged;
-  10. a withheld policy under a deployment allowlist is refused in the `policy`
+  10. conditional policy erasure: for corresponding occurrences that select the
+      same artifact with the same arguments and required routed values, erasing
+      policy metadata leaves the structural reduction result unchanged;
+  11. a withheld policy under a deployment allowlist is refused in the `policy`
       phase with `PolicyDenied` and traced;
-  11. two attempts differing only in Host-addressed policies produce different
+  12. two attempts differing only in Host-addressed policies produce different
       Outcome Journal keys, and so do two attempts differing only in the pinned
-      Host capability snapshot/profile version.
+      Host capability snapshot/profile version or the pinned allowlist revision.
 
 ## Reference experiment
 
@@ -416,7 +455,7 @@ implement this contract without inventing policy semantics: the Host interface
 gains a capability declaration, the Dispatcher builds a Host-facing request
 carrying `hostPolicies[]` and no `directPolicies[]`, and policy binding splits
 the ordered list into two source-order subsequences against pinned declarations.
-Scenarios 1–11 above become Runtime tests with the existing Scheduler and Host
+Scenarios 1–12 above become Runtime tests with the existing Scheduler and Host
 doubles.
 
 ## Unresolved questions
@@ -477,6 +516,17 @@ doubles.
   Journal key gains the pinned Host capability snapshot/profile identity and
   version, per SCP-0004's placement of Host implementation version in
   outcome-reuse policy rather than structural identity.
+- Review round 3 (2026-09-19, language PR #8): one P1 and one P2, both
+  addressed. The forwarding allowlist is now pinned at run start like the other
+  two declarations, recorded in provenance and in the journal's
+  granted-capability material, and a runtime case fixes that a mid-run change
+  alters nothing in that run; live revocation is named as out of scope with the
+  questions a future proposal would have to answer, since cancelling the run is
+  the defined way to stop in-flight Host effects today. Attempt-lifecycle
+  authority is withheld by non-exposure rather than by an undefined refusal: the
+  Host-policy context has read-only attempt identity and cancellation signal and
+  simply has no retry/settle/extend operation, so there is no surface, phase or
+  outcome left to specify.
 
 ## Final rationale
 

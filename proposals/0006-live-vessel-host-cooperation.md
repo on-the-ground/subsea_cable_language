@@ -229,6 +229,14 @@ spelling implementation-specific.
   `conformance/DEDUCTION.md`; status and evidence distinguish the accepted core
   from pending details; and the no-remainder proof with no normative consequence
   is removed.
+- Review round 2 (2026-09-20, language PR #7): three P2 findings are addressed.
+  The general value-barrier contract now assigns `DeductionBlocked(pendingValue)`
+  and its speculative counterpart rather than leaving §16 ahead of the contract;
+  §18 compares an event multiset plus per-occurrence causal order instead of
+  requiring a global frontier order; and trace normalization defines transport
+  removal, volatile-field erasure, and stable occurrence/attempt identities.
+  The optional wording fixes for ledger comparison and the AGENTS reading-order
+  status are included as well.
 
 ## Final rationale
 

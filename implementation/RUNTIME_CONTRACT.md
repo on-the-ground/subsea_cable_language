@@ -375,15 +375,15 @@ the Vessel. It MUST:
 - keep run-scoped execution state out of the Codebase and Deduction Ledger.
 
 Carousel MUST stop at a value barrier when the required value is unresolved. It
-MUST NOT commit a placeholder, invoke a leaf to obtain the value, or hold a
-deduction half-committed across evaluation. The Scheduler and Host MUST NOT
-rewrite a deduction when they deliver an outcome.
+MUST report `DeductionBlocked(pendingValue)` for explicit demand and the
+corresponding `PrefetchBlocked` reason for speculative consideration. It MUST
+NOT commit a placeholder, invoke a leaf to obtain the value, or hold a deduction
+half-committed across evaluation. The Scheduler and Host MUST NOT rewrite a
+deduction when they deliver an outcome.
 
 This rule includes conditional selectors. Until every value required by the
 selector is resolved, Carousel MUST select no key, create no branch occurrence
-or observation, and emit no `ConditionalBranchSelected`. Explicit demand
-reports `DeductionBlocked(pendingValue)` and speculative consideration reports
-the corresponding `PrefetchBlocked` reason.
+or observation, and emit no `ConditionalBranchSelected`.
 
 ## 8. Occurrence envelopes
 

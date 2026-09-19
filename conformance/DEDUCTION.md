@@ -198,16 +198,17 @@ downstream deduction, and leave every downstream unqualified reference symbolic.
 
 Complete the leaf with `Succeeded(value)` and let the Runtime accept that output
 into the Outcome & Value Store. Demanding the same downstream occurrence again
-MUST read the resolved routed value and may now commit its deduction. The earlier
-leaf and every deduction preceding the barrier remain byte-for-byte unchanged.
+with every other prerequisite unchanged MUST read the resolved routed value and
+commit its deduction. The earlier leaf and every deduction preceding the barrier
+remain byte-for-byte unchanged.
 
 ## 17. Host evaluation cannot choose or rewrite Goal topology
 
 Snapshot the Deduction Ledger immediately before dispatching a grounded leaf to
 a recording Host. The Host-facing surface MUST expose no operation that edits a
 deduction, resolves a Goal alias, selects a conditional branch, or publishes a
-Touchdown. After the Host returns a typed outcome, the ledger snapshot remains
-unchanged; only the Runtime-owned outcome/value state and trace may change.
+Touchdown. After the Host returns a typed outcome, the current ledger MUST equal
+the snapshot; only the Runtime-owned outcome/value state and trace may change.
 
 If the returned value later participates in routing or a conditional selector,
 topology changes only when Carousel receives a separate demand and commits the
@@ -221,10 +222,19 @@ an in-process adapter and once through an out-of-process adapter. Fix the
 Codebase revision, Scheduler profile and demand sequence, primitive profile,
 Host outcomes, and routed values.
 
-After transport-specific events are removed, both normalized traces MUST expose
-the same ordered semantic boundary events: Touchdown publication, Scheduler
-eligibility and dispatch, Host outcome, value resolution, and resumed Carousel
-demand. Their deduction records, Root outcome, and Fully Touchdown Cable MUST be
-equal. Process placement MUST NOT move alias resolution, policy interpretation,
-topology selection, or outcome ownership across their specified component
-boundaries.
+Normalize each trace by removing transport-only events and fields, timestamps,
+and durations; replace `runId` with one fixed token; map every runtime occurrence
+ID to its root-to-leaf child-ordinal vector; and map each attempt ID to its
+normalized occurrence plus attempt ordinal. The two normalized traces MUST have
+the same semantic boundary-event multiset and the same causal order within each
+occurrence: Touchdown publication precedes Scheduler eligibility and dispatch,
+which precede the Host outcome, value resolution, and any resumed Carousel
+demand that consumes that value. No global order is required between independent
+occurrences unless the fixed Runtime/Carousel profile supplies one.
+
+After applying the same identity normalization, the selected hashes, arguments,
+reduction results, observed codebase revisions, and lineages in their deduction
+records MUST be equal. Their Root outcomes and Fully Touchdown Cables MUST also
+be equal. Process placement MUST NOT move alias resolution, policy
+interpretation, topology selection, or outcome ownership across their specified
+component boundaries.

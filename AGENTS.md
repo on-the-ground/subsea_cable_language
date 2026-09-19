@@ -26,7 +26,8 @@ Before implementing a Subsea Cable consumer/runtime, read these files in order:
 10. `proposals/0005-guarded-conditional-recursion.md` — the accepted core and
     pending details for selective branching and guarded recursion.
 11. `proposals/0006-live-vessel-host-cooperation.md` — the live, bidirectional
-    Vessel–Host voyage lifecycle and deployment-neutral compiler boundary.
+    Vessel–Host voyage lifecycle, its accepted deployment-neutral core, and
+    pending compiler/profile details.
 
 Use **Subsea Cable** as the language name, **`__C`** only as its visual short
 mark, `.vyg` for source files, and `subsea-cable` for portable slugs/language

@@ -80,11 +80,13 @@ callback or FFI, embed a module, or use local or remote messaging. A suspended
 Vessel remains logically live if its state can resume the same unfinished
 voyage.
 
-A compiler or partial evaluator MAY prepare statically known structure and MAY
-generate code linked with this Runtime loop. A producer that permanently hands
-all later control to a detached Host is not by itself a conforming
-general-purpose Vessel. It MUST NOT present prospective output as the terminated
-voyage's Fully Touchdown Cable or Root outcome. See
+A compiler MAY validate, normalize, cache prepared artifacts, or generate code
+linked with this Runtime loop. Those preparation steps MUST keep each
+unqualified Goal reference symbolic until its exact occurrence is demanded and
+MUST NOT create a deduction record outside a voyage. A deployment that
+permanently hands all later control to a detached Host MUST NOT advertise
+conformance to the general Vessel profile. It MUST NOT present prospective
+output as the terminated voyage's Fully Touchdown Cable or Root outcome. See
 [SCP-0006](../proposals/0006-live-vessel-host-cooperation.md).
 
 ## 2. Frontend contract

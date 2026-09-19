@@ -69,8 +69,8 @@ Cable and then disappears. It remains the logical owner of the voyage while
 Carousel publishes Touchdowns, Scheduler dispatches eligible instances, Host
 returns outcomes, and routed values enable later deductions. This may all occur
 inside one process or library; the rule fixes lifecycle ownership, not process
-topology. Generated code is conforming only when it embeds, links, or
-communicates with the same live feedback loop.
+topology. A generated deployment may advertise general Vessel conformance only
+when it embeds, links, or communicates with the same live feedback loop.
 
 Never resolve an unqualified Goal reference to a hash merely because its parent
 was parsed, stored, or deduced. It remains a symbolic `Name/Arity` occurrence

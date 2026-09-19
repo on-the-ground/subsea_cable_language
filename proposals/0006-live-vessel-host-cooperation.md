@@ -1,13 +1,15 @@
 # SCP-0006 — Live Vessel–Host cooperation
 
-- Status: Accepted
+- Status: Discussion — live cooperation and deployment-neutral core accepted;
+  compiler/profile details awaiting owner confirmation
 - Author(s): Codex (agent) for on-the-ground
 - Created: 2026-09-18
-- Updated: 2026-09-18
+- Updated: 2026-09-20
 - Requires owner decision: yes
 - External implementation ADRs: —
-- Evidence repositories/revisions: `FOR_AGENTS.md`,
-  `implementation/RUNTIME_ORCHESTRATION_PLAN.md`, and SCP-0004
+- Evidence repositories/revisions: owner design review 2026-09-18,
+  [language PR #7 review](https://github.com/on-the-ground/subsea_cable_language/pull/7#pullrequestreview-5256145171),
+  `FOR_AGENTS.md`, `implementation/RUNTIME_ORCHESTRATION_PLAN.md`, and SCP-0004
 - Supersedes: any interpretation of Vessel as a compiler that hands a completed
   Cable to a detached Host
 - Superseded by: —
@@ -24,10 +26,13 @@ This is a semantic lifecycle requirement, not a deployment requirement. Vessel
 and Host may communicate across processes or run in one process through a
 library, static link, callback, FFI, embedded module, or equivalent mechanism.
 
-A tool may compile or partially evaluate a Voyage Plan, but a producer that
-emits Host code or a prospective leaf manifest and then relinquishes the voyage
-is not by itself a Vessel. Generated code may still be conforming when it embeds
-or links the same live feedback-loop responsibilities.
+A tool may validate, normalize, cache prepared artifacts, or generate Host
+bindings, but those preparation steps are not deduction and MUST leave every
+unqualified Goal occurrence symbolic until that exact occurrence is demanded in
+a voyage. A producer that emits Host code or a prospective leaf manifest and
+then relinquishes the voyage is not by itself a Vessel. Generated code may still
+be conforming when it embeds or links the same live feedback-loop
+responsibilities.
 
 ## Motivation and reproduction
 
@@ -120,18 +125,22 @@ A conforming implementation MAY use:
 Suspension and recovery are also allowed. “Live” means logically participating
 in the unfinished voyage, not continuously occupying a thread or process.
 
-### Compiler and partial-evaluation tools
+### Compiler and static-preparation tools
 
-A compiler MAY validate, normalize, cache, partially deduce, or generate Host
-bindings for the statically known portion of a Voyage Plan. A profile may also
-prove that a particular plan has no value-dependent structural remainder.
+A compiler MAY validate, normalize, cache prepared artifacts, or generate Host
+bindings. These steps MUST preserve every unqualified Goal reference as symbolic
+`Name/Arity` until that exact occurrence is demanded in a voyage. They MUST NOT
+create a deduction record outside that voyage; only Carousel may commit one
+after observing the run's occurrence, arguments, codebase revision, and active
+lineages.
 
 Those tools MUST NOT present an unexecuted prospective artifact as the
 terminated voyage's Fully Touchdown Cable or Root outcome. If generated code
 must react to Host results, it MUST embed, link, or communicate with a component
 that preserves the live Vessel responsibilities above. A compiler-only producer
 that permanently hands off all later control may be a useful external tool, but
-it MUST NOT identify itself as the Vessel or as a complete Consumer Runtime.
+the deployment it ships MUST NOT advertise conformance to the general Vessel
+profile unless that deployment implements the live loop above.
 
 ## Alternatives
 
@@ -140,7 +149,7 @@ it MUST NOT identify itself as the Vessel or as a complete Consumer Runtime.
 | Make no specification change | Existing documents already imply the loop | Leaves room to market a compiler-only handoff as a complete Vessel |
 | Vessel emits Host code or a complete Cable and exits | Simple deployment and conventional build artifact | Cannot generally cross value barriers or retain planning, alias, routing, and provenance state without recreating Vessel inside the output |
 | Require a separate Vessel daemon | Operational boundary is visually obvious | Confuses semantic ownership with deployment and excludes embedded/library uses |
-| **Accepted: live logical cooperation, deployment-neutral** | Preserves value-dependent unfolding and agent replanning while allowing in-process, linked, embedded, or remote packaging | Requires a bidirectional Runtime/Host contract for unfinished voyages |
+| **Accepted core: live logical cooperation, deployment-neutral** | Preserves value-dependent unfolding and agent replanning while allowing in-process, linked, embedded, or remote packaging | Requires a bidirectional Runtime/Host contract for unfinished voyages |
 
 ## Philosophy and boundary audit
 
@@ -162,10 +171,10 @@ it MUST NOT identify itself as the Vessel or as a complete Consumer Runtime.
 - Previously invalid source newly accepted: none.
 - Stored artifact/hash impact: none.
 - Diagnostic impact: none.
-- Runtime impact: a compiler-only implementation MUST describe itself as a
-  compiler or partial evaluator rather than a Vessel. Its generated deployment
-  may become a conforming Vessel by linking or communicating with the required
-  feedback-loop components.
+- Runtime impact: a detached compiler-only producer is not sufficient evidence
+  for general Vessel conformance. Its generated deployment may claim that
+  profile only when it links or communicates with the required feedback-loop
+  components.
 - Version/profile requirement: consumers claiming the general Vessel contract
   after this SCP MUST implement the live lifecycle boundary.
 
@@ -179,7 +188,8 @@ it MUST NOT identify itself as the Vessel or as a complete Consumer Runtime.
 - Runtime cases: verify at least one routed Host value unblocks later deduction;
   verify no Host call can rewrite prior deductions or independently select later
   Goal topology; verify equivalent in-process and out-of-process adapters obey
-  the same event boundary.
+  the same event boundary. These cases are recorded in
+  `conformance/DEDUCTION.md` §§16–18.
 
 ## Reference experiment
 
@@ -193,8 +203,7 @@ spelling implementation-specific.
 ## Unresolved questions
 
 - Concrete streaming, callback, IPC, and recovery APIs remain Runtime choices.
-- Static-profile proof requirements and code-generation formats remain future
-  profile or implementation work.
+- Code-generation formats remain future profile or implementation work.
 - Concrete Scheduler policy semantics remain deliberately unspecified.
 
 ## Owner decision record
@@ -209,12 +218,22 @@ spelling implementation-specific.
 - Decision date: 2026-09-18
 - Conditions: do not assign Scheduler policy to Host and do not require a
   separate process.
+- Accepted core: live Vessel–Host cooperation and deployment-topology
+  neutrality.
+- Submitted for confirmation: compiler/static-preparation limits, general
+  Vessel profile-claim rules, and the synchronized runtime cases.
+- Review round 1 (2026-09-20, language PR #7): two P1 and three P2 findings are
+  addressed in this revision. Static preparation no longer performs deduction;
+  general Vessel conformance is an observable profile claim rather than a rule
+  about a tool's name; the three runtime cases are recorded in
+  `conformance/DEDUCTION.md`; status and evidence distinguish the accepted core
+  from pending details; and the no-remainder proof with no normative consequence
+  is removed.
 
 ## Final rationale
 
 Subsea Cable is intended to carry plans whose later structure can depend on
 observed results. Its agent use case makes that feedback loop central rather
-than exceptional. A compiler may package the loop, optimize it, or prove it
-unnecessary for a restricted static plan, but it cannot replace the general
-Vessel lifecycle without losing the property the language is designed to
-provide.
+than exceptional. A compiler may prepare or package the loop, but a detached
+compiler cannot replace the general Vessel lifecycle without losing the
+property the language is designed to provide.

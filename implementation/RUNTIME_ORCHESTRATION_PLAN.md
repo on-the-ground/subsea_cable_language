@@ -1,8 +1,9 @@
 # Runtime Orchestration — Coordinating Carousel, Host, and Policy
 
 > **Status:** proposed operational design. The live Vessel–Host feedback-loop
-> boundary is accepted in
-> [SCP-0006](../proposals/0006-live-vessel-host-cooperation.md); concrete APIs,
+> and deployment-neutral core are accepted in
+> [SCP-0006](../proposals/0006-live-vessel-host-cooperation.md), whose
+> compiler/profile details remain under discussion; concrete APIs,
 > baseline outcome rules, and policy mechanics in this document remain
 > non-normative. It extends
 > [CAROUSEL_ENGINE_PLAN.md](CAROUSEL_ENGINE_PLAN.md) and must not be implemented

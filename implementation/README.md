@@ -10,9 +10,10 @@ The deduction engine objective, Touchdown prefetch model, backpressure boundary,
 and phased delivery plan are tracked separately in
 [CAROUSEL_ENGINE_PLAN.md](CAROUSEL_ENGINE_PLAN.md). Read it before freezing a
 Runtime component model; its ownership boundary is accepted in SCP-0002 and
-propagated into the normative Runtime Contract. Live Vessel–Host cooperation is
-accepted in
-[SCP-0006](../proposals/0006-live-vessel-host-cooperation.md). The remaining
+propagated into the normative Runtime Contract. The live Vessel–Host feedback
+loop and deployment-neutral core are accepted in
+[SCP-0006](../proposals/0006-live-vessel-host-cooperation.md); its
+compiler/profile details remain under discussion. The remaining
 proposed coordination of Carousel, Host, and `@policy` from a run command to the
 Root outcome is in [RUNTIME_ORCHESTRATION_PLAN.md](RUNTIME_ORCHESTRATION_PLAN.md),
 and evidence from an external proof of concept is in

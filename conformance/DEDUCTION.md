@@ -188,3 +188,43 @@ different canonical selector-value digests. The later voyage MUST NOT reuse the
 earlier selected-branch segment. Reuse is permitted only when the stable value
 slot, digest, primitive profile, and every other SCP-0004 dependency fingerprint
 match.
+
+## 16. A Host value unblocks later deduction
+
+Use a serial route whose first grounded leaf produces a value explicitly routed
+into a later Goal occurrence. Demand the later occurrence before the Host outcome
+exists. Carousel MUST report `DeductionBlocked(pendingValue)`, commit no
+downstream deduction, and leave every downstream unqualified reference symbolic.
+
+Complete the leaf with `Succeeded(value)` and let the Runtime accept that output
+into the Outcome & Value Store. Demanding the same downstream occurrence again
+MUST read the resolved routed value and may now commit its deduction. The earlier
+leaf and every deduction preceding the barrier remain byte-for-byte unchanged.
+
+## 17. Host evaluation cannot choose or rewrite Goal topology
+
+Snapshot the Deduction Ledger immediately before dispatching a grounded leaf to
+a recording Host. The Host-facing surface MUST expose no operation that edits a
+deduction, resolves a Goal alias, selects a conditional branch, or publishes a
+Touchdown. After the Host returns a typed outcome, the ledger snapshot remains
+unchanged; only the Runtime-owned outcome/value state and trace may change.
+
+If the returned value later participates in routing or a conditional selector,
+topology changes only when Carousel receives a separate demand and commits the
+affected reduction. The Host return itself MUST NOT create that structure or
+rewrite any earlier record.
+
+## 18. Deployment topology preserves the Runtime boundary
+
+Run the same Voyage Plan twice against deterministic Host doubles: once through
+an in-process adapter and once through an out-of-process adapter. Fix the
+Codebase revision, Scheduler profile and demand sequence, primitive profile,
+Host outcomes, and routed values.
+
+After transport-specific events are removed, both normalized traces MUST expose
+the same ordered semantic boundary events: Touchdown publication, Scheduler
+eligibility and dispatch, Host outcome, value resolution, and resumed Carousel
+demand. Their deduction records, Root outcome, and Fully Touchdown Cable MUST be
+equal. Process placement MUST NOT move alias resolution, policy interpretation,
+topology selection, or outcome ownership across their specified component
+boundaries.

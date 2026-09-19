@@ -40,8 +40,9 @@ batch is ultimately executed by the Host.
 
 Host-addressed policies travel with the evaluation request that already exists.
 The grounded leaf envelope already carries `directPolicies[]`; this proposal
-gives the Host the authority to interpret a declared subsequence of them and
-names that filtered projection. A Host declares the policy identifiers it
+gives the Host the authority to interpret a declared subsequence of them, names
+that subsequence `hostPolicies[]`, and makes it the *only* policy field the
+Host-facing request carries. A Host declares the policy identifiers it
 accepts in its capability description, the same way it declares Anchors. A
 policy claimed by both the Scheduler registry and the Host is an error, not a
 precedence question.
@@ -118,8 +119,8 @@ Resolution outcomes:
 
 | Claimed by | Result |
 |---|---|
-| Scheduler only | Scheduler-addressed; the Scheduler interprets it; the Host never sees it |
-| Host only | Host-addressed; the Scheduler does not interpret it; it rides in the leaf envelope |
+| Scheduler only | Scheduler-addressed; the Scheduler interprets it; it never crosses to the Host |
+| Host only | Host-addressed; the Scheduler does not interpret it; it rides in the Host-facing request as `hostPolicies[]` |
 | Both | **`PolicyConflict`** — see below |
 | Neither | `UnknownPolicy`, unchanged |
 
@@ -138,9 +139,16 @@ partway through, and neither provenance nor replay would be deterministic. With
 pinning, addressee resolution is a function of the source plus two recorded
 version identities.
 
-Provenance records both identities. A run MAY refuse to start when either
-declaration cannot be pinned; it MUST NOT re-resolve an already disclosed
-occurrence's addressee.
+Provenance records both identities. A Runtime MUST NOT re-resolve an already
+disclosed occurrence's addressee.
+
+Pinning is a portable safety rule, so it has no permissive branch: when either
+declaration cannot be pinned, the run **MUST refuse to start**, before any
+occurrence is disclosed and before deduction begins. That refusal is a profile
+negotiation / run-start failure, not a new language diagnostic — this proposal
+adds no kind for it — but whether the run may proceed is single-valued. Leaving
+it optional would reopen exactly the non-deterministic fallbacks pinning exists
+to close: live resolution, or an empty declaration treated as "claims nothing".
 
 ### Double claim is an error, not a precedence rule
 
@@ -182,27 +190,55 @@ directly on the grounded leaf occurrence it configures.
 
 ### The Host policy channel
 
-The grounded leaf envelope already carries `directPolicies[]`. This proposal
-adds one derived field:
+Two boundaries must be kept apart, because a projection alone hides nothing.
+
+**Inside the Runtime**, the occurrence record and the grounded leaf envelope keep
+`directPolicies[]` unchanged: all of the occurrence's authored policies, in
+source order. The Scheduler needs them, provenance records them, and nothing in
+this proposal removes them.
+
+**At the Host boundary**, the Dispatcher constructs the Host-facing evaluation
+request, and that request carries only:
 
 ```text
 hostPolicies[]   the source-order subsequence of this occurrence's
                  directPolicies[] that resolved as Host-addressed
 ```
 
-- `hostPolicies[]` is a **projection**, not a new channel: same entries, same
-  decoded arguments, same target spans, in source order.
-- Scheduler-addressed entries MUST NOT appear in `hostPolicies[]`, and the Host
-  MUST NOT interpret any entry outside it. Each addressee receives its own
-  source-order subsequence and nothing else.
+- The Host-facing evaluation request MUST NOT carry `directPolicies[]`. Handing
+  the Host the full envelope and asking it to read only a projection is not a
+  boundary; the Scheduler-addressed entries have to be absent from what crosses,
+  or "the Host never sees it" is unimplementable.
+- `hostPolicies[]` carries the same entries as the corresponding
+  `directPolicies[]` subsequence: same decoded arguments, same target spans, same
+  relative source order.
 - The Scheduler MUST NOT interpret, reorder, drop, or synthesize the
-  Host-addressed subsequence.
+  Host-addressed subsequence; it only filters and forwards it.
+- An empty `hostPolicies[]` is the ordinary case and MUST NOT be conflated with
+  a missing field.
 - Cross-layer ordering is fixed: the **Scheduler attempt lifecycle wraps the
   Host invocation**. A Scheduler-addressed `@timeout` or `@retry` governs the
-  attempt within which the Host applies its own policies; a Host-addressed
-  policy never observes or alters the enclosing attempt.
+  attempt within which the Host applies its own policies.
 - The Host MAY reject a policy it advertised but cannot honor for this call;
   that is a Host-phase failure of the attempt, not `UnknownPolicy`.
+
+### What a Host-addressed policy may see of the attempt
+
+The Host already receives the attempt identity — the Dispatcher passes it with
+the leaf envelope, and `Host.Control.cancel(attemptId)` is how cancellation
+arrives — so this proposal does not forbid observation. Forbidding it would
+contradict the Host contract and the cancellation forwarding this proposal
+itself requires.
+
+What a Host-addressed policy MUST NOT have is **authority over the attempt
+lifecycle**:
+
+- it MAY read the current invocation's attempt identity and cancellation
+  context, and MAY use them for delegation, tracing, and idempotency;
+- it MUST NOT create, retry, settle, extend, or abandon an attempt, and MUST NOT
+  interpret a Scheduler-addressed policy in order to do so.
+
+Observation is inside one invocation; lifecycle control is the Scheduler's.
 
 ### Cancellation stays cooperative
 
@@ -268,10 +304,17 @@ source text is an unmediated channel into the Host.
   were Host-addressed, the pinned Scheduler registry version, the pinned Host
   capability snapshot and Host identity, and the granted capabilities.
 - Consequently a future Outcome Journal MUST key an outcome by at least the
-  Touchdown descriptor, the Host identity, the Host-addressed policy digest,
+  Touchdown descriptor, the Host identity, the **pinned Host capability
+  snapshot/profile identity and its version**, the Host-addressed policy digest,
   and the granted capabilities. Two attempts with identical structure but
   different Host-addressed policies — `@dryRun` and a real run — MUST NOT share
-  a journal entry.
+  a journal entry, and neither may two attempts that differ only in the Host's
+  implementation or capability profile version.
+- The capability version belongs in the key because SCP-0004 places Host
+  implementation and capability version in **outcome-reuse policy and the
+  journal**, not in structural identity. The same Host identity with the same
+  allowlist and granted capabilities can still be a different implementation
+  after an upgrade, and its earlier outcomes are not reusable.
 
 ### Capability reporting
 
@@ -336,7 +379,9 @@ allowlist in effect.
   1. a Host-addressed policy appears in `hostPolicies[]` in source order and the
      Scheduler never interprets it;
   2. a Scheduler-addressed policy on the same leaf stays out of
-     `hostPolicies[]`, and each addressee receives only its own subsequence;
+     `hostPolicies[]`, and the Host-facing evaluation request carries no
+     `directPolicies[]` at all — inspecting what crossed the boundary shows the
+     Scheduler-addressed entry is absent, not merely unread;
   3. a policy claimed by both pinned declarations is `PolicyConflict` in the
      `policy` phase at disclosure; a `check` pass with profiles attached reports
      it earlier as a non-authoritative preflight diagnostic and the
@@ -346,26 +391,32 @@ allowlist in effect.
      resolving-map occurrence is `UnsupportedPolicyTarget`, and a composite's
      policy never reaches a descendant leaf's `hostPolicies[]`;
   6. a registry or capability change mid-run does not alter the addressee of a
-     later-disclosed occurrence, and provenance records the pinned versions;
-  7. cancellation of an attempt carrying a delegating Host-addressed policy is
+     later-disclosed occurrence, and provenance records the pinned versions; a
+     run whose declarations cannot be pinned refuses to start before any
+     occurrence is disclosed;
+  7. a Host-addressed policy reads the attempt identity and cancellation
+     context of its own invocation, and an attempt at lifecycle control —
+     retrying, settling, or extending the attempt — is refused;
+  8. cancellation of an attempt carrying a delegating Host-addressed policy is
      forwarded to the worker and traced; a late `Succeeded` is recorded
      alongside the cancellation request and the Scheduler decides its meaning;
-  8. conditional policy erasure: for corresponding occurrences that select the
+  9. conditional policy erasure: for corresponding occurrences that select the
      same artifact with the same arguments and required routed values, erasing
      policy metadata leaves the structural reduction result unchanged;
-  9. a withheld policy under a deployment allowlist is refused in the `policy`
-     phase with `PolicyDenied` and traced;
-  10. two attempts differing only in Host-addressed policies produce different
-      Outcome Journal keys.
+  10. a withheld policy under a deployment allowlist is refused in the `policy`
+      phase with `PolicyDenied` and traced;
+  11. two attempts differing only in Host-addressed policies produce different
+      Outcome Journal keys, and so do two attempts differing only in the pinned
+      Host capability snapshot/profile version.
 
 ## Reference experiment
 
 The POC ships no concrete interpreters and rejects every policy, so it can
 implement this contract without inventing policy semantics: the Host interface
-gains a capability declaration, `LeafContext` carries the `hostPolicies[]`
-projection of the occurrence's `directPolicies[]`, and policy binding splits the
-ordered list into two source-order subsequences against pinned declarations.
-Scenarios 1–10 above become Runtime tests with the existing Scheduler and Host
+gains a capability declaration, the Dispatcher builds a Host-facing request
+carrying `hostPolicies[]` and no `directPolicies[]`, and policy binding splits
+the ordered list into two source-order subsequences against pinned declarations.
+Scenarios 1–11 above become Runtime tests with the existing Scheduler and Host
 doubles.
 
 ## Unresolved questions
@@ -413,6 +464,19 @@ doubles.
   inheritance to descendants; cancellation is restated as cooperative; policy
   erasure takes the conditional form of RUNTIME_ORCHESTRATION_PLAN §8.5; and
   the allowlist refusal gets the distinct kind `PolicyDenied`.
+- Review round 2 (2026-09-19, language PR #8): two further P1 and two P2
+  findings, all addressed. The projection is no longer only a derived field:
+  the Runtime-internal envelope keeps `directPolicies[]`, and the Host-facing
+  evaluation request the Dispatcher builds carries `hostPolicies[]` and no
+  `directPolicies[]`, so invisibility is implementable rather than asserted.
+  Pinning loses its permissive branch — a run whose declarations cannot be
+  pinned MUST refuse to start, as a profile-negotiation failure. The Host may
+  read its own invocation's attempt identity and cancellation context, since the
+  Dispatcher already passes them and `Host.Control.cancel(attemptId)` depends on
+  them; what is forbidden is authority over the attempt lifecycle. The Outcome
+  Journal key gains the pinned Host capability snapshot/profile identity and
+  version, per SCP-0004's placement of Host implementation version in
+  outcome-reuse policy rather than structural identity.
 
 ## Final rationale
 

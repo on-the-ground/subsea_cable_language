@@ -7,6 +7,8 @@
 - Requires owner decision: yes
 - External implementation ADRs: [subsea_cable_runtime `0003-structure-valued-lookup-maps.md`](https://github.com/on-the-ground/subsea_cable_runtime/blob/main/docs/decisions/0003-structure-valued-lookup-maps.md)
 - Evidence repositories/revisions: `on-the-ground/subsea_cable_runtime@d62f1c3` (Carousel POC; evidence gathered while pinned to this repository at `cbc6f53`)
+- Activation pull request: [#10](https://github.com/on-the-ground/subsea_cable_language/pull/10)
+- Effective language revision: the commit on `main` produced by squash-merging PR #10
 - Supersedes: —
 - Superseded by: —
 
@@ -121,6 +123,15 @@ The POC blocks structure-valued lookup with `UnsupportedByProfile` until a decis
   the diagnostic split above
 - Decision date: 2026-09-20
 - Conditions: entries stay explicit; no implicit routing into a selected entry
+
+## Activation record
+
+- Canonical documents synchronized: `README.md` lookup-map semantics, `implementation/RUNTIME_CONTRACT.md` §2.2, `FOR_AGENTS.md`, `implementation/CAROUSEL_POC_FINDINGS.md` F8
+- Grammar projections synchronized: no production change; entry forms are limited to what `SubseaCable.g4` already admits in a map-entry position, verified against `mapEntry` and `nonIdentifierPrimary`
+- Diagnostics and examples synchronized: `InvalidStructuralContext` for a bare entry and for a structure-valued map used as a value, with the position split against SCP-0005's `UnboundName`
+- Conformance cases synchronized: `conformance/valid/structure-valued-lookup-map.vyg`, `conformance/invalid-semantic/StructureMapBareEntry.vyg`, `conformance/invalid-semantic/StructureMapAsValue.vyg`, `conformance/cases.tsv`, `conformance/DEDUCTION.md` §21
+- Compatibility and migration notes synchronized: SCP compatibility section; programs relying on bare entries or implicit routing become invalid
+- Verification commands and results: `python .github/scripts/validate_scp_activation.py` passes; `python .github/scripts/test_validate_scp_activation.py` passes; `mkdocs build --strict` passes; every markdown link resolves and every `conformance/cases.tsv` path exists
 
 ## Final rationale
 

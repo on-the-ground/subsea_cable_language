@@ -8,10 +8,6 @@ Use `TEMPLATE.md` and allocate a number during review. Draft filenames may begin
 with `draft-`; proposal history is retained when a proposal is rejected,
 withdrawn, or superseded.
 
-Merging a proposal records a decision. A decision takes effect only when the
-canonical documents and the conformance corpus carry it, so an accepted SCP
-names where it landed.
-
 Implementation ADRs remain in their external implementation repositories. An SCP
 links those ADRs and extracts the implementation-independent language question.
 

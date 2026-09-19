@@ -7,6 +7,8 @@
 - Requires owner decision: yes
 - External implementation ADRs: [subsea_cable_runtime `0005-dynamic-nooutput-errors.md`](https://github.com/on-the-ground/subsea_cable_runtime/blob/main/docs/decisions/0005-dynamic-nooutput-errors.md)
 - Evidence repositories/revisions: `on-the-ground/subsea_cable_runtime@d62f1c3` (Carousel POC; evidence gathered while pinned to this repository at `cbc6f53`)
+- Activation pull request: [#10](https://github.com/on-the-ground/subsea_cable_language/pull/10)
+- Effective language revision: the commit on `main` produced by squash-merging PR #10
 - Supersedes: —
 - Superseded by: —
 
@@ -87,6 +89,15 @@ The POC reports the option B kinds, marked experimental (ADR 0005).
   phase decided by the detection point
 - Decision date: 2026-09-20
 - Conditions: —
+
+## Activation record
+
+- Canonical documents synchronized: `README.md` error-ownership table, `implementation/RUNTIME_CONTRACT.md` §3, `implementation/CAROUSEL_POC_FINDINGS.md` F10
+- Grammar projections synchronized: not applicable; no source syntax changed
+- Diagnostics and examples synchronized: new stable kind `NoOutputNotRoutable`, dual-phase `deduction` or `host` by detection point
+- Conformance cases synchronized: `conformance/DEDUCTION.md` §20
+- Compatibility and migration notes synchronized: SCP compatibility section; the POC's two experimental kinds are renamed
+- Verification commands and results: `python .github/scripts/validate_scp_activation.py` passes; `python .github/scripts/test_validate_scp_activation.py` passes; `mkdocs build --strict` passes; every markdown link resolves and every `conformance/cases.tsv` path exists
 
 ## Final rationale
 

@@ -7,6 +7,8 @@
 - Requires owner decision: yes
 - External implementation ADRs: [subsea_cable_runtime `0002-inline-goal-arrow-stages.md`](https://github.com/on-the-ground/subsea_cable_runtime/blob/main/docs/decisions/0002-inline-goal-arrow-stages.md)
 - Evidence repositories/revisions: `on-the-ground/subsea_cable_runtime@d62f1c3` (Carousel POC; evidence gathered while pinned to this repository at `cbc6f53`)
+- Activation pull request: [#10](https://github.com/on-the-ground/subsea_cable_language/pull/10)
+- Effective language revision: the commit on `main` produced by squash-merging PR #10
 - Supersedes: —
 - Superseded by: —
 
@@ -96,6 +98,15 @@ The POC implements option A as an experimental path (ADR 0002). Tests: `TestValu
 - Decision date: 2026-09-20
 - Conditions: the stage adds no lineage segment; `Reattempt` on it stays
   `UnsupportedPolicyTarget`; Host-addressed policies may not target it
+
+## Activation record
+
+- Canonical documents synchronized: `implementation/RUNTIME_CONTRACT.md` §8 occurrence-kind list and §8.1, `AGENTS.md` occurrence-kind glossary, `implementation/RUNTIME_ORCHESTRATION_PLAN.md` §8.5, `implementation/CAROUSEL_POC_FINDINGS.md` F3
+- Grammar projections synchronized: not applicable; the stage was already grammatical
+- Diagnostics and examples synchronized: deduction-phase `DestructureMismatch` on a stage binding mismatch; `UnsupportedPolicyTarget` for `Reattempt` on the stage
+- Conformance cases synchronized: `conformance/DEDUCTION.md` §19 and `conformance/POLICY.md` §5
+- Compatibility and migration notes synchronized: SCP compatibility section; no stored artifact or hash impact
+- Verification commands and results: `python .github/scripts/validate_scp_activation.py` passes; `python .github/scripts/test_validate_scp_activation.py` passes; `mkdocs build --strict` passes; every markdown link resolves and every `conformance/cases.tsv` path exists
 
 ## Final rationale
 

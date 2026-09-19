@@ -7,6 +7,8 @@
 - Requires owner decision: yes (decided; Owner decision R9 stays open separately)
 - External implementation ADRs: pending (subsea_cable_runtime, Host policy channel)
 - Evidence repositories/revisions: `on-the-ground/subsea_cable_runtime` POC; owner design review 2026-09-18
+- Activation pull request: [#10](https://github.com/on-the-ground/subsea_cable_language/pull/10)
+- Effective language revision: the commit on `main` produced by squash-merging PR #10
 - Supersedes: the implicit assumption that every `@policy` is addressed to the Scheduler
 - Superseded by: —
 
@@ -639,6 +641,15 @@ doubles.
   outcome with exactly one variant plus its serving capability snapshot is
   journal-reusable. Runtime cases cover missing, double, mismatched substitute,
   and cross-variant collision behavior.
+
+## Activation record
+
+- Canonical documents synchronized: `README.md` policy-addressee section and error-ownership table, `implementation/RUNTIME_CONTRACT.md` §3, §8 envelope, §8.2, §10.1, §12 and §15, `AGENTS.md`, `FOR_AGENTS.md`, `implementation/RUNTIME_ORCHESTRATION_PLAN.md`
+- Grammar projections synchronized: not applicable; the grammar already admits any policy identifier
+- Diagnostics and examples synchronized: `PolicyConflict` in the `policy` phase, `InvalidPolicyArguments`, `UnsupportedPolicyTarget` for any non-leaf occurrence kind, and the new stable kind `PolicyDenied`
+- Conformance cases synchronized: `conformance/POLICY.md` §§1–13
+- Compatibility and migration notes synchronized: SCP compatibility section; no previously valid source changes meaning and no stored hash impact
+- Verification commands and results: `python .github/scripts/validate_scp_activation.py` passes; `python .github/scripts/test_validate_scp_activation.py` passes; `mkdocs build --strict` passes; every markdown link resolves and every `conformance/cases.tsv` path exists
 
 ## Final rationale
 

@@ -86,9 +86,15 @@ Identity only; routing, policy, and demand-time alias resolution are unaffected.
 
 - Previously valid source affected: none.
 - Previously invalid source newly accepted: none.
-- Stored artifact/hash impact: defines hashes; existing stores must be re-hashed under the accepted encoding profile.
+- Stored artifact/hash impact: this SCP changes the input set of artifact
+  identity, so a profile-specific store that adopts this revision MUST rewrite
+  and re-hash its artifacts under its own encoding profile. A cross-runtime
+  canonical rehash is not possible yet and is not required here: no canonical
+  encoding profile is accepted, and the exact encoding and hash algorithm remain
+  a future profile decision (see Unresolved questions).
 - Diagnostic impact: none.
-- Migration strategy: re-store artifacts.
+- Migration strategy: re-store artifacts under the adopting profile; defer any
+  cross-runtime rehash until a canonical encoding profile exists.
 - Version/profile requirement: canonical encoding profile revision.
 
 ## Grammar and conformance impact
@@ -124,7 +130,8 @@ The POC uses option B under profile `poc-sha256-canon/1`, marked experimental (A
 - Conformance cases synchronized: `conformance/DEDUCTION.md` §22, including a
   case that fails a direct-only capture (`Goal` → value `a` → value `b`, change
   `b`) and a case fixing that reordering binding declarations changes no hash
-- Compatibility and migration notes synchronized: SCP compatibility section; existing stores must be re-hashed under the accepted encoding profile
+- Compatibility and migration notes synchronized: SCP compatibility section,
+  scoping the rehash to profile-specific stores adopting this revision; existing stores must be re-hashed under the accepted encoding profile
 - Verification commands and results: `python .github/scripts/validate_scp_activation.py` passes; `python .github/scripts/test_validate_scp_activation.py` passes; `mkdocs build --strict` passes; every markdown link resolves and every `conformance/cases.tsv` path exists
 
 ## Final rationale

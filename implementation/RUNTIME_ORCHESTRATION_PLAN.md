@@ -361,15 +361,26 @@ by neither is rejected as `UnknownPolicy`.
 Not fixed: every concrete policy's meaning, inheritance, and composition. This
 design supplies a **mechanism** only.
 
-### 8.2 Policy registry and interpreters
+### 8.2 Scheduler-addressed policy registry and interpreters
+
+**Sections 8.2 through 8.5 describe Scheduler-addressed policies only.** The
+interface below observes Scheduler events and returns attempt-lifecycle actions
+such as `Reattempt`, `CancelScope` and `FailScope`. A Host-addressed policy MUST
+NOT be given this interface: the accepted Host-policy surface exposes no
+attempt-lifecycle operation at all
+([SCP-0011](../proposals/0011-policy-addressee-and-host-channel.md), and
+`RUNTIME_CONTRACT.md` §10.1). Restricting `targetKinds` would not preserve that
+difference, because the difference is authority, not target.
+
+A Host-addressed policy takes the separate path in §8.6: the Dispatcher filters
+it into `hostPolicies[]`, the Host interprets it inside one invocation, and no
+Scheduler event or action is involved.
 
 ```text
-PolicyInterpreter
+SchedulerPolicyInterpreter
   id, version
   targetKinds          subset of {Goal, serial, parallel, resolving-map,
-                                   goal-arrow-stage, function-leaf, anchor};
-                       a Host-addressed policy is limited to
-                       {function-leaf, anchor}
+                                   goal-arrow-stage, function-leaf, anchor}
   validateArgs(args)   -> ok | InvalidPolicyArguments
   attach(scopeCtx)     -> state
   on(event, state, scopeCtx) -> [Action]
@@ -441,7 +452,27 @@ No action can edit topology, routing, aliases, or committed deductions.
   `UnknownPolicy` when it is exposed, before any affected execution. Policies
   are never silently ignored to manufacture a comparison run.
 
-### 8.6 Illustration only
+### 8.6 Host-addressed policies take a different path
+
+A Host-addressed policy never enters the registry above. Its path is:
+
+```text
+occurrence.directPolicies[]  --(addressee resolution, §10.1)-->  hostPolicies[]
+hostPolicies[]               --(Dispatcher, Host-facing request)-->  Host
+```
+
+- It is resolved against the pinned Host capability declaration, not the
+  Scheduler registry, and a double claim is `PolicyConflict`.
+- It reaches only `{function-leaf, anchor}` occurrences; anywhere else is
+  `UnsupportedPolicyTarget`.
+- It observes no Scheduler event and returns no action. It may read the current
+  invocation's attempt identity and cancellation signal, and the surface exposes
+  no operation to create, retry, settle, extend or abandon an attempt. The only
+  way it changes Runtime attempt state is the outcome the invocation returns.
+- Everything in §§8.3–8.5 — the event set, the closed action set, and the flow
+  invariants — therefore does not apply to it.
+
+### 8.7 Illustration only
 
 ```subsea
 Patch = [d] -> @retry $editFiles(d)

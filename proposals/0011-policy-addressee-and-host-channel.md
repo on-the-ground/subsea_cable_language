@@ -644,7 +644,7 @@ doubles.
 
 ## Activation record
 
-- Canonical documents synchronized: `README.md` policy-addressee section, policy-ownership paragraph and error-ownership table, `implementation/RUNTIME_CONTRACT.md` §3, §8 envelope, §8.2, §10.1, §12 and §15, `AGENTS.md` Scheduler definition and policy-addressee glossary, `FOR_AGENTS.md`, `implementation/README.md`, `implementation/RUNTIME_ORCHESTRATION_PLAN.md` §8.1 and §8.2
+- Canonical documents synchronized: `README.md` policy-addressee section, policy-ownership paragraph and error-ownership table, `implementation/RUNTIME_CONTRACT.md` §3, §8 envelope, §8.2, §10.1, §12 and §15, `AGENTS.md` Scheduler definition and policy-addressee glossary, `FOR_AGENTS.md`, `implementation/README.md`, `implementation/RUNTIME_ORCHESTRATION_PLAN.md` §8.1, §8.2 scoped to Scheduler-addressed interpreters and the new §8.6 for the Host-addressed path
 - Grammar projections synchronized: no production change; the error-ownership comment in `SubseaCable.g4` and `SubseaCable.ebnf` now attributes policy existence, applicability and conflicts to the resolved addressee rather than to the Scheduler alone
 - Diagnostics and examples synchronized: `PolicyConflict` in the `policy` phase, `InvalidPolicyArguments`, `UnsupportedPolicyTarget` for any non-leaf occurrence kind, and the new stable kind `PolicyDenied`
 - Conformance cases synchronized: `conformance/POLICY.md` §§1–13, with §§12–13 covering the execution-identity tagged union: variant-tag collision, an admissible `capabilitySnapshotSubstitute`, and the four reporting shapes

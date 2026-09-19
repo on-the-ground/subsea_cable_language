@@ -98,7 +98,12 @@ Selection stays a deduction-time value decision using Host primitive semantics; 
 
 - Previously valid source affected: programs relying on bare entries or on implicit routing into entries become invalid under A.
 - Previously invalid source newly accepted: none.
-- Stored artifact/hash impact: none.
+- Stored artifact/hash impact: scoped, not none. The Identity section puts a
+  structure-valued map's keys and entry shapes into the referencing artifact's
+  identity, so a Runtime that previously omitted that structure, or captured the
+  map by value, MUST recompute the `ArtifactHash` and `StructureHash` of
+  artifacts that reference such a map. Artifacts that reference none are
+  unaffected.
 - Diagnostic impact: `InvalidStructuralContext` for the cases above.
 - Migration strategy: add explicit suffixes and routing.
 - Version/profile requirement: language revision.
@@ -134,7 +139,7 @@ The POC blocks structure-valued lookup with `UnsupportedByProfile` until a decis
 - Grammar projections synchronized: no production change. `mapEntry : mapKey ':' expression` and `expression : goalArrow | logicalOr` admit more than the accepted entry forms, so the restriction is semantic: a bare identifier entry and an inline Goal arrow entry both parse and are rejected in validation
 - Diagnostics and examples synchronized: `InvalidStructuralContext` for a bare entry, an inline Goal arrow entry, and a structure-valued map used as a value, with the position split against SCP-0005's `UnboundName`
 - Conformance cases synchronized: `conformance/valid/structure-valued-lookup-map.vyg`, `conformance/invalid-semantic/StructureMapBareEntry.vyg`, `conformance/invalid-semantic/StructureMapArrowEntry.vyg`, `conformance/invalid-semantic/StructureMapAsValue.vyg`, `conformance/cases.tsv`, `conformance/DEDUCTION.md` §21
-- Compatibility and migration notes synchronized: SCP compatibility section; programs relying on bare entries or implicit routing become invalid
+- Compatibility and migration notes synchronized: SCP compatibility section; programs relying on bare entries, an inline arrow entry, or implicit routing become invalid, and the stored-hash impact is scoped to artifacts that reference a structure-valued map
 - Verification commands and results: `python .github/scripts/validate_scp_activation.py` passes; `python .github/scripts/test_validate_scp_activation.py` passes; `mkdocs build --strict` passes; every markdown link resolves and every `conformance/cases.tsv` path exists
 
 ## Final rationale

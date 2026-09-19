@@ -340,17 +340,17 @@ the behavior.
 - Provenance records the split: which policies were Scheduler-addressed, which
   were Host-addressed, the pinned Scheduler registry version, the pinned Host
   capability snapshot and Host identity, the pinned forwarding-allowlist
-  revision, the granted capabilities, and — **per attempt** — the Host
-  implementation revision/digest that actually served it.
+  revision, the granted capabilities, and — **per attempt** — the reported Host
+  capability snapshot identity plus the tagged execution identity that actually
+  served it.
 - Consequently a future Outcome Journal MUST key an outcome by at least the
-  Touchdown descriptor, the Host identity, the **Host implementation
-  revision/digest the serving attempt reported**, the **Host capability
-  snapshot/profile identity and version that attempt reported**, the
-  Host-addressed policy digest, and the granted capabilities including the
-  pinned allowlist revision. Two attempts with identical structure but different
-  Host-addressed policies — `@dryRun` and a real run — MUST NOT share a journal
-  entry, and neither may two attempts that differ only in the Host's
-  implementation revision or capability profile version.
+  Touchdown descriptor, the Host identity, the serving attempt's **tagged
+  reported execution identity**, the **Host capability snapshot/profile identity
+  and version that attempt reported**, the Host-addressed policy digest, and the
+  granted capabilities including the pinned allowlist revision. Two attempts
+  with identical structure but different Host-addressed policies — `@dryRun` and
+  a real run — MUST NOT share a journal entry, and neither may two attempts that
+  differ only in execution-identity variant/value or capability profile version.
 
 #### Which identities are pinned, and which are reported
 
@@ -361,9 +361,18 @@ different times:
   uses the identities pinned at run start and nothing else. Nothing in this
   section changes that.
 - **Outcome reuse** must describe what actually produced the outcome, and only
-  the attempt knows that. A Host MUST therefore report, with each outcome, the
-  implementation revision/digest and capability snapshot identity that served
-  that attempt, and the journal MUST be keyed by the reported values.
+  the attempt knows that. For an outcome to be journal-reusable, a Host MUST
+  therefore report with it the capability snapshot identity that served the
+  attempt and exactly one tagged execution identity:
+
+```text
+reportedExecutionIdentity =
+    implementationRevision(revisionOrDigest)
+  | capabilitySnapshotSubstitute(snapshotIdentity, guaranteeProfile)
+```
+
+The journal MUST key by the variant tag as well as its value, so identical bytes
+in the two namespaces never collide.
 
 Run-start pinning alone cannot carry this. A Host may swap its binary or adapter
 mid-voyage; a Runtime keying by the run-start value would record the old
@@ -372,14 +381,18 @@ reuse this rule closes. The Runtime generally cannot verify a no-swap promise
 either, so requiring one would move the guarantee outside what the contract can
 check.
 
-- An outcome whose attempt reports no implementation revision MUST NOT be
+- An outcome whose attempt reports neither execution-identity variant, reports
+  both, or omits its serving capability snapshot identity MUST NOT be
   journal-reusable. Refusing reuse is always safe; guessing is not.
 - A deployment that cannot expose an implementation revision at all MAY instead
   guarantee that its capability snapshot identity changes whenever any
   implementation revision that can affect outcome meaning changes, and MUST
-  state that guarantee. The substituted identity is then reported per attempt
-  under exactly the rule above — the fallback changes which value is reported,
-  never when it is observed.
+  identify that guarantee as a profile. The attempt then reports
+  `capabilitySnapshotSubstitute(snapshotIdentity, guaranteeProfile)`. The
+  substitute's `snapshotIdentity` MUST equal the separately reported serving
+  capability snapshot identity; a mismatch makes the outcome non-reusable. The
+  fallback changes the execution-identity variant, never when it is observed;
+  its tag, snapshot identity, and guarantee profile all enter the journal key.
 - When an attempt reports a capability snapshot identity that differs from the
   run-start pinned one, that is **drift**: the Runtime MUST record it, the
   outcome MUST NOT be reused under the pinned identity, and a deployment MAY
@@ -390,11 +403,12 @@ check.
   implementation revision at run start and refuse to start, or fail the run on
   drift. That is a stricter profile layered on the reporting rule, not an
   alternative to it.
-- Both belong in the key rather than in structural identity because SCP-0004
-  places Host implementation and capability version in **outcome-reuse policy
-  and the journal**. The same Host identity with the same allowlist and granted
-  capabilities can still be a different implementation after an upgrade, and its
-  earlier outcomes are not reusable.
+- The tagged execution identity and reported capability snapshot belong in the
+  key rather than in structural identity because SCP-0004 places Host
+  implementation and capability version in **outcome-reuse policy and the
+  journal**. The same Host identity with the same allowlist and granted
+  capabilities can still be a different implementation after an upgrade, and
+  its earlier outcomes are not reusable.
 
 ### Capability reporting
 
@@ -402,8 +416,9 @@ A Runtime reports, for the attached Host and Scheduler: Anchor identifiers,
 Host-addressed policy identifiers with schemas, Scheduler-addressed policy
 identifiers, the pinned identities — Scheduler registry version, Host
 capability snapshot/profile version, and forwarding-allowlist revision — with
-the allowlist contents in effect, and whether the Host reports a per-attempt
-implementation revision or relies on the capability-snapshot substitution.
+the allowlist contents in effect, which per-attempt execution-identity variants
+the Host supports, and the guarantee-profile identifier for any
+capability-snapshot substitution.
 
 ## Alternatives
 
@@ -492,16 +507,20 @@ implementation revision or relies on the capability-snapshot substitution.
       phase with `PolicyDenied` and traced;
   12. two attempts differing only in Host-addressed policies produce different
       Outcome Journal keys, and so do two attempts differing only in the
-      reported Host implementation revision, only in the reported capability
-      snapshot/profile version, or only in the pinned allowlist revision — the
-      implementation case is exercised with the capability manifest, allowlist
-      and granted capabilities held identical;
+      reported execution-identity variant/value, only in the reported capability
+      snapshot/profile version, or only in the pinned allowlist revision — an
+      `implementationRevision(x)` key never collides with a
+      `capabilitySnapshotSubstitute(x, profile)` key even when `x` has identical
+      bytes;
   13. a Host that swaps its implementation mid-run reports the new revision with
       the affected attempt's outcome, that outcome is keyed by the reported
-      revision rather than the run-start value, and an outcome whose attempt
-      reports no revision is not journal-reusable; a reported capability
-      snapshot identity differing from the pinned one is recorded as drift and
-      does not change addressee resolution.
+      revision rather than the run-start value; an outcome reporting neither or
+      both execution-identity variants is not journal-reusable; a declared
+      substitute variant is reusable under its own tagged key and guarantee
+      profile only when its snapshot identity matches the separately reported
+      serving snapshot; and a reported capability snapshot identity differing
+      from the pinned one is recorded as drift without changing addressee
+      resolution.
 
 ## Reference experiment
 
@@ -603,6 +622,15 @@ doubles.
   identity differing from the pinned one is recorded as drift, and a deployment
   wanting replay determinism may additionally pin at run start as a stricter
   profile.
+- Review round 6 (2026-09-20, language PR #8): one P1, addressed. The
+  implementation-revision fallback no longer contradicts the no-revision reuse
+  rule or the minimum journal key. Per-attempt execution identity is a tagged
+  union of `implementationRevision` and `capabilitySnapshotSubstitute`; the tag
+  and value enter the key, the substitute carries its declared guarantee
+  profile and must name the separately reported serving snapshot, and only an
+  outcome with exactly one variant plus its serving capability snapshot is
+  journal-reusable. Runtime cases cover missing, double, mismatched substitute,
+  and cross-variant collision behavior.
 
 ## Final rationale
 

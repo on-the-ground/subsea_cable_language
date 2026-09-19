@@ -1,12 +1,14 @@
-# SCP-NNNN — Errors for NoOutput where a value is required at runtime
+# SCP-0010 — Errors for NoOutput where a value is required at runtime
 
-- Status: Draft
+- Status: Accepted
 - Author(s): Claude (agent) for on-the-ground
 - Created: 2026-09-17
-- Updated: 2026-09-17
+- Updated: 2026-09-20
 - Requires owner decision: yes
 - External implementation ADRs: [subsea_cable_runtime `0005-dynamic-nooutput-errors.md`](https://github.com/on-the-ground/subsea_cable_runtime/blob/main/docs/decisions/0005-dynamic-nooutput-errors.md)
 - Evidence repositories/revisions: `on-the-ground/subsea_cable_runtime@d62f1c3` (Carousel POC; evidence gathered while pinned to this repository at `cbc6f53`)
+- Activation pull request: [#10](https://github.com/on-the-ground/subsea_cable_language/pull/10)
+- Effective language revision: the commit on `main` produced by squash-merging PR #10
 - Supersedes: —
 - Superseded by: —
 
@@ -33,6 +35,14 @@ Recommended option A: a single kind `NoOutputNotRoutable`.
 
 - Phase `deduction` when detected while routing into a deduction (a routed input or a resolving-map result being bound).
 - Phase `host` when detected inside a function-leaf body evaluation.
+
+This is the dual-phase pattern `KeyNotFound` and `DestructureMismatch` already
+use: one stable kind, and a phase decided by where the failure is detected. The
+kind is scoped to the failing occurrence like any other deduction error, so
+earlier committed deductions are untouched and recovery stays Scheduler policy.
+
+A leaf returning `NoOutput` where a value was required is therefore distinct
+from a leaf that fails: the outcome arrived, it simply cannot be routed.
 
 ## Alternatives
 
@@ -68,16 +78,31 @@ The POC reports the option B kinds, marked experimental (ADR 0005).
 
 ## Unresolved questions
 
-- Whether a Scheduler policy may convert the failure (for example into a retry) remains policy discovery.
+- Whether a Scheduler policy may convert the failure (for example into a retry)
+  remains policy discovery. The kind and phase do not depend on that answer.
 
 ## Owner decision record
 
 - Decision requested on: 2026-09-17
 - Maintainer/agent recommendation: option A
-- Owner response: pending
-- Decision date: —
+- Owner response: accepted — option A, one kind `NoOutputNotRoutable` with the
+  phase decided by the detection point
+- Decision date: 2026-09-20
 - Conditions: —
+
+## Activation record
+
+- Canonical documents synchronized: `README.md` error-ownership table, `implementation/RUNTIME_CONTRACT.md` §3, `implementation/CAROUSEL_POC_FINDINGS.md` F10
+- Grammar projections synchronized: not applicable; no source syntax changed
+- Diagnostics and examples synchronized: new stable kind `NoOutputNotRoutable`, dual-phase `deduction` or `host` by detection point
+- Conformance cases synchronized: `conformance/DEDUCTION.md` §20
+- Compatibility and migration notes synchronized: SCP compatibility section; the POC's two experimental kinds are renamed
+- Verification commands and results: `python .github/scripts/validate_scp_activation.py` passes; `python .github/scripts/test_validate_scp_activation.py` passes; `mkdocs build --strict` passes; every markdown link resolves and every `conformance/cases.tsv` path exists
 
 ## Final rationale
 
-Pending.
+`NoOutput` is not a value, so a Host leaf that produces it where a value was
+required has not failed at the Host — it has failed where the language tried to
+route it. Naming one kind and letting the phase follow the detection point puts
+the error where the reader can act on it, and keeps the Host's phase for the
+Host's own failures.

@@ -1,13 +1,14 @@
 # SCP-0005 — Guarded conditional recursion
 
-- Status: Discussion — core guarded-recursion direction accepted; detailed
-  contract awaiting owner confirmation
+- Status: Accepted
 - Author(s): Codex (agent) for on-the-ground
 - Created: 2026-09-18
-- Updated: 2026-09-18
+- Updated: 2026-09-20
 - Requires owner decision: yes
 - External implementation ADRs: pending
 - Evidence repositories/revisions: owner reproduction in the language design review
+- Activation pull request: [#10](https://github.com/on-the-ground/subsea_cable_language/pull/10)
+- Effective language revision: the commit on `main` produced by squash-merging PR #10
 - Supersedes: the blanket rule that every recursive Goal-definition cycle is `CycleDetected`
 - Superseded by: —
 
@@ -351,10 +352,23 @@ yield at every selected conditional child until explicit demand arrives.
 - Conditions on accepted core: selected branches alone enter the realized
   structure; recursive steps create fresh occurrences so the realized Cable
   remains a DAG
-- Pending detailed confirmation: local SCC/exit analysis, the ancestor-chain
+- Accepted in full on 2026-09-20: every item below was confirmed after the PR #6
+  review rounds and is now normative in `README.md`, `Recursion.md`,
+  `implementation/RUNTIME_CONTRACT.md`, `conformance/DEDUCTION.md` §§9–15 and
+  `conformance/cases.tsv`
+- Previously pending, now confirmed: local SCC/exit analysis, the ancestor-chain
   late-cycle rule, selector purity and value barriers, explicit demand at each
   selected conditional branch edge, selector trace/reuse fields, and concrete
   conformance cases
+
+## Activation record
+
+- Canonical documents synchronized: `README.md`, `Recursion.md`, `implementation/RUNTIME_CONTRACT.md` §2.2, `AGENTS.md`, `FOR_AGENTS.md`
+- Grammar projections synchronized: `SubseaCable.g4` and `SubseaCable.ebnf` carry the conditional-pipeline production, activated with the core in PR #6; this pull request adds no production change
+- Diagnostics and examples synchronized: `CycleDetected`, `KeyNotFound` and `UnboundName` wording for conditional positions in `README.md`
+- Conformance cases synchronized: `conformance/DEDUCTION.md` §§9–15, `conformance/cases.tsv`, and the conditional fixtures
+- Compatibility and migration notes synchronized: SCP compatibility section; no previously valid source changes meaning
+- Verification commands and results: `python .github/scripts/validate_scp_activation.py` passes; `python .github/scripts/test_validate_scp_activation.py` passes; `mkdocs build --strict` passes; every markdown link resolves and every `conformance/cases.tsv` path exists
 
 ## Final rationale
 

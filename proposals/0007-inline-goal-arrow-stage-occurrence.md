@@ -1,12 +1,14 @@
-# SCP-NNNN — Occurrence kind for inline Goal-arrow stages
+# SCP-0007 — Occurrence kind for inline Goal-arrow stages
 
-- Status: Draft
+- Status: Accepted
 - Author(s): Claude (agent) for on-the-ground
 - Created: 2026-09-17
-- Updated: 2026-09-17
+- Updated: 2026-09-20
 - Requires owner decision: yes
 - External implementation ADRs: [subsea_cable_runtime `0002-inline-goal-arrow-stages.md`](https://github.com/on-the-ground/subsea_cable_runtime/blob/main/docs/decisions/0002-inline-goal-arrow-stages.md)
 - Evidence repositories/revisions: `on-the-ground/subsea_cable_runtime@d62f1c3` (Carousel POC; evidence gathered while pinned to this repository at `cbc6f53`)
+- Activation pull request: [#10](https://github.com/on-the-ground/subsea_cable_language/pull/10)
+- Effective language revision: the commit on `main` produced by squash-merging PR #10
 - Supersedes: —
 - Superseded by: —
 
@@ -36,6 +38,19 @@ Recommended option A:
 - It is deducible: it stays undeduced until demanded and until its routed input resolves (conservative barrier).
 - Its deduction binds the input to its parameters (a mismatch is a deduction-phase `DestructureMismatch`), reduces its body, and commits a deduction record with `referenceKind = inline-arrow`, the parameter arity, no requested name, and no artifact hash; the enclosing artifact supplies identity.
 - It adds no lineage segment; its children inherit the enclosing Goal lineage.
+- It **does** take a child-ordinal segment. A `goal-arrow-stage` is a committed
+  reduction, so it assigns child ordinals to its result in authored order and
+  occupies one segment of every descendant leaf's root-to-leaf ordinal vector
+  under [SCP-0004](0004-voyage-plans-and-touchdown-cable-artifacts.md). Lineage
+  and ordinal position are separate axes: the stage is invisible in lineage and
+  visible in ordering. Without this rule two Runtimes would disagree on
+  `touchdownCableHash` for the same voyage.
+- A Scheduler-addressed `@policy` MAY target it, like any other occurrence: it
+  carries its own `directPolicies[]` and inherits none. It is a composite, so
+  `Reattempt` on it is rejected with `UnsupportedPolicyTarget` under the
+  existing rule in `implementation/RUNTIME_ORCHESTRATION_PLAN.md` §8.5. A
+  Host-addressed policy MUST NOT target it, because it is not a grounded leaf
+  ([SCP-0011](0011-policy-addressee-and-host-channel.md)).
 
 ## Alternatives
 
@@ -72,16 +87,33 @@ The POC implements option A as an experimental path (ADR 0002). Tests: `TestValu
 
 ## Unresolved questions
 
-- Whether a policy may target an inline stage occurrence, and how it is reported.
+- None. Policy targeting is settled above.
 
 ## Owner decision record
 
 - Decision requested on: 2026-09-17
 - Maintainer/agent recommendation: option A
-- Owner response: pending
-- Decision date: —
-- Conditions: —
+- Owner response: accepted — option A, with the stage taking an ordinal segment
+  like any other occurrence and remaining a legal Scheduler-policy target
+- Decision date: 2026-09-20
+- Conditions: the stage adds no lineage segment; `Reattempt` on it stays
+  `UnsupportedPolicyTarget`; Host-addressed policies may not target it
+
+## Activation record
+
+- Canonical documents synchronized: `implementation/RUNTIME_CONTRACT.md` §8 occurrence-kind list and §8.1, `AGENTS.md` occurrence-kind glossary, `implementation/RUNTIME_ORCHESTRATION_PLAN.md` §8.5, `implementation/CAROUSEL_POC_FINDINGS.md` F3
+- Grammar projections synchronized: not applicable; the stage was already grammatical
+- Diagnostics and examples synchronized: deduction-phase `DestructureMismatch` on a stage binding mismatch; `UnsupportedPolicyTarget` for `Reattempt` on the stage
+- Conformance cases synchronized: `conformance/DEDUCTION.md` §19 and `conformance/POLICY.md` §5
+- Compatibility and migration notes synchronized: SCP compatibility section; no stored artifact or hash impact
+- Verification commands and results: `python .github/scripts/validate_scp_activation.py` passes; `python .github/scripts/test_validate_scp_activation.py` passes; `mkdocs build --strict` passes; every markdown link resolves and every `conformance/cases.tsv` path exists
 
 ## Final rationale
 
-Pending.
+An inline arrow stage is a real deduction: it waits for a routed value, binds
+it, and only then reduces a body that may depend on that value. Everything a
+Runtime must record about a deduction — when it committed, what it bound, what
+it produced — is already defined for occurrences, so the stage becomes an
+occurrence rather than a special case hidden inside its parent. Keeping it out
+of lineage and inside the ordinal vector reflects what it is: not a Goal anyone
+named, but a place in the realized structure.

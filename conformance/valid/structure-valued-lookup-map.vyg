@@ -1,0 +1,13 @@
+Left = [] -> $left
+Right = [] -> $right
+Audit = [] -> $audit
+
+routes = {
+    "left": Left[],
+    "both": [Left[], Audit[]],
+    _: Right[],
+}
+
+Pick = [key] -> routes[key]
+
+Pick["left"]

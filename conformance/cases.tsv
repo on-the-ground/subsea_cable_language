@@ -3,6 +3,7 @@ syntax	accept	valid/core.vyg
 syntax	accept	valid/continuations.vyg
 syntax	accept	valid/unicode-strings.vyg
 syntax	accept	valid/conditional-recursion.vyg
+syntax	accept	valid/structure-valued-lookup-map.vyg
 syntax	SyntaxError	invalid-syntax/unicode-identifier.vyg
 syntax	SyntaxError	invalid-syntax/inline-function.vyg
 syntax	SyntaxError	invalid-syntax/empty-program.vyg
@@ -24,3 +25,5 @@ validation	InvalidStructuralContext	invalid-semantic/EffectfulConditionalSelecto
 validation	KeyNotFound	invalid-semantic/ConditionalKeyNotFound.vyg
 validation	UnboundName	invalid-semantic/ConditionalUppercaseSelector.vyg
 validation	CycleDetected	invalid-semantic/ConditionalExitReentersCycle.vyg
+validation	InvalidStructuralContext	invalid-semantic/StructureMapBareEntry.vyg
+validation	InvalidStructuralContext	invalid-semantic/StructureMapAsValue.vyg

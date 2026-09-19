@@ -238,3 +238,68 @@ records MUST be equal. Their Root outcomes and Fully Touchdown Cables MUST also
 be equal. Process placement MUST NOT move alias resolution, policy
 interpretation, topology selection, or outcome ownership across their specified
 component boundaries.
+
+## 19. An inline Goal-arrow stage is its own occurrence
+
+Use a serial route whose second stage is an inline Goal-arrow stage that
+destructures a routed map, for example `[Collect[], [{code, logs}] ->
+Diagnose[code, logs]]`.
+
+Demand the stage before `Collect` produces its output. The stage MUST remain
+undeduced under the conservative value barrier, report
+`DeductionBlocked(pendingValue)` on explicit demand, and commit nothing. It MUST
+be exposed with `occurrenceKind = goal-arrow-stage`.
+
+Resolve the output and demand the stage again. It MUST commit exactly one
+deduction record with `referenceKind = inline-arrow`, the parameter arity, no
+requested name and no artifact hash. Its `Diagnose` child MUST carry the
+enclosing Goal's lineage with no segment added for the stage, and MUST sit one
+child-ordinal segment deeper than the stage, so every descendant leaf's
+root-to-leaf ordinal vector includes the stage's ordinal.
+
+Supply a routed value that does not match the stage's pattern instead: the stage
+MUST fail with a deduction-phase `DestructureMismatch` and commit no partial
+record.
+
+## 20. `NoOutput` where a value is required
+
+Run three variants in which a Host leaf returns `NoOutput`:
+
+1. into an explicitly routed input of a later occurrence;
+2. as the result of a resolving-map branch that is being bound;
+3. in a value position inside a function-leaf body.
+
+Every variant MUST report the single kind `NoOutputNotRoutable`. Variants 1 and
+2 MUST use phase `deduction`, because the failure is detected while routing into
+a deduction; variant 3 MUST use phase `host`. The failure is scoped to the
+failing occurrence: no earlier committed deduction changes, and no partial
+record is retained. A leaf that returns `NoOutput` where no value is required is
+not an error.
+
+## 21. Structure-valued lookup maps select one entry
+
+Store `conformance/valid/structure-valued-lookup-map.vyg` and demand
+`Pick["left"]`. Exactly one entry participates: the `Left[]` occurrence is
+created and the other entries create no occurrence, resolve no alias, and
+observe no value.
+
+Demand `Pick["missing"]` against a copy of the map with the `_` entry removed.
+When the key is statically known the miss is a validation error; when it is only
+known at demand time it MUST be a deduction-phase `KeyNotFound`. With the `_`
+entry present, the same demand MUST select the wildcard entry.
+
+A selected entry receives no implicit upstream value: a stage preceding the
+lookup MUST NOT be routed into the entry unless the entry says so.
+
+## 22. Artifact identity captures the values a term names
+
+1. Store two units whose Goals are textually identical but which read different
+   top-level values. Their `ArtifactHash` values MUST differ.
+2. Edit a top-level value that no Goal in the unit references by name. Every
+   `ArtifactHash` in the unit MUST be unchanged.
+3. Store a unit whose Goal selects from a structure-valued lookup map, then
+   rebind a `Name/Arity` alias that one of the map's entries references. The
+   referencing artifact's `ArtifactHash` MUST be unchanged, and a later
+   occurrence selecting that entry MUST observe the new binding.
+4. Edit the map's own structure — add, remove, or reshape an entry. The
+   referencing artifact's `ArtifactHash` MUST change.

@@ -1,10 +1,13 @@
 # Runtime Orchestration — Coordinating Carousel, Host, and Policy
 
 > **Status:** proposed operational design. The live Vessel–Host feedback-loop
-> and deployment-neutral core are accepted in
-> [SCP-0006](../proposals/0006-live-vessel-host-cooperation.md), whose
-> compiler/profile details remain under discussion; concrete APIs,
-> baseline outcome rules, and policy mechanics in this document remain
+> boundary is accepted in
+> [SCP-0006](../proposals/0006-live-vessel-host-cooperation.md), and policy
+> addressee resolution, the `hostPolicies[]` projection and the pinned
+> declarations are accepted in
+> [SCP-0011](../proposals/0011-policy-addressee-and-host-channel.md) and
+> normative in `RUNTIME_CONTRACT.md` §10.1. Concrete APIs, baseline outcome
+> rules, and the remaining policy mechanics in this document stay
 > non-normative. It extends
 > [CAROUSEL_ENGINE_PLAN.md](CAROUSEL_ENGINE_PLAN.md) and must not be implemented
 > on any path marked **Owner decision** until that decision is recorded.
@@ -415,6 +418,9 @@ No action can edit topology, routing, aliases, or committed deductions.
 - **Scope reattempt is undefined.** Retrying a composite would need
   attempt-scoped occurrence identities. **Owner decision R4**; until then,
   `Reattempt` on a composite target is rejected with `UnsupportedPolicyTarget`.
+  A `goal-arrow-stage` occurrence is a composite for this rule: a
+  Scheduler-addressed policy may target it, but `Reattempt` on it is rejected
+  (SCP-0007).
 - **Stacking needs a declared pairing.** The registry publishes a composition
   table for supported ordered pairs. A pair missing from the table is
   `PolicyConflict` at attach time. This design deliberately chooses no nesting

@@ -1,0 +1,12 @@
+Left = [] -> $left
+Right = [] -> $right
+
+routes = {
+    "left": Left[],
+    _: Right[],
+}
+
+Report = (r) -> r
+Run = [] -> Report(routes)
+
+Run[]

@@ -1,7 +1,6 @@
 # SCP-0006 — Live Vessel–Host cooperation
 
-- Status: Discussion — live cooperation and deployment-neutral core accepted;
-  compiler/profile details awaiting owner confirmation
+- Status: Accepted
 - Author(s): Codex (agent) for on-the-ground
 - Created: 2026-09-18
 - Updated: 2026-09-20
@@ -10,6 +9,8 @@
 - Evidence repositories/revisions: owner design review 2026-09-18,
   [language PR #7 review](https://github.com/on-the-ground/subsea_cable_language/pull/7#pullrequestreview-5256145171),
   `FOR_AGENTS.md`, `implementation/RUNTIME_ORCHESTRATION_PLAN.md`, and SCP-0004
+- Activation pull request: [#10](https://github.com/on-the-ground/subsea_cable_language/pull/10)
+- Effective language revision: the commit on `main` produced by squash-merging PR #10
 - Supersedes: any interpretation of Vessel as a compiler that hands a completed
   Cable to a detached Host
 - Superseded by: —
@@ -220,8 +221,11 @@ spelling implementation-specific.
   separate process.
 - Accepted core: live Vessel–Host cooperation and deployment-topology
   neutrality.
-- Submitted for confirmation: compiler/static-preparation limits, general
-  Vessel profile-claim rules, and the synchronized runtime cases.
+- Accepted in full on 2026-09-20: the compiler/static-preparation limits, the general
+  Vessel profile-claim rule, and the synchronized runtime cases were confirmed
+  after the PR #7 review rounds and are normative in
+  `implementation/RUNTIME_CONTRACT.md` §1.1 and `conformance/DEDUCTION.md`
+  §§16–18.
 - Review round 1 (2026-09-20, language PR #7): two P1 and three P2 findings are
   addressed in this revision. Static preparation no longer performs deduction;
   general Vessel conformance is an observable profile claim rather than a rule
@@ -237,6 +241,15 @@ spelling implementation-specific.
   removal, volatile-field erasure, and stable occurrence/attempt identities.
   The optional wording fixes for ledger comparison and the AGENTS reading-order
   status are included as well.
+
+## Activation record
+
+- Canonical documents synchronized: `implementation/RUNTIME_CONTRACT.md` §1.1, `METAPHORS.md`, `README.md`, `FOR_AGENTS.md`, `AGENTS.md`, `implementation/README.md`, `implementation/RUNTIME_ORCHESTRATION_PLAN.md`
+- Grammar projections synchronized: not applicable; no source syntax changed
+- Diagnostics and examples synchronized: not applicable; no diagnostic kind changed
+- Conformance cases synchronized: `conformance/DEDUCTION.md` §§16–18
+- Compatibility and migration notes synchronized: SCP compatibility section; a detached compiler-only producer may not advertise the general Vessel profile
+- Verification commands and results: `python .github/scripts/validate_scp_activation.py` passes; `python .github/scripts/test_validate_scp_activation.py` passes; `mkdocs build --strict` passes; every markdown link resolves and every `conformance/cases.tsv` path exists
 
 ## Final rationale
 

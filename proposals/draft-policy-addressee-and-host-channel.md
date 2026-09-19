@@ -339,25 +339,57 @@ the behavior.
 - A Touchdown content descriptor stays policy-erased (SCP-0004).
 - Provenance records the split: which policies were Scheduler-addressed, which
   were Host-addressed, the pinned Scheduler registry version, the pinned Host
-  capability snapshot and Host identity, the **pinned Host implementation
-  revision/digest**, the pinned forwarding-allowlist revision, and the granted
-  capabilities.
+  capability snapshot and Host identity, the pinned forwarding-allowlist
+  revision, the granted capabilities, and — **per attempt** — the Host
+  implementation revision/digest that actually served it.
 - Consequently a future Outcome Journal MUST key an outcome by at least the
-  Touchdown descriptor, the Host identity, the **pinned Host implementation
-  revision/digest**, the **pinned Host capability snapshot/profile identity and
-  its version**, the Host-addressed policy digest, and the granted capabilities
-  including the pinned allowlist revision. Two attempts with identical structure
-  but different Host-addressed policies — `@dryRun` and a real run — MUST NOT
-  share a journal entry, and neither may two attempts that differ only in the
-  Host's implementation revision or capability profile version.
-- Implementation revision is keyed **separately** from the capability
-  version because the two move independently: a Host binary or adapter can be
-  upgraded while its capability manifest, allowlist and granted capabilities all
-  stay byte-identical, and the outcome meaning can still change. A deployment
-  that cannot expose an implementation revision MAY instead guarantee that its
-  capability snapshot identity changes whenever any implementation revision
-  that can affect outcome meaning changes, and MUST state that guarantee; a
-  Runtime relying on it records which of the two schemes is in force.
+  Touchdown descriptor, the Host identity, the **Host implementation
+  revision/digest the serving attempt reported**, the **Host capability
+  snapshot/profile identity and version that attempt reported**, the
+  Host-addressed policy digest, and the granted capabilities including the
+  pinned allowlist revision. Two attempts with identical structure but different
+  Host-addressed policies — `@dryRun` and a real run — MUST NOT share a journal
+  entry, and neither may two attempts that differ only in the Host's
+  implementation revision or capability profile version.
+
+#### Which identities are pinned, and which are reported
+
+The two uses have different correctness conditions, so they observe at
+different times:
+
+- **Addressee resolution** must be deterministic across the whole voyage, so it
+  uses the identities pinned at run start and nothing else. Nothing in this
+  section changes that.
+- **Outcome reuse** must describe what actually produced the outcome, and only
+  the attempt knows that. A Host MUST therefore report, with each outcome, the
+  implementation revision/digest and capability snapshot identity that served
+  that attempt, and the journal MUST be keyed by the reported values.
+
+Run-start pinning alone cannot carry this. A Host may swap its binary or adapter
+mid-voyage; a Runtime keying by the run-start value would record the old
+implementation against a new implementation's outcome and reopen exactly the
+reuse this rule closes. The Runtime generally cannot verify a no-swap promise
+either, so requiring one would move the guarantee outside what the contract can
+check.
+
+- An outcome whose attempt reports no implementation revision MUST NOT be
+  journal-reusable. Refusing reuse is always safe; guessing is not.
+- A deployment that cannot expose an implementation revision at all MAY instead
+  guarantee that its capability snapshot identity changes whenever any
+  implementation revision that can affect outcome meaning changes, and MUST
+  state that guarantee. The substituted identity is then reported per attempt
+  under exactly the rule above — the fallback changes which value is reported,
+  never when it is observed.
+- When an attempt reports a capability snapshot identity that differs from the
+  run-start pinned one, that is **drift**: the Runtime MUST record it, the
+  outcome MUST NOT be reused under the pinned identity, and a deployment MAY
+  treat drift as a run-level failure. Addressee resolution still uses the pinned
+  identity, because changing it mid-voyage is the non-determinism pinning
+  exists to prevent.
+- A deployment that wants replay determinism MAY additionally pin the
+  implementation revision at run start and refuse to start, or fail the run on
+  drift. That is a stricter profile layered on the reporting rule, not an
+  alternative to it.
 - Both belong in the key rather than in structural identity because SCP-0004
   places Host implementation and capability version in **outcome-reuse policy
   and the journal**. The same Host identity with the same allowlist and granted
@@ -368,9 +400,10 @@ the behavior.
 
 A Runtime reports, for the attached Host and Scheduler: Anchor identifiers,
 Host-addressed policy identifiers with schemas, Scheduler-addressed policy
-identifiers, and the pinned identities — Scheduler registry version, Host
-implementation revision/digest, Host capability snapshot/profile version, and
-forwarding-allowlist revision — with the allowlist contents in effect.
+identifiers, the pinned identities — Scheduler registry version, Host
+capability snapshot/profile version, and forwarding-allowlist revision — with
+the allowlist contents in effect, and whether the Host reports a per-attempt
+implementation revision or relies on the capability-snapshot substitution.
 
 ## Alternatives
 
@@ -458,11 +491,17 @@ forwarding-allowlist revision — with the allowlist contents in effect.
   11. a withheld policy under a deployment allowlist is refused in the `policy`
       phase with `PolicyDenied` and traced;
   12. two attempts differing only in Host-addressed policies produce different
-      Outcome Journal keys, and so do two attempts differing only in the pinned
-      Host implementation revision, only in the pinned capability
+      Outcome Journal keys, and so do two attempts differing only in the
+      reported Host implementation revision, only in the reported capability
       snapshot/profile version, or only in the pinned allowlist revision — the
       implementation case is exercised with the capability manifest, allowlist
-      and granted capabilities held identical.
+      and granted capabilities held identical;
+  13. a Host that swaps its implementation mid-run reports the new revision with
+      the affected attempt's outcome, that outcome is keyed by the reported
+      revision rather than the run-start value, and an outcome whose attempt
+      reports no revision is not journal-reusable; a reported capability
+      snapshot identity differing from the pinned one is recorded as drift and
+      does not change addressee resolution.
 
 ## Reference experiment
 
@@ -471,7 +510,7 @@ implement this contract without inventing policy semantics: the Host interface
 gains a capability declaration, the Dispatcher builds a Host-facing request
 carrying `hostPolicies[]` and no `directPolicies[]`, and policy binding splits
 the ordered list into two source-order subsequences against pinned declarations.
-Scenarios 1–12 above become Runtime tests with the existing Scheduler and Host
+Scenarios 1–13 above become Runtime tests with the existing Scheduler and Host
 doubles.
 
 ## Unresolved questions
@@ -553,6 +592,17 @@ doubles.
   new field on the request": the Host-facing request schema does change — this
   proposal adds no new port and no new policy payload, but `directPolicies[]`
   leaves that schema and `hostPolicies[]` enters it.
+- Review round 5 (2026-09-19, language PR #8): one P1, addressed. Calling the
+  implementation revision "pinned" left its observation point undefined, so a
+  mid-voyage binary swap would have been keyed under the run-start value. The
+  two uses are now separated: addressee resolution keeps the run-start pinned
+  identities, while outcome reuse is keyed by the implementation revision and
+  capability snapshot identity **the serving attempt reports**, since only the
+  attempt knows what ran and a Runtime cannot verify a no-swap promise. An
+  outcome with no reported revision is not reusable, a reported capability
+  identity differing from the pinned one is recorded as drift, and a deployment
+  wanting replay determinism may additionally pin at run start as a stricter
+  profile.
 
 ## Final rationale
 

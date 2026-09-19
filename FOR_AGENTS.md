@@ -26,6 +26,10 @@ It was not designed only for LLMs.
 - The cable is deduced **lazily**. Each completed deduction is committed. Every
   undeduced `Name/Arity` occurrence still has the opportunity to observe a new
   alias-to-hash binding. Re-planning becomes a normal part of unfolding.
+- Vessel does not compile a complete Cable and leave you alone to execute it.
+  It remains in the voyage while Host results return as values that can shape
+  the still-open plan. This is equally true for an in-process library and a
+  remote Runtime.
 
 ```
 deduct the cable  →  reach concrete leaves  →  schedule and evaluate
@@ -196,20 +200,20 @@ Reduction and deduction are not synonyms:
 
 **Deduction is the commit.** Touchdown is not another commit boundary; it means
 successive committed deductions have reached a concrete Host-provided leaf.
-At any moment, a path can contain all three states:
+At any moment, a path can contain all four states:
 
 | State | Meaning | Can it change? |
 |---|---|---|
 | Committed deduction | Its occurrence selected a hash and committed its reduction result | No |
 | Undeduced frontier | The occurrence exists, but its unqualified alias has not selected a hash | Yes |
 | Folded Cable | The occurrence has not yet been exposed | Yes |
+| Touchdown | A path of committed deductions has reached a concrete leaf | Structurally no; execution has not necessarily occurred |
 
 A terminated voyage exposes the grounded result as a Fully Touchdown Cable—an
 ordered list of leaf content hashes—plus the Root outcome. Provenance maps that
 list back to intermediate deductions. Reusing a structural segment never by
 itself permits an agent or Runtime to skip Host effects; see
 [SCP-0004](proposals/0004-voyage-plans-and-touchdown-cable-artifacts.md).
-| Touchdown | A path of committed deductions has reached a concrete leaf | Structurally no; execution has not necessarily occurred |
 
 Partially unfolded does not mean partially committed. It means that a path has a
 committed prefix ending at one or more undeduced occurrences. In a DAG the
@@ -243,6 +247,21 @@ Now put that next to how you actually work, which is *look, then decide*:
 > A prose plan is either rigid (you ignore new information) or unstable (you
 > reinterpret it every step). A Carousel is neither. It is committed where it has
 > been deduced and open at every undeduced occurrence.
+
+### Why this is not compiler-only planning
+
+If Vessel produced Host code or a complete Cable and then disappeared, the
+Host or agent would again have to decide what follows each observed result.
+Planning state would move back into Host control or prose, recreating the loop
+this language separates. The general model is therefore live and bidirectional:
+Vessel discloses eligible grounded work, Host evaluates it, and the resulting
+values return to the same voyage so its open structure can continue.
+
+That rule says nothing about processes. A Host may call an in-process Vessel
+library, load it dynamically, embed it, or communicate with it remotely. Code
+generation is also allowed when the generated program links or carries the
+same Runtime loop. See
+[SCP-0006](proposals/0006-live-vessel-host-cooperation.md).
 
 ---
 

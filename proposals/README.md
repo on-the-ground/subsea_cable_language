@@ -23,3 +23,4 @@ See `GOVERNANCE.md` for statuses and decision procedure.
 ## Proposals under discussion
 
 - [SCP-0005 — Guarded conditional recursion](0005-guarded-conditional-recursion.md) — core direction accepted; SCC, demand, selector, provenance, and conformance details awaiting confirmation
+- [SCP-0006 — Live Vessel–Host cooperation](0006-live-vessel-host-cooperation.md) — live feedback loop and deployment-neutral core accepted; compiler/profile details awaiting confirmation

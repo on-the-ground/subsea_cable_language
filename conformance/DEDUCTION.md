@@ -188,3 +188,53 @@ different canonical selector-value digests. The later voyage MUST NOT reuse the
 earlier selected-branch segment. Reuse is permitted only when the stable value
 slot, digest, primitive profile, and every other SCP-0004 dependency fingerprint
 match.
+
+## 16. A Host value unblocks later deduction
+
+Use a serial route whose first grounded leaf produces a value explicitly routed
+into a later Goal occurrence. Demand the later occurrence before the Host outcome
+exists. Carousel MUST report `DeductionBlocked(pendingValue)`, commit no
+downstream deduction, and leave every downstream unqualified reference symbolic.
+
+Complete the leaf with `Succeeded(value)` and let the Runtime accept that output
+into the Outcome & Value Store. Demanding the same downstream occurrence again
+with every other prerequisite unchanged MUST read the resolved routed value and
+commit its deduction. The earlier leaf and every deduction preceding the barrier
+remain byte-for-byte unchanged.
+
+## 17. Host evaluation cannot choose or rewrite Goal topology
+
+Snapshot the Deduction Ledger immediately before dispatching a grounded leaf to
+a recording Host. The Host-facing surface MUST expose no operation that edits a
+deduction, resolves a Goal alias, selects a conditional branch, or publishes a
+Touchdown. After the Host returns a typed outcome, the current ledger MUST equal
+the snapshot; only the Runtime-owned outcome/value state and trace may change.
+
+If the returned value later participates in routing or a conditional selector,
+topology changes only when Carousel receives a separate demand and commits the
+affected reduction. The Host return itself MUST NOT create that structure or
+rewrite any earlier record.
+
+## 18. Deployment topology preserves the Runtime boundary
+
+Run the same Voyage Plan twice against deterministic Host doubles: once through
+an in-process adapter and once through an out-of-process adapter. Fix the
+Codebase revision, Scheduler profile and demand sequence, primitive profile,
+Host outcomes, and routed values.
+
+Normalize each trace by removing transport-only events and fields, timestamps,
+and durations; replace `runId` with one fixed token; map every runtime occurrence
+ID to its root-to-leaf child-ordinal vector; and map each attempt ID to its
+normalized occurrence plus attempt ordinal. The two normalized traces MUST have
+the same semantic boundary-event multiset and the same causal order within each
+occurrence: Touchdown publication precedes Scheduler eligibility and dispatch,
+which precede the Host outcome, value resolution, and any resumed Carousel
+demand that consumes that value. No global order is required between independent
+occurrences unless the fixed Runtime/Carousel profile supplies one.
+
+After applying the same identity normalization, the selected hashes, arguments,
+reduction results, observed codebase revisions, and lineages in their deduction
+records MUST be equal. Their Root outcomes and Fully Touchdown Cables MUST also
+be equal. Process placement MUST NOT move alias resolution, policy
+interpretation, topology selection, or outcome ownership across their specified
+component boundaries.

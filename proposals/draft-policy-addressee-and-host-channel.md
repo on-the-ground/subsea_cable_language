@@ -3,7 +3,7 @@
 - Status: Discussion — addressee model and double-claim handling accepted by the owner; the remaining contract is submitted for confirmation
 - Author(s): Claude (agent) for on-the-ground
 - Created: 2026-09-18
-- Updated: 2026-09-18
+- Updated: 2026-09-19
 - Requires owner decision: yes (Owner decision R9 stays open; this proposal decides only the addressee question)
 - External implementation ADRs: pending (subsea_cable_runtime, Host policy channel)
 - Evidence repositories/revisions: `on-the-ground/subsea_cable_runtime` POC; owner design review 2026-09-18
@@ -16,22 +16,35 @@
 A `@policy` is metadata addressed to somebody. Two addressees exist, and the
 language never said so:
 
-- **Vessel-addressed** policies change whether, when, and how often the Vessel
-  visits an occurrence: retry, timeout, cancellation, completion criteria.
-  The Scheduler interprets them. This is the case the documents already assume.
-- **Host-addressed** policies change what happens inside one leaf invocation:
-  run it in a separate process, use a resource class, batch it. The Host
+- **Scheduler-addressed** policies change eligibility, the attempt lifecycle, or
+  a scope's outcome: retry, timeout, cancellation, completion criteria. The
+  Scheduler interprets them, inside the Vessel. This is the case the documents
+  already assume.
+- **Host-addressed** policies change what happens inside exactly one grounded
+  leaf invocation: run it in a separate process, use a resource class. The Host
   interprets them; the Scheduler must not.
 
-The test is mechanical: **if it changes the Vessel's visiting, it is
-Vessel-addressed; if it only changes what happens inside one invocation, it is
-Host-addressed.**
+The test is mechanical: **if it changes eligibility, the attempt lifecycle, or a
+scope's outcome, it is Scheduler-addressed; if it changes only what happens
+inside exactly one grounded leaf invocation, it is Host-addressed.**
 
-Host-addressed policies travel with the evaluation request itself — the leaf
-envelope carries `(what, args, how)` — so no new port is introduced. A Host
-declares the policy identifiers it accepts in its capability description, the
-same way it declares Anchors. A policy claimed by both the Scheduler registry
-and the Host is a **validation error**, not a precedence question.
+"Vessel" is the name of the whole Consumer Runtime — Scheduler Port and Host
+Port included — so it cannot name one side of this split. This proposal
+therefore says *Scheduler-addressed* throughout, and reserves *Vessel* for the
+assembled whole and for the product an operator addresses.
+
+The test rules out cases that look Host-shaped but are not. Batching or
+coalescing several leaves is Scheduler work: it touches ordering and eligibility
+across more than one occurrence, so it is Scheduler-addressed even though the
+batch is ultimately executed by the Host.
+
+Host-addressed policies travel with the evaluation request that already exists.
+The grounded leaf envelope already carries `directPolicies[]`; this proposal
+gives the Host the authority to interpret a declared subsequence of them and
+names that filtered projection. A Host declares the policy identifiers it
+accepts in its capability description, the same way it declares Anchors. A
+policy claimed by both the Scheduler registry and the Host is an error, not a
+precedence question.
 
 ## Motivation and reproduction
 
@@ -44,12 +57,21 @@ Patch = [d] -> @separateProcess("worker") $editFiles(d)
 ```
 
 Today this fails with `UnknownPolicy` in every conforming Runtime, because the
-Scheduler is the only interpreter and it cannot know the identifier. The Host —
-the only component that could act on it — never sees it: the leaf envelope
-carries the leaf identity and arguments but no policy metadata.
+Scheduler is the only interpreter and it cannot know the identifier.
 
-The gap is not a missing port. It is a missing field on the request that
-already exists, plus a missing rule about who a policy is for.
+The envelope is not the gap. RUNTIME_CONTRACT §8 already delivers
+`directPolicies[]` — identifier, decoded arguments, target span — with every
+grounded arrow-function and Anchor occurrence, and the Scheduler already hands
+that envelope to the Host capability. What is missing is narrower and sharper:
+
+- the metadata arrives **undifferentiated**, so a Host cannot tell which entries
+  were meant for it and which are the Scheduler's to interpret;
+- no rule grants a Host the **authority** to interpret any of them; and
+- there is no **filtered projection**, so honouring one entry would mean reading
+  all of them, including Scheduler-addressed policies the Host must not see.
+
+So the gap is a rule about who a policy is for, plus a named projection of a
+field that already exists — not a new port and not a new field on the request.
 
 ## Existing invariant under pressure
 
@@ -61,7 +83,13 @@ already exists, plus a missing rule about who a policy is for.
   invocation, and **must not decide Goal topology**.
 - Ordered policies are part of the authored artifact identity and are erased in
   the structural projection.
-- Unknown policies are rejected rather than ignored.
+- Unknown policies are rejected rather than ignored, and they fail where they
+  are disclosed, not at validation time.
+- The grounded leaf envelope already carries `directPolicies[]` —
+  **only** policies authored on that exact occurrence (RUNTIME_CONTRACT §8).
+  Policies do not inherit to descendants.
+- The Frontend and Codebase MUST NOT depend on one Scheduler or Host registry
+  (RUNTIME_CONTRACT §1).
 
 The first invariant supplies the correction. Anchors are already resolved by
 the Host rather than by the language; a Host-addressed policy is the same kind
@@ -70,8 +98,9 @@ of name and deserves the same treatment.
 ## Classification
 
 This is a portable contract and diagnostic question, not a grammar question.
-The grammar already admits any policy identifier. What changes is who resolves
-it, which envelope carries it, and which diagnostic a conflict produces. It
+The grammar already admits any policy identifier. What changes is who is
+authorized to interpret it, which projection of the existing envelope it appears
+in, where it may be attached, and which diagnostic a conflict produces. It
 cannot be a Runtime profile choice: two Runtimes that split policies differently
 would run the same source with different effects.
 
@@ -79,10 +108,9 @@ would run the same source with different effects.
 
 ### Addressee resolution
 
-A Vessel resolves each occurrence's ordered policies at bind time against two
-declarations:
+A Runtime resolves an occurrence's ordered policies against two declarations:
 
-- the **Scheduler policy registry** (Vessel-addressed identifiers), and
+- the **Scheduler policy registry** (Scheduler-addressed identifiers), and
 - the **Host capability declaration** (Host-addressed identifiers, with arity
   or argument schema, declared alongside Anchors).
 
@@ -90,42 +118,107 @@ Resolution outcomes:
 
 | Claimed by | Result |
 |---|---|
-| Scheduler only | Vessel-addressed; the Scheduler interprets it; the Host never sees it |
+| Scheduler only | Scheduler-addressed; the Scheduler interprets it; the Host never sees it |
 | Host only | Host-addressed; the Scheduler does not interpret it; it rides in the leaf envelope |
 | Both | **`PolicyConflict`** — see below |
 | Neither | `UnknownPolicy`, unchanged |
 
+### Pinned declarations and resolution time
+
+Both declarations are **pinned at run start**: a Runtime MUST record a versioned
+Scheduler registry identity and a Host capability snapshot/profile identity for
+the run, and MUST resolve every occurrence's policies against those pinned
+declarations, not against whatever is registered when the occurrence happens to
+be disclosed.
+
+This matters because occurrences are disclosed lazily. Without pinning, a
+registry or capability change mid-voyage could route the same identifier to a
+different addressee for a later occurrence, or turn it into a double claim
+partway through, and neither provenance nor replay would be deterministic. With
+pinning, addressee resolution is a function of the source plus two recorded
+version identities.
+
+Provenance records both identities. A run MAY refuse to start when either
+declaration cannot be pinned; it MUST NOT re-resolve an already disclosed
+occurrence's addressee.
+
 ### Double claim is an error, not a precedence rule
 
-A policy identifier claimed by both the Scheduler registry and the Host
-capability is `PolicyConflict`. Its phase follows the existing dual-phase
-pattern used by `KeyNotFound` and `DestructureMismatch`: when the Vessel can
-compare both declarations before deduction — which it can whenever the Host is
-attached, including `check` and lint — the phase is `validation`; otherwise it
-is the `policy` phase at disclosure.
+A policy identifier claimed by both the pinned Scheduler registry and the pinned
+Host capability is `PolicyConflict` in the **`policy` phase**, reported when the
+bearing occurrence is disclosed — the same place `UnknownPolicy` is reported
+today. Host argument-schema mismatch is reported the same way.
+
+This is deliberately *not* a `validation`-phase error. The Frontend and Codebase
+MUST NOT depend on a Scheduler or Host registry (RUNTIME_CONTRACT §1), external
+policy identifiers and arguments are attached by the policy engine at occurrence
+disclosure, and structural validation is complete without them. Raising a
+registry-dependent conflict into `validation` would make the authored artifact's
+acceptance depend on an attached Runtime.
+
+A `check` or lint pass with profiles attached MAY report the same conflict
+earlier as a **non-authoritative preflight diagnostic**. A preflight report is a
+courtesy: it does not change the authoritative phase, and its absence does not
+make the source valid.
 
 No Runtime may resolve the collision by precedence, by configuration order, or
 by silently sending the policy to both. A Host that shadows a Scheduler policy
 must be rejected loudly, because the alternative lets a Host capture a future
 standard policy name.
 
+### Where a Host-addressed policy may be attached
+
+An evaluation request exists only for a grounded leaf. A Host-addressed policy
+therefore has `targetKinds = {function-leaf, anchor}`: it MUST be authored
+directly on the grounded leaf occurrence it configures.
+
+- A Host-addressed identifier attached directly to a Goal, serial, parallel, or
+  resolving-map occurrence is `UnsupportedPolicyTarget` — the kind already used
+  when a policy targets an occurrence kind that cannot carry it.
+- A composite's policy MUST NOT be forwarded to its descendant leaves. Policies
+  do not inherit (RUNTIME_CONTRACT §8: `directPolicies[]` is *only* policies
+  authored on this exact occurrence), and forwarding would silently create the
+  inheritance the contract denies.
+
 ### The Host policy channel
 
-The evaluation request carries the How:
+The grounded leaf envelope already carries `directPolicies[]`. This proposal
+adds one derived field:
 
 ```text
-evaluate(leaf identity, arguments, host-addressed policies)
+hostPolicies[]   the source-order subsequence of this occurrence's
+                 directPolicies[] that resolved as Host-addressed
 ```
 
-- Host-addressed policies are delivered in the leaf envelope as **ordered,
-  opaque** metadata, preserving their relative source order.
-- The Scheduler MUST NOT interpret, reorder, drop, or synthesize them.
-- Vessel-addressed policies MUST NOT be delivered to the Host.
+- `hostPolicies[]` is a **projection**, not a new channel: same entries, same
+  decoded arguments, same target spans, in source order.
+- Scheduler-addressed entries MUST NOT appear in `hostPolicies[]`, and the Host
+  MUST NOT interpret any entry outside it. Each addressee receives its own
+  source-order subsequence and nothing else.
+- The Scheduler MUST NOT interpret, reorder, drop, or synthesize the
+  Host-addressed subsequence.
+- Cross-layer ordering is fixed: the **Scheduler attempt lifecycle wraps the
+  Host invocation**. A Scheduler-addressed `@timeout` or `@retry` governs the
+  attempt within which the Host applies its own policies; a Host-addressed
+  policy never observes or alters the enclosing attempt.
 - The Host MAY reject a policy it advertised but cannot honor for this call;
   that is a Host-phase failure of the attempt, not `UnknownPolicy`.
-- `Host.Cancel` remains binding regardless of any Host-addressed policy. A
-  policy that moves work into another process, worker, or machine does not
-  relieve the Host of cancellation.
+
+### Cancellation stays cooperative
+
+A Host-addressed policy that moves work into another process, worker, or machine
+does not weaken cancellation, and does not strengthen it either. The existing
+rule is unchanged: **cancellation is cooperative**
+(RUNTIME_ORCHESTRATION_PLAN §9).
+
+- On cancellation the Host MUST forward the request to the delegated worker and
+  MUST record that it did so in the trace.
+- The Host MAY still return a late `Succeeded`. The Runtime records both the
+  cancellation request and the late outcome; the Scheduler policy decides what
+  the late success means.
+- A Host MUST NOT claim a cancellation guarantee it cannot honour through a
+  delegating policy. Advertising such a policy is advertising delegation, not
+  preemption.
 
 ### What a Host-addressed policy may and may not do
 
@@ -133,33 +226,47 @@ evaluate(leaf identity, arguments, host-addressed policies)
   one attempt.
 - It MUST NOT create, remove, or reorder occurrences, change demand, alter
   committed structure, or make the Host produce Goal structure.
-- It MUST NOT be required for structural validity: erasing every policy still
-  yields the same topology and the same reduction results for occurrences
-  deduced in both runs.
+- **Policy erasure is conditional, not absolute.** Because a Host-addressed
+  policy may change an outcome value, and that value may later feed a
+  conditional selector or a routed argument, a policy-erased run may legitimately
+  reach a different topology. The invariant this proposal claims is the one
+  RUNTIME_ORCHESTRATION_PLAN §8.5 already states: a Host-addressed policy does
+  not directly edit topology, and for corresponding occurrences that select the
+  same artifact with the same arguments and the same required routed values,
+  erasing policy metadata does not change the structural reduction result.
 
 ### Argument validation
 
-A Host declares each policy's arity or argument schema with the identifier.
-The Vessel validates Host-addressed policy arguments against that declaration
-at the same point it validates Scheduler policy arguments, and reports
-`InvalidPolicyArguments` with the existing phase rules. Structural validation
-therefore still completes before deduction.
+A Host declares each policy's arity or argument schema with the identifier. The
+Runtime validates Host-addressed policy arguments against the pinned declaration
+at occurrence disclosure — the same point it validates Scheduler policy
+arguments — and reports `InvalidPolicyArguments` in the `policy` phase.
+
+Structural validation is unaffected and still completes before deduction: it
+never consults either declaration, so nothing here moves work into or out of the
+`validation` phase.
 
 ### Deployment allowlist
 
-A deployment MAY restrict which Host-addressed policies a Vessel forwards. A
+A deployment MAY restrict which Host-addressed policies a Runtime forwards. A
 policy that a Host advertises but the deployment withholds is refused in the
-`policy` phase and recorded in the trace; it is never silently dropped. This
-matters where agents commit source through an MCP surface: without it, source
-text is an unmediated channel into the Host.
+`policy` phase with the stable kind **`PolicyDenied`** and recorded in the
+trace; it is never silently dropped. The kind is distinct on purpose:
+`UnknownPolicy` is wrong because the Host does know the identifier, and
+`UnsupportedPolicyTarget` is wrong because the target is a legal one — what
+failed is the deployment's permission to forward it.
+
+This matters where agents commit source through an MCP surface: without it,
+source text is an unmediated channel into the Host.
 
 ### Identity, provenance, and reuse
 
 - Ordered policies of **both** kinds remain part of the authored `ArtifactHash`
   and are erased in `StructureHash`, unchanged.
 - A Touchdown content descriptor stays policy-erased (SCP-0004).
-- Provenance records the split: which policies were Vessel-addressed, which
-  were Host-addressed, the Host identity, and the granted capabilities.
+- Provenance records the split: which policies were Scheduler-addressed, which
+  were Host-addressed, the pinned Scheduler registry version, the pinned Host
+  capability snapshot and Host identity, and the granted capabilities.
 - Consequently a future Outcome Journal MUST key an outcome by at least the
   Touchdown descriptor, the Host identity, the Host-addressed policy digest,
   and the granted capabilities. Two attempts with identical structure but
@@ -168,9 +275,10 @@ text is an unmediated channel into the Host.
 
 ### Capability reporting
 
-A Vessel reports, for the attached Host and Scheduler: Anchor identifiers,
+A Runtime reports, for the attached Host and Scheduler: Anchor identifiers,
 Host-addressed policy identifiers with schemas, Scheduler-addressed policy
-identifiers, and the forwarding allowlist in effect.
+identifiers, the pinned registry and capability versions, and the forwarding
+allowlist in effect.
 
 ## Alternatives
 
@@ -180,19 +288,24 @@ identifiers, and the forwarding allowlist in effect.
 | Encode the addressee in the identifier (`@host.x`) | Addressee visible in source; no collisions by construction | Language change while R9 is open; promoting a Host hint to a standard policy renames it and **changes every artifact hash that uses it**; forwarding gate must be added separately |
 | Send every policy to both sides | Simplest wiring | `@timeout` would be interpreted twice with no source-visible winner |
 | Host silently ignores what it does not know | No new errors | Turns a typo into silent behavior change; contradicts the existing reject-unknown rule |
-| Infer the addressee from the target occurrence kind | No declarations | Both kinds target leaves; inference cannot separate them |
+| Infer the addressee from the target occurrence kind | No declarations | A Scheduler-addressed policy may also target a leaf, so the target kind narrows what a Host policy may target but cannot decide the addressee |
+| Resolve declarations live instead of pinning them at run start | No snapshot machinery | A mid-voyage registry change would re-route an identifier for later occurrences or create a double claim partway through; provenance and replay stop being deterministic |
 | Keep the status quo | No change | Host-directed How is unwritable; authors hide it inside Anchor arguments, which buries execution intent in data |
 
 ## Philosophy and boundary audit
 
-- Structure stays separate from execution policy: a Host-addressed policy
-  cannot touch topology.
+- Structure stays separate from execution policy: a Host-addressed policy never
+  directly edits topology.
 - The Carousel is unaffected; it neither reads nor forwards policy.
-- The Scheduler keeps demand, eligibility, attempts, and cancellation.
+- The Scheduler keeps demand, eligibility, attempts, and cancellation, and its
+  attempt lifecycle still wraps every Host invocation.
 - The Host gains no power over Goal structure, only over its own invocation.
-- Policy erasure, alias laziness, and deduction immutability are unchanged.
-- Portability holds: addressee resolution depends on declarations, not on an
-  implementation's internal naming.
+- Policy non-inheritance, alias laziness, and deduction immutability are
+  unchanged; policy erasure keeps exactly the conditional form §8.5 already
+  gives it.
+- The Frontend and Codebase still depend on no Scheduler or Host registry.
+- Portability holds: addressee resolution depends on pinned declarations, not on
+  an implementation's internal naming.
 
 ## Compatibility and migration
 
@@ -201,8 +314,11 @@ identifiers, and the forwarding allowlist in effect.
   policies, once a Host advertises them.
 - Stored artifact/hash impact: none. Policies were already part of the authored
   hash and their spelling does not change.
-- Diagnostic impact: `PolicyConflict` gains the double-claim case and a
-  validation phase; `UnknownPolicy` narrows to identifiers claimed by neither.
+- Diagnostic impact: `PolicyConflict` gains the double-claim case in the
+  `policy` phase; `UnsupportedPolicyTarget` gains Host-addressed policies
+  attached to non-leaf occurrences; `PolicyDenied` is new; `UnknownPolicy`
+  narrows to identifiers claimed by neither declaration. No diagnostic moves
+  into the `validation` phase.
 - Migration strategy: Hosts that already accept out-of-band execution hints
   declare them as policies and stop smuggling them through Anchor arguments.
 - Version/profile requirement: consumers advertise support for the Host policy
@@ -217,40 +333,59 @@ identifiers, and the forwarding allowlist in effect.
   depends on the attached Scheduler registry and Host capability, so the
   corpus cannot express it as a `.vyg` fixture.
 - runtime cases, stated with test doubles:
-  1. a Host-addressed policy reaches the Host in source order and the Scheduler
-     never interprets it;
-  2. a Vessel-addressed policy never reaches the Host;
-  3. a policy claimed by both is `PolicyConflict`, in the `validation` phase
-     when the Host is attached before deduction;
+  1. a Host-addressed policy appears in `hostPolicies[]` in source order and the
+     Scheduler never interprets it;
+  2. a Scheduler-addressed policy on the same leaf stays out of
+     `hostPolicies[]`, and each addressee receives only its own subsequence;
+  3. a policy claimed by both pinned declarations is `PolicyConflict` in the
+     `policy` phase at disclosure; a `check` pass with profiles attached reports
+     it earlier as a non-authoritative preflight diagnostic and the
+     authoritative phase does not change;
   4. a policy claimed by neither is `UnknownPolicy`, unchanged;
-  5. a Host-addressed policy cannot change topology: erasing it yields the same
-     structure and the same reduction results;
-  6. cancellation reaches an attempt carrying a Host-addressed policy that
-     moved the work out of process;
-  7. a withheld policy under a deployment allowlist is refused in the `policy`
-     phase and traced;
-  8. two attempts differing only in Host-addressed policies produce different
-     Outcome Journal keys.
+  5. a Host-addressed identifier attached to a Goal, serial, parallel, or
+     resolving-map occurrence is `UnsupportedPolicyTarget`, and a composite's
+     policy never reaches a descendant leaf's `hostPolicies[]`;
+  6. a registry or capability change mid-run does not alter the addressee of a
+     later-disclosed occurrence, and provenance records the pinned versions;
+  7. cancellation of an attempt carrying a delegating Host-addressed policy is
+     forwarded to the worker and traced; a late `Succeeded` is recorded
+     alongside the cancellation request and the Scheduler decides its meaning;
+  8. conditional policy erasure: for corresponding occurrences that select the
+     same artifact with the same arguments and required routed values, erasing
+     policy metadata leaves the structural reduction result unchanged;
+  9. a withheld policy under a deployment allowlist is refused in the `policy`
+     phase with `PolicyDenied` and traced;
+  10. two attempts differing only in Host-addressed policies produce different
+      Outcome Journal keys.
 
 ## Reference experiment
 
 The POC ships no concrete interpreters and rejects every policy, so it can
 implement this contract without inventing policy semantics: the Host interface
-gains a capability declaration, `LeafContext` carries the Host-addressed slice,
-and policy binding splits the ordered list in two. Scenarios 1–8 above become
-Runtime tests with the existing Scheduler and Host doubles.
+gains a capability declaration, `LeafContext` carries the `hostPolicies[]`
+projection of the occurrence's `directPolicies[]`, and policy binding splits the
+ordered list into two source-order subsequences against pinned declarations.
+Scenarios 1–10 above become Runtime tests with the existing Scheduler and Host
+doubles.
 
 ## Unresolved questions
 
 - Owner decision R9 — the policy observation model and the closed action set —
-  stays open. This proposal constrains it: the Vessel-side action set is the
-  set of control verbs the Vessel already owns (demand, withhold, reattempt,
+  stays open. This proposal constrains it: the Scheduler-side action set is the
+  set of control verbs the Scheduler already owns (demand, withhold, reattempt,
   cancel, withdraw, reconfigure prefetch, settle scope), and anything outside
   it is either Host-addressed or not a policy.
 - Whether any Scheduler-addressed policy becomes standardized across Runtimes
   is a separate question; this proposal only routes identifiers.
-- Whether a Host may observe Vessel-addressed policies for logging is left
+- Whether a Host may observe Scheduler-addressed policies for logging is left
   closed for now: it may not.
+- `PolicyDenied` is proposed here as a new stable kind for the deployment
+  allowlist. If the owner would rather not add a kind, the allowlist section
+  drops to unresolved and its MUST and runtime case come out with it.
+- How a deployment pins a Host capability snapshot when the Host is a live
+  external process — a declared profile identity, a signed manifest, or a
+  handshake digest — is a Runtime-profile question. The requirement here is only
+  that some recorded identity exists and does not change mid-run.
 
 ## Owner decision record
 
@@ -262,15 +397,30 @@ Runtime tests with the existing Scheduler and Host doubles.
 - Decision date: 2026-09-18
 - Accepted core: two addressees, capability-declared Host policies, the How
   travelling with the evaluation request, and double claim as an error
-- Submitted for confirmation: the diagnostic kind and dual phase for double
-  claim, argument-schema validation, the deployment allowlist, provenance and
-  Outcome Journal key requirements, and the runtime case list
+- Submitted for confirmation: the diagnostic kind and phase for double claim,
+  argument-schema validation, the deployment allowlist, provenance and Outcome
+  Journal key requirements, and the runtime case list
+- Review round 1 (2026-09-18, language PR #8): the owner raised six P1 and two
+  P2 findings against this draft. All eight are addressed in this revision —
+  `Scheduler-addressed` replaces `Vessel-addressed` and the addressee test is
+  restated in eligibility/attempt-lifecycle/scope-outcome terms; the motivation
+  is corrected to acknowledge the existing `directPolicies[]` envelope and to
+  state the gap as authority plus filtered projection; declarations are pinned
+  at run start and resolved at disclosure; the authoritative phase for double
+  claim and schema mismatch is `policy`, with `check`/lint demoted to a
+  non-authoritative preflight; Host-addressed policies are restricted to
+  `{function-leaf, anchor}` with `UnsupportedPolicyTarget` otherwise and no
+  inheritance to descendants; cancellation is restated as cooperative; policy
+  erasure takes the conditional form of RUNTIME_ORCHESTRATION_PLAN §8.5; and
+  the allowlist refusal gets the distinct kind `PolicyDenied`.
 
 ## Final rationale
 
 A policy says how something should happen. Some of those sentences are about
-how the Vessel walks the graph, and some are about what happens inside one
-invocation. The language already treats Anchor names as the Host's to resolve;
+whether and when work becomes eligible and how its attempts end, and some are
+about what happens inside one grounded leaf invocation. The first set belongs to
+the Scheduler; the second belongs to the Host, and the language has never said
+so. The language already treats Anchor names as the Host's to resolve;
 policies meant for the Host are the same kind of name and belong in the same
 request. Naming the addressee explicitly keeps the Scheduler from interpreting
 sentences that were never addressed to it, and keeps the Host from acquiring

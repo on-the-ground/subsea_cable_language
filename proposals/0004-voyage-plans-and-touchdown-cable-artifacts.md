@@ -7,6 +7,8 @@
 - Requires owner decision: yes
 - External implementation ADRs: [runtime ADR 0007 — Voyage results and incremental reuse boundary](https://github.com/on-the-ground/subsea_cable_runtime/blob/main/docs/decisions/0007-voyage-results-and-incremental-reuse.md) (proposed; link becomes valid after the companion Runtime PR merges)
 - Evidence repositories/revisions: `on-the-ground/subsea_cable_runtime` POC and the owner-directed Vessel plan
+- Activation pull request: [#5](https://github.com/on-the-ground/subsea_cable_language/pull/5)
+- Effective language revision: `003b1e2404e01ad3e33eee8781ec2f408055091c`
 - Supersedes: the source-level equation “Program = Cable” and the `.subc` source extension
 - Superseded by: —
 
@@ -434,6 +436,20 @@ plan define the staged experiment and its acceptance tests.
   descriptors produced before F9 is accepted are experimental.
 - Authorized conformance changes: rename all canonical source fixtures and add
   voyage-result scenarios as the external Vessel implements them
+
+## Activation record
+
+- Canonical documents synchronized: public naming, philosophy, semantics,
+  agent guidance, and implementation-neutral contracts and plans
+- Grammar projections synchronized: `.vyg` source extension documentation in
+  `SubseaCable.g4` and `SubseaCable.ebnf`
+- Diagnostics and examples synchronized: Voyage Plan, Fully Touchdown Cable,
+  and result-envelope terminology and examples
+- Conformance cases synchronized: canonical fixture extensions, deduction
+  documentation, and voyage-result cases
+- Compatibility and migration notes synchronized: SCP compatibility section,
+  public naming guidance, and migration playbook
+- Verification commands and results: activation PR checks passed
 
 ## Final rationale
 

@@ -5,13 +5,34 @@ syntax, semantics, identity, diagnostics, component boundaries, or portable
 policy contracts.
 
 Use `TEMPLATE.md` and allocate a number during review. Draft filenames may begin
-with `draft-`; accepted history is never deleted merely because a proposal was
-rejected or superseded.
+with `draft-`; proposal history is retained when a proposal is rejected,
+withdrawn, or superseded.
 
 Implementation ADRs remain in their external implementation repositories. An SCP
 links those ADRs and extracts the implementation-independent language question.
 
-See `GOVERNANCE.md` for statuses and decision procedure.
+See `GOVERNANCE.md` for statuses and the complete decision procedure. In
+particular:
+
+- merging a Draft or Discussion SCP records the proposal but does not change
+  the language;
+- an approving owner decision is recorded while the SCP remains Discussion;
+- the SCP changes to Accepted only in the same pull request that synchronizes
+  every affected canonical document, grammar, diagnostic, example, and
+  conformance case; and
+- the decision becomes effective only when that activation pull request merges.
+
+The activating SCP records that pull request and the resulting effective
+language revision. There is no Accepted-but-not-yet-effective state.
+Partially approved work must be split so an Accepted SCP contains only its
+complete effective contract; pending normative questions remain in a separate
+Draft or Discussion SCP.
+
+One activation pull request may activate multiple SCPs. Each records the same
+pull request and the single commit created on `main` by squash-merging it.
+Existing Discussion SCPs that mention an accepted core are not grandfathered;
+their next activation must complete the contract or split pending normative
+parts into follow-up proposals.
 
 ## Accepted proposals
 

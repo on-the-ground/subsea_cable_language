@@ -4,7 +4,8 @@ Select exactly one primary classification.
 
 - [ ] Editorial clarification with no semantic change
 - [ ] Conformance correction for already specified behavior
-- [ ] Language change backed by a Draft or accepted SCP
+- [ ] Language change backed by an SCP
+- [ ] Governance or contribution-process change
 - [ ] Ecosystem listing
 - [ ] Website-only presentation change using canonical repository sources
 
@@ -38,7 +39,30 @@ Use `not applicable` only for genuinely editorial or presentation-only changes.
 - [ ] Any affected implementation path remained blocked until the required
       owner decision was recorded.
 - [ ] A language change has a linked SCP using `proposals/TEMPLATE.md`.
-- [ ] No proposed behavior is described as accepted before its SCP is accepted.
+- [ ] An owner-approved SCP remains Discussion until its complete activation PR
+      merges.
+- [ ] This PR does not describe proposed behavior as effective merely because
+      its Draft or Discussion SCP was merged or its direction was approved.
+
+## Activation gate
+
+Complete this section for a PR that activates a language change. Otherwise mark
+it not applicable and do not change the SCP status to Accepted.
+
+- Activation PR: yes/no
+- SCP or SCPs activated:
+- Status before this PR:
+- Effective language revision (`the commit on main produced by squash-merging
+  PR #NN` is permitted):
+
+- [ ] This PR changes the linked SCP to Accepted.
+- [ ] The status change and every affected canonical and conformance projection
+      are included in this same PR.
+- [ ] The SCP records this activation PR, final rationale, compatibility impact,
+      and effective language revision.
+- [ ] No required synchronization is deferred to a later PR.
+- [ ] This activation PR will be squash-merged, producing one effective
+      revision on `main`.
 
 ## Classification boundary
 
@@ -87,7 +111,7 @@ Check every projection affected by this change.
 - [ ] `conformance/`
 - [ ] implementation-neutral contracts and plans
 - [ ] examples, diagnostics, compatibility, and migration notes
-- [ ] SCP status and final rationale
+- [ ] SCP status, activation record, and final rationale
 - [ ] none of the above require changes; explanation provided below
 
 ## Verification

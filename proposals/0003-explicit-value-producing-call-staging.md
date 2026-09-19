@@ -7,6 +7,8 @@
 - Requires owner decision: yes (Owner decision R3)
 - External implementation ADRs: [subsea_cable_runtime `docs/decisions/0006-argument-position-call-staging.md`](https://github.com/on-the-ground/subsea_cable_runtime/blob/main/docs/decisions/0006-argument-position-call-staging.md)
 - Evidence repositories/revisions: `on-the-ground/subsea_cable_runtime` Carousel POC; [language issue #2](https://github.com/on-the-ground/subsea_cable_language/issues/2)
+- Activation pull request: [#3](https://github.com/on-the-ground/subsea_cable_language/pull/3)
+- Effective language revision: `79debc4fe1106ccdee96278811b74609468e7dd6`
 - Supersedes: `draft-argument-position-call-staging.md`
 - Superseded by: —
 
@@ -196,6 +198,18 @@ separate deferred topics.
 - Decision date: 2026-09-17
 - Conditions: primitive expressions such as `B[x + 1]` remain valid; nested
   Host Anchor calls remain valid inside function-arrow leaf bodies.
+
+## Activation record
+
+- Canonical documents synchronized: `README.md`, agent guidance, and
+  implementation-neutral contracts and plans
+- Grammar projections synchronized: `SubseaCable.g4` and `SubseaCable.ebnf`
+- Diagnostics and examples synchronized: structural-context rules and examples
+- Conformance cases synchronized: nested Goal/Anchor invalid-semantic fixtures
+  and valid primitive-expression cases
+- Compatibility and migration notes synchronized: SCP compatibility section
+  and migration playbook
+- Verification commands and results: activation PR checks passed
 
 ## Final rationale
 

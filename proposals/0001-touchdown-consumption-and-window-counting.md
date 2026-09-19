@@ -7,6 +7,8 @@
 - Requires owner decision: yes
 - External implementation ADRs: [subsea_cable_runtime `docs/decisions/0001-touchdown-consumption.md`](https://github.com/on-the-ground/subsea_cable_runtime/blob/main/docs/decisions/0001-touchdown-consumption.md)
 - Evidence repositories/revisions: `on-the-ground/subsea_cable_runtime@d62f1c3` (Carousel POC; evidence gathered while pinned to this repository at `cbc6f53`)
+- Activation pull request: [#1](https://github.com/on-the-ground/subsea_cable_language/pull/1)
+- Effective language revision: `eabb5052b674901e107aed385cbf5d61a122d618`
 - Supersedes: —
 - Superseded by: —
 
@@ -246,6 +248,17 @@ scenario above.
 - Decision date: 2026-09-17
 - Conditions: prefetch scope and demand count (Carousel plan decisions 1 and 2)
   stay open.
+
+## Activation record
+
+- Canonical documents synchronized: `README.md`, Carousel and Runtime plans
+- Grammar projections synchronized: not applicable; no source syntax changed
+- Diagnostics and examples synchronized: not applicable; no diagnostic kind or
+  source example changed
+- Conformance cases synchronized: `conformance/DEDUCTION.md`,
+  `conformance/cases.tsv`
+- Compatibility and migration notes synchronized: SCP compatibility section
+- Verification commands and results: activation PR checks passed
 
 ## Final rationale
 

@@ -118,6 +118,16 @@ only unrelated work. The owner must decide any change
 to source syntax, structural semantics, identity, layer ownership, error phase,
 policy targeting/composition, or the Host/Carousel/Scheduler boundary.
 
+Merging a Draft or Discussion SCP records design history only. An approving
+owner decision authorizes integration but does not make the proposal effective.
+Treat new behavior as Subsea Cable semantics only after one activation pull
+request changes the SCP to Accepted together with every affected canonical and
+conformance projection and is squash-merged to `main`. One activation pull
+request may activate multiple SCPs. An existing Discussion SCP that mentions an
+accepted core remains non-effective until its contract is completed or its
+pending normative parts are split into a follow-up proposal and the accepted
+scope is activated.
+
 Every completed phase must satisfy its gate in `implementation/README.md` and
 leave reproducible tests or evidence. Implementation convenience is not language
 semantics.

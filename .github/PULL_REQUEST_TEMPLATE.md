@@ -5,6 +5,7 @@ Select exactly one primary classification.
 - [ ] Editorial clarification with no semantic change
 - [ ] Conformance correction for already specified behavior
 - [ ] Language change backed by an SCP
+- [ ] Governance or contribution-process change
 - [ ] Ecosystem listing
 - [ ] Website-only presentation change using canonical repository sources
 
@@ -49,9 +50,10 @@ Complete this section for a PR that activates a language change. Otherwise mark
 it not applicable and do not change the SCP status to Accepted.
 
 - Activation PR: yes/no
-- SCP status before this PR:
-- Effective language revision (`the commit produced by merging PR #NN` is
-  permitted):
+- SCP or SCPs activated:
+- Status before this PR:
+- Effective language revision (`the commit on main produced by squash-merging
+  PR #NN` is permitted):
 
 - [ ] This PR changes the linked SCP to Accepted.
 - [ ] The status change and every affected canonical and conformance projection
@@ -59,6 +61,8 @@ it not applicable and do not change the SCP status to Accepted.
 - [ ] The SCP records this activation PR, final rationale, compatibility impact,
       and effective language revision.
 - [ ] No required synchronization is deferred to a later PR.
+- [ ] This activation PR will be squash-merged, producing one effective
+      revision on `main`.
 
 ## Classification boundary
 

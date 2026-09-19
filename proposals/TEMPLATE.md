@@ -110,8 +110,10 @@ Complete this section in the activation pull request. That pull request must
 propose changing this SCP's status to Accepted together with every applicable
 projection. Authoritative `main` still treats it as Discussion until that pull
 request merges. Complete the activation metadata above; the effective revision
-may be expressed as "the commit produced by merging PR #NN" so the pull request
-does not require a follow-up status commit.
+may be expressed as "the commit on `main` produced by squash-merging PR #NN" so
+the pull request does not require a follow-up status commit. One activation pull
+request may activate multiple SCPs; each records the same pull request and
+effective revision.
 
 - Canonical documents synchronized:
 - Grammar projections synchronized:

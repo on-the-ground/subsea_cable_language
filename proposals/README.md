@@ -28,6 +28,12 @@ Partially approved work must be split so an Accepted SCP contains only its
 complete effective contract; pending normative questions remain in a separate
 Draft or Discussion SCP.
 
+One activation pull request may activate multiple SCPs. Each records the same
+pull request and the single commit created on `main` by squash-merging it.
+Existing Discussion SCPs that mention an accepted core are not grandfathered;
+their next activation must complete the contract or split pending normative
+parts into follow-up proposals.
+
 ## Accepted proposals
 
 - [SCP-0001 — Touchdown consumption and window counting](0001-touchdown-consumption-and-window-counting.md)

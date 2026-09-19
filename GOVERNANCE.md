@@ -58,6 +58,12 @@ Substantial language changes use a Subsea Cable Proposal (SCP), analogous to a
 PEP. The proposal lives under `proposals/NNNN-short-name.md` and uses
 `proposals/TEMPLATE.md`.
 
+Repository governance and contribution-process changes use a Governance or
+process pull request, not an SCP, unless they also change language syntax,
+semantics, identity, diagnostics, component boundaries, or portable policy
+contracts. Such a pull request must state its transition effect and enforcement
+mechanism and still requires owner review.
+
 Statuses:
 
 - **Draft** — evidence and design are being developed;
@@ -87,8 +93,9 @@ Workflow:
    source, compatibility and migration notes, diagnostics, examples, and
    conformance cases. It also changes the SCP status to Accepted and records the
    activation pull request and effective language revision. Before merge, the
-   latter may be written as "the commit produced by merging PR #NN"; that
-   reference identifies the exact revision once the pull request merges.
+   latter may be written as "the commit on `main` produced by squash-merging PR
+   #NN"; that reference identifies the exact revision once the pull request
+   merges.
 8. The SCP becomes Accepted, and its behavior becomes effective language, only
    when that complete activation pull request merges. A merge that leaves an SCP
    Draft or Discussion records design work only and has no semantic effect.
@@ -112,12 +119,23 @@ The activation change must be atomic from `main`'s perspective: the status
 change to Accepted must not merge before or after its required normative and
 conformance projections. If an SCP was previously merged for discussion, the
 activation pull request updates that same SCP alongside those projections.
+One activation pull request may activate more than one SCP. Every SCP activated
+by it records the same pull request and effective revision.
+
+Activation pull requests must use this repository's squash-merge strategy. The
+effective revision is the single squash commit created on `main`; rebase merge
+is not permitted for activation because it does not provide one unambiguous
+effective revision.
 
 If the owner approves only part of an SCP, the approved scope must be separated
 from pending normative questions before activation. Move the pending portion to
 a follow-up Draft or Discussion SCP, or keep the entire original SCP in
 Discussion. An Accepted SCP may identify future extensions, but it must not mix
 its effective contract with undecided requirements inside that contract.
+Existing Discussion SCPs that describe an "accepted core" are not
+grandfathered. Their next activation pull request must either complete and
+activate the whole contract or separate every pending normative part into a
+Draft or Discussion follow-up SCP.
 
 An SCP is a decision and design-history record, not a substitute for the
 canonical sources listed above. If an Accepted SCP and a canonical projection
@@ -125,6 +143,12 @@ disagree, that is a repository defect; implementations follow neither silently
 and must report the conflict. The effective revision recorded in the SCP is the
 first revision at which implementations may claim the new behavior as Subsea
 Cable semantics.
+
+CI enforces the minimum mechanically observable activation boundary: every SCP
+status transition to Accepted must include complete activation metadata and an
+activation record, and the same diff must touch at least one core canonical
+projection (`README.md`, either grammar, or `conformance/`). Review remains
+responsible for deciding whether all affected projections were included.
 
 Proposal discussion may use prototype implementations, but prototypes remain in
 external repositories.

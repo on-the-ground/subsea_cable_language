@@ -76,6 +76,15 @@ Requires a proposal. Include:
 - compatibility impact;
 - conformance additions.
 
+### Governance or process change
+
+Changes proposal statuses, roles, review gates, activation procedure, or
+repository enforcement without changing language behavior. State the migration
+effect on existing records and add automated enforcement where the rule is
+mechanically observable. This type does not require an SCP unless it also
+changes language syntax, semantics, identity, diagnostics, component
+boundaries, or portable policy contracts.
+
 ### Ecosystem listing
 
 Adds an external project to `ECOSYSTEM.md`. The project must identify its
@@ -108,6 +117,11 @@ A language-changing PR is reviewed in this order:
 Passing one Runtime's tests is evidence, not sufficient proof of a good language
 change.
 
+The `validate` check rejects a transition to Accepted unless the SCP contains
+activation metadata and a complete activation record and the same pull request
+touches at least one core canonical projection. This is a minimum consistency
+guard, not proof that review identified every affected projection.
+
 ## Required synchronization
 
 When applicable, one activation pull request updates:
@@ -125,6 +139,8 @@ The status transition and every required projection must merge atomically. An
 owner-approved proposal remains Discussion until this synchronization is
 complete. See [Language Governance](GOVERNANCE.md#merge-decision-and-activation)
 for the distinction between a merged record, a decision, and effective language.
+One activation pull request may activate multiple SCPs; each records the same
+pull request and squash revision.
 
 Run all available conformance and grammar-generation checks. `git diff --check`
 must pass.

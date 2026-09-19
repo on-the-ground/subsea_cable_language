@@ -43,13 +43,17 @@ Recommended option A:
 - Every entry value must be Goal structure written with an explicit suffix: a
   deferred Goal reference `A[]`, an Anchor reference `$a`, or a serial or
   parallel composition of those. A bare identifier in an entry is a value name,
-  so it is not Goal structure (`InvalidStructuralContext`). The grammar already
-  admits exactly these forms in a map-entry position, so no production changes.
-  An inline Goal arrow is not admitted there and stays out of scope: entries are
-  reached by lookup, not by routing, so a parameterized entry would have no
-  caller to supply its arguments. A brace literal inside an entry is an ordinary
-  map, not a resolving map, because a map is resolving only as the direct body
-  of a Goal arrow.
+  so it is not Goal structure (`InvalidStructuralContext`).
+- An **inline Goal arrow entry is rejected in validation**, also as
+  `InvalidStructuralContext`. The grammar does admit it —
+  `mapEntry : mapKey ':' expression` and `expression : goalArrow | logicalOr`,
+  so `{k: [x] -> A[x]}` parses — but an entry is reached by lookup, not by
+  routing, so a parameterized entry would have no caller to supply its
+  arguments. This is a semantic restriction on a syntactically valid form, in
+  the same way a nested `Goal(...)` parses and is rejected. No production
+  changes.
+- A brace literal inside an entry is an ordinary map, not a resolving map,
+  because a map is resolving only as the direct body of a Goal arrow.
 - Such a map may be used only in a Goal-structure position; using it as a value is `InvalidStructuralContext`.
 - The selected entry receives no implicit upstream value; routing must be explicit in the entry.
 
@@ -127,9 +131,9 @@ The POC blocks structure-valued lookup with `UnsupportedByProfile` until a decis
 ## Activation record
 
 - Canonical documents synchronized: `README.md` lookup-map semantics, `implementation/RUNTIME_CONTRACT.md` §2.2, `FOR_AGENTS.md`, `implementation/CAROUSEL_POC_FINDINGS.md` F8
-- Grammar projections synchronized: no production change; entry forms are limited to what `SubseaCable.g4` already admits in a map-entry position, verified against `mapEntry` and `nonIdentifierPrimary`
-- Diagnostics and examples synchronized: `InvalidStructuralContext` for a bare entry and for a structure-valued map used as a value, with the position split against SCP-0005's `UnboundName`
-- Conformance cases synchronized: `conformance/valid/structure-valued-lookup-map.vyg`, `conformance/invalid-semantic/StructureMapBareEntry.vyg`, `conformance/invalid-semantic/StructureMapAsValue.vyg`, `conformance/cases.tsv`, `conformance/DEDUCTION.md` §21
+- Grammar projections synchronized: no production change. `mapEntry : mapKey ':' expression` and `expression : goalArrow | logicalOr` admit more than the accepted entry forms, so the restriction is semantic: a bare identifier entry and an inline Goal arrow entry both parse and are rejected in validation
+- Diagnostics and examples synchronized: `InvalidStructuralContext` for a bare entry, an inline Goal arrow entry, and a structure-valued map used as a value, with the position split against SCP-0005's `UnboundName`
+- Conformance cases synchronized: `conformance/valid/structure-valued-lookup-map.vyg`, `conformance/invalid-semantic/StructureMapBareEntry.vyg`, `conformance/invalid-semantic/StructureMapArrowEntry.vyg`, `conformance/invalid-semantic/StructureMapAsValue.vyg`, `conformance/cases.tsv`, `conformance/DEDUCTION.md` §21
 - Compatibility and migration notes synchronized: SCP compatibility section; programs relying on bare entries or implicit routing become invalid
 - Verification commands and results: `python .github/scripts/validate_scp_activation.py` passes; `python .github/scripts/test_validate_scp_activation.py` passes; `mkdocs build --strict` passes; every markdown link resolves and every `conformance/cases.tsv` path exists
 

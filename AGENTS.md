@@ -30,11 +30,14 @@ Before implementing a Subsea Cable consumer/runtime, read these files in order:
 12. `proposals/0011-policy-addressee-and-host-channel.md` — who each `@policy`
     is addressed to and how a Host-addressed one reaches the Host.
 
-Every proposal in `proposals/` numbered `0001`–`0011` is Accepted. A merged
-proposal is a decision; the decision is in force because the canonical documents
-and `conformance/` carry it. When they disagree, the canonical documents and the
-conformance corpus are what an implementation follows, and the disagreement is a
-defect to report.
+Proposals `0001`–`0011` are Accepted. `0001`–`0004` became effective at their
+own activation pull requests; `0005`–`0011` become effective at the commit on
+`main` produced by squash-merging PR #10. Merging a Draft or Discussion proposal
+before that records design history only.
+
+If an Accepted SCP and a canonical projection disagree, follow **neither**
+silently: stop that implementation path and report the conflict as a repository
+defect (`GOVERNANCE.md`).
 
 Use **Subsea Cable** as the language name, **`__C`** only as its visual short
 mark, `.vyg` for source files, and `subsea-cable` for portable slugs/language
@@ -70,7 +73,8 @@ Keep these terms separate:
   routed values; Carousel may only read resolved values through a narrow port.
 - **Host**: primitive semantics, arrow-function leaf evaluation, and `$Anchor`
   resolution/invocation.
-- **Scheduler**: execution eligibility, outcomes, and `@policy` only.
+- **Scheduler**: execution eligibility, outcomes, and Scheduler-addressed
+  `@policy` only. A Host-addressed policy is the Host's to interpret.
 - **Occurrence kinds**: `Goal`, `serial`, `parallel`, `resolving-map`,
   `goal-arrow-stage`, `function-leaf`, `anchor`. An inline Goal-arrow stage is a
   real deducible occurrence: it waits for its routed input, binds it, commits a

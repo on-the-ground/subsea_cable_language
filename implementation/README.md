@@ -97,13 +97,15 @@ Source Frontend  → UTF-8, preprocessing, parse, validation, artifact preparati
 Codebase         → immutable Goal artifacts, mutable aliases, revisions, deduction ledger
 Carousel         → lazy deduction, reduction rules, occurrences, lineages, frontier
 Outcome/Value    → live run outcomes and resolved routed values
-Scheduler Port   → readiness/outcomes and opaque @policy delivery
+Scheduler Port   → readiness/outcomes and addressee-resolved @policy delivery
 Host Port        → primitive semantics, arrow-leaf evaluation, $Anchor resolution/invocation
 Diagnostics      → errors, traces, provenance, and conformance evidence
 ```
 
 The Host supplies concrete computation semantics. The Scheduler interprets
-`@policy`. Carousel owns demand-time Goal alias resolution and structural
+Scheduler-addressed `@policy`; a Host-addressed policy reaches the Host as the
+`hostPolicies[]` projection and the Scheduler does not interpret it
+([SCP-0011](../proposals/0011-policy-addressee-and-host-channel.md)). Carousel owns demand-time Goal alias resolution and structural
 deduction, but delegates primitive value semantics to the Host and never
 evaluates grounded leaves. The Runtime owns the Outcome & Value Store; Scheduler
 writes outcomes and Carousel reads committed values through a narrow port.

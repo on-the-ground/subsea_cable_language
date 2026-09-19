@@ -353,8 +353,10 @@ HostCapabilityChanged
 
 Fixed by the language: a policy targets exactly the following occurrence,
 stacks in source order, has validated value arguments, never changes topology,
-and is never copied to children. The Scheduler interprets it and must reject
-unsupported ones.
+and is never copied to children. Its addressee is resolved against the pinned
+declarations of `RUNTIME_CONTRACT.md` §10.1: a Scheduler-addressed policy is
+interpreted by the Scheduler, a Host-addressed one by the Host, and one claimed
+by neither is rejected as `UnknownPolicy`.
 
 Not fixed: every concrete policy's meaning, inheritance, and composition. This
 design supplies a **mechanism** only.
@@ -365,7 +367,9 @@ design supplies a **mechanism** only.
 PolicyInterpreter
   id, version
   targetKinds          subset of {Goal, serial, parallel, resolving-map,
-                                   function-leaf, anchor}
+                                   goal-arrow-stage, function-leaf, anchor};
+                       a Host-addressed policy is limited to
+                       {function-leaf, anchor}
   validateArgs(args)   -> ok | InvalidPolicyArguments
   attach(scopeCtx)     -> state
   on(event, state, scopeCtx) -> [Action]

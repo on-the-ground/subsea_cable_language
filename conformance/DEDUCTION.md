@@ -297,6 +297,15 @@ lookup MUST NOT be routed into the entry unless the entry says so.
    top-level values. Their `ArtifactHash` values MUST differ.
 2. Edit a top-level value that no Goal in the unit references by name. Every
    `ArtifactHash` in the unit MUST be unchanged.
+2b. **The capture is transitive, not direct-only.** Bind `b` to a value, bind
+   `a` to a value that references `b` by name, and write a Goal whose term
+   references only `a`. Change `b`. That Goal's `ArtifactHash` MUST change. An
+   implementation that captures only directly referenced bindings passes every
+   other scenario here and fails this one, which is the point of the case.
+2c. **Canonical order is a contract.** Reorder the top-level binding
+   declarations without changing any value. Because top-level bindings form one
+   order-independent scope and the closure is captured in canonical order, every
+   `ArtifactHash` in the unit MUST be unchanged.
 3. Store a unit whose Goal selects from a structure-valued lookup map, then
    rebind a `Name/Arity` alias that one of the map's entries references. The
    referencing artifact's `ArtifactHash` MUST be unchanged, and a later

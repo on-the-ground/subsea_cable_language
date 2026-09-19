@@ -711,8 +711,15 @@ Anchoring policy uses `@`, independently of Host resolution:
 Each `@policy` prefix attaches How metadata to exactly the following structural
 occurrence. It never changes dependency topology, `GoalNodeId`, argument routing,
 or result routing. Stacked policies attach to the same target in source order.
+
 Policy meaning, applicability, inheritance over a composite, conflict handling,
-and execution belong to the Scheduler.
+and execution belong to the policy's **addressee**. A Scheduler-addressed policy
+is the Scheduler's, and that is the default and the majority case. A
+Host-addressed policy — one that changes only what happens inside exactly one
+grounded leaf invocation — is the Host's to interpret, and the Scheduler must
+not interpret it. Neither addressee may change topology, and neither inherits to
+a descendant occurrence. The next section states how an addressee is
+determined.
 
 A policy on a Goal reference belongs to that occurrence/edge and its lineage,
 never to the shared Goal definition or node. Erasing every policy annotation
@@ -899,7 +906,9 @@ may be used only in a Goal-structure position; using it as a value is
 explicit suffix: a deferred Goal reference `A[]`, an Anchor reference `$a`, or a
 serial or parallel composition of those. A bare identifier in an entry is a
 value name, not a Goal stage, so it is `InvalidStructuralContext`. An inline
-Goal arrow is not an entry form. The selected entry receives no implicit upstream
+Goal arrow parses in that position but is rejected in validation with the same
+kind: an entry is selected by lookup, not routed into, so its parameters would
+have no caller. The selected entry receives no implicit upstream
 value; routing into it must be written explicitly.
 
 A named structure-valued map is not a conditional branch map. `[sel, Routes]` is

@@ -272,7 +272,7 @@ same Runtime loop. See
 | Interpretation | Every step, again | Structure authored once; aliases resolved per demanded occurrence |
 | Validation | While executing | Static errors before deduction; dynamic structural errors before affected leaf evaluation |
 | Parallelism | Decided ad hoc by the model | Visible in the structure |
-| Retry / QoS | Mixed into reasoning | Opaque `@policy`, interpreted only by a declared Scheduler profile |
+| Retry / QoS | Mixed into reasoning | Opaque `@policy`, interpreted only by the declared profile it is addressed to — a Scheduler registry, or a Host capability for a single-invocation policy |
 | Effects | Anywhere in the text | Only behind `$` |
 | Progress | Inferred from a transcript | Deduction ledger plus the undeduced frontier |
 | Re-planning | Rewrite the plan, hope for consistency | Rebind aliases; committed deductions stay |
@@ -423,8 +423,10 @@ You do not need a runtime to think this way.
 - Write `[...]` for what must be ordered and `{...}` for what is independent.
   If you cannot decide which, you do not understand the dependency yet.
 - Put every effect behind a `$` Host Anchor. If a step touches the world, name the
-  boundary. Carry How metadata only as a Scheduler-recognized `@policy`; do not
-  invent policy semantics from names such as retry or timeout.
+  boundary. Carry How metadata only as a `@policy` that a declared profile
+  recognizes — the Scheduler registry, or the Host capability when it configures
+  one grounded leaf invocation; do not invent policy semantics from names such as
+  retry or timeout.
 - Route values explicitly. If a step needs something, some structure must
   provide it.
 - Treat each completed deduction as committed. Re-plan by rebinding aliases that

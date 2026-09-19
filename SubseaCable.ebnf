@@ -157,7 +157,9 @@
  *   semantics are Host-provided; a failure requested while reducing is reported
  *   in the deduction context. Arrow-function and Anchor leaf failures are Host-
  *   owned. Policy existence, applicability, conflicts, scheduling, and upstream
- *   outcomes are Scheduler-owned. A failed deduction commits no partial result
+ *   outcomes belong to the policy's resolved addressee: the Scheduler by
+ *   default, or the Host for a policy its capability declares and that
+ *   configures one grounded leaf invocation. A failed deduction commits no partial result
  *   and never rewrites any earlier deduction. Each error has a stable kind and
  *   phase; source span, artifact, occurrence, and active lineages are attached
  *   when available.

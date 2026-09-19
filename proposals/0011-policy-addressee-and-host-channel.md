@@ -644,10 +644,10 @@ doubles.
 
 ## Activation record
 
-- Canonical documents synchronized: `README.md` policy-addressee section and error-ownership table, `implementation/RUNTIME_CONTRACT.md` §3, §8 envelope, §8.2, §10.1, §12 and §15, `AGENTS.md`, `FOR_AGENTS.md`, `implementation/RUNTIME_ORCHESTRATION_PLAN.md`
-- Grammar projections synchronized: not applicable; the grammar already admits any policy identifier
+- Canonical documents synchronized: `README.md` policy-addressee section, policy-ownership paragraph and error-ownership table, `implementation/RUNTIME_CONTRACT.md` §3, §8 envelope, §8.2, §10.1, §12 and §15, `AGENTS.md` Scheduler definition and policy-addressee glossary, `FOR_AGENTS.md`, `implementation/README.md`, `implementation/RUNTIME_ORCHESTRATION_PLAN.md` §8.1 and §8.2
+- Grammar projections synchronized: no production change; the error-ownership comment in `SubseaCable.g4` and `SubseaCable.ebnf` now attributes policy existence, applicability and conflicts to the resolved addressee rather than to the Scheduler alone
 - Diagnostics and examples synchronized: `PolicyConflict` in the `policy` phase, `InvalidPolicyArguments`, `UnsupportedPolicyTarget` for any non-leaf occurrence kind, and the new stable kind `PolicyDenied`
-- Conformance cases synchronized: `conformance/POLICY.md` §§1–13
+- Conformance cases synchronized: `conformance/POLICY.md` §§1–13, with §§12–13 covering the execution-identity tagged union: variant-tag collision, an admissible `capabilitySnapshotSubstitute`, and the four reporting shapes
 - Compatibility and migration notes synchronized: SCP compatibility section; no previously valid source changes meaning and no stored hash impact
 - Verification commands and results: `python .github/scripts/validate_scp_activation.py` passes; `python .github/scripts/test_validate_scp_activation.py` passes; `mkdocs build --strict` passes; every markdown link resolves and every `conformance/cases.tsv` path exists
 

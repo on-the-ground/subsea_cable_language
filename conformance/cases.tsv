@@ -27,3 +27,4 @@ validation	UnboundName	invalid-semantic/ConditionalUppercaseSelector.vyg
 validation	CycleDetected	invalid-semantic/ConditionalExitReentersCycle.vyg
 validation	InvalidStructuralContext	invalid-semantic/StructureMapBareEntry.vyg
 validation	InvalidStructuralContext	invalid-semantic/StructureMapAsValue.vyg
+validation	InvalidStructuralContext	invalid-semantic/StructureMapArrowEntry.vyg

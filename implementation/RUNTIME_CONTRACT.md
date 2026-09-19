@@ -148,11 +148,13 @@ shorthand, and reports `UnboundName` when no value binding exists.
 A structure-valued ordinary lookup map is a top-level binding whose right-hand
 side is a map literal and whose entries are Goal structure. Validation MUST
 require every entry to be a deferred Goal reference, an Anchor reference, or a
-serial or parallel composition of those, and MUST reject a bare identifier entry
-as
-`InvalidStructuralContext`, because a bare identifier in that position is a
-value name. Such a map MUST be used only in a Goal-structure position; using it
-as a value is `InvalidStructuralContext`. A selected entry receives no implicit
+serial or parallel composition of those. It MUST reject a bare identifier entry
+as `InvalidStructuralContext`, because a bare identifier in that position is a
+value name, and it MUST reject an inline Goal arrow entry with the same kind:
+the grammar admits one there, but an entry is selected by lookup rather than
+routed into, so its parameters would have no caller. Such a map MUST be used
+only in a Goal-structure position; using it as a value is
+`InvalidStructuralContext`. A selected entry receives no implicit
 upstream value. A named map is never a conditional branch map: the conditional
 pipeline's second element MUST be an authored branch-map literal, so `[sel,
 Routes]` is a two-stage serial composition and selection from a named map is
@@ -736,16 +738,46 @@ complete portable contract is
 [SCP-0004](../proposals/0004-voyage-plans-and-touchdown-cable-artifacts.md).
 
 Where such a journal exists, it MUST key an outcome by at least the Touchdown
-descriptor, the Host identity, the Host implementation revision/digest and the
-Host capability snapshot identity **the serving attempt reported**, the
-Host-addressed policy digest, and the granted capabilities including the pinned
-allowlist revision. Only the attempt knows which implementation actually ran it,
-and a Runtime cannot verify a no-swap promise, so these come from the attempt's
-report rather than from the run-start pin; an outcome whose attempt reports no
-implementation revision MUST NOT be journal-reusable, and a reported capability
-identity differing from the pinned one is recorded as drift and is not reusable
-under the pinned identity. Addressee resolution still uses the pinned
-identities. See
+descriptor, the Host identity, the **execution identity the serving attempt
+reported**, the Host-addressed policy digest, and the granted capabilities
+including the pinned allowlist revision. Only the attempt knows what actually
+ran it, and a Runtime cannot verify a no-swap promise, so the execution identity
+comes from the attempt's report rather than from the run-start pin. Addressee
+resolution still uses the pinned identities.
+
+The reported execution identity is a tagged union with **exactly one** variant:
+
+```text
+reportedExecutionIdentity =
+    implementationRevision(revisionOrDigest)
+  | capabilitySnapshotSubstitute(snapshotIdentity, guaranteeProfile)
+```
+
+- The journal MUST key by the **variant tag** as well as its value, so identical
+  bytes in the two namespaces never collide.
+- `implementationRevision` is the ordinary variant: the implementation revision
+  or digest that served the attempt.
+- `capabilitySnapshotSubstitute` serves a deployment that cannot expose an
+  implementation revision at all. That deployment MUST guarantee that its
+  capability snapshot identity changes whenever any implementation revision
+  that can affect outcome meaning changes, and MUST identify that guarantee as
+  a profile, which the attempt reports as `guaranteeProfile`. The substitute's
+  `snapshotIdentity` MUST equal the separately reported serving capability
+  snapshot identity; a mismatch makes the outcome non-reusable. Its tag,
+  snapshot identity and guarantee profile all enter the journal key.
+- An outcome whose attempt reports neither variant, reports both, or omits its
+  serving capability snapshot identity MUST NOT be journal-reusable. Refusing
+  reuse is always safe; guessing is not.
+- When an attempt reports a capability snapshot identity that differs from the
+  run-start pinned one, that is **drift**: the Runtime MUST record it, the
+  outcome MUST NOT be reused under the pinned identity, and a deployment MAY
+  treat drift as a run-level failure.
+- A deployment that wants replay determinism MAY additionally pin the
+  implementation revision at run start and refuse to start, or fail the run on
+  drift. That is a stricter profile layered on the reporting rule, not an
+  alternative to it.
+
+See
 [SCP-0011](../proposals/0011-policy-addressee-and-host-channel.md).
 
 ## 13. Run and recovery boundary

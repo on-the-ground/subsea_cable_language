@@ -107,22 +107,38 @@ Where an Outcome Journal exists, two attempts with identical structure that
 differ only in their Host-addressed policies — `@dryRun` and a real run — MUST
 produce different journal keys.
 
-## 12. Host identity and capability version key the journal
+## 12. Execution identity and capability version key the journal
 
-Two attempts differing only in the reported Host implementation revision MUST
+Two attempts differing only in the reported `implementationRevision` MUST
 produce different journal keys, with the capability manifest, allowlist and
 granted capabilities held identical. The same MUST hold for two attempts
 differing only in the reported capability snapshot/profile version, and for two
 differing only in the pinned allowlist revision.
 
+The variant tag is part of the key. Construct two attempts whose reported
+execution identities carry **identical bytes** under different variants — one
+`implementationRevision(x)` and one `capabilitySnapshotSubstitute(x, p)`. They
+MUST NOT share a journal entry. Two attempts differing only in
+`guaranteeProfile` MUST also produce different keys.
+
 ## 13. Identity is reported per attempt, not assumed from the pin
 
 Swap the Host implementation mid-run. The affected attempt MUST report the new
-revision with its outcome, and its journal entry MUST be keyed by the reported
-revision rather than by the run-start value.
+`implementationRevision` with its outcome, and its journal entry MUST be keyed
+by the reported value rather than by the run-start value.
 
-An outcome whose attempt reports no implementation revision MUST NOT be
-journal-reusable. A reported capability snapshot identity that differs from the
-pinned one MUST be recorded as drift and MUST NOT be reused under the pinned
-identity; addressee resolution still uses the pinned identity, and a deployment
-MAY treat drift as a run-level failure.
+Exactly one variant is admissible per attempt. Run all four shapes:
+
+1. `implementationRevision(r)` alone — reusable, keyed by that variant and
+   value.
+2. `capabilitySnapshotSubstitute(s, p)` alone, where the deployment declares the
+   guarantee profile `p` and `s` equals the separately reported serving
+   capability snapshot identity — **reusable**. A conforming Runtime MUST NOT
+   refuse this outcome merely because no implementation revision was reported.
+3. Neither variant, or both variants, or a substitute whose `snapshotIdentity`
+   does not equal the serving snapshot, or a substitute with no declared
+   guarantee profile — MUST NOT be journal-reusable.
+4. A reported capability snapshot identity differing from the run-start pinned
+   one — recorded as drift, MUST NOT be reused under the pinned identity;
+   addressee resolution still uses the pinned identity, and a deployment MAY
+   treat drift as a run-level failure.

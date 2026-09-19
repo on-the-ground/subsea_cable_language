@@ -372,8 +372,7 @@ yield at every selected conditional child until explicit demand arrives.
 
 ## Final rationale
 
-The detailed contract remains in Discussion. Its accepted core rationale is
-that Subsea Cable deduces occurrences, not a static definition graph. A
+Subsea Cable deduces occurrences, not a static definition graph. A
 recursive definition guarded by selective structure can unfold into a finite or
 infinite sequence of fresh occurrences without ever creating a cyclic realized
 Cable. Rejecting that definition solely because its name recurs discards the

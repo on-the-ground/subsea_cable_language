@@ -121,7 +121,9 @@ The POC uses option B under profile `poc-sha256-canon/1`, marked experimental (A
 - Canonical documents synchronized: `README.md` artifact identity, `implementation/RUNTIME_CONTRACT.md` §2.3 and §6, `AGENTS.md`, `FOR_AGENTS.md`, `implementation/CAROUSEL_POC_FINDINGS.md` F9
 - Grammar projections synchronized: not applicable; no source syntax changed
 - Diagnostics and examples synchronized: not applicable; no diagnostic kind changed
-- Conformance cases synchronized: `conformance/DEDUCTION.md` §22
+- Conformance cases synchronized: `conformance/DEDUCTION.md` §22, including a
+  case that fails a direct-only capture (`Goal` → value `a` → value `b`, change
+  `b`) and a case fixing that reordering binding declarations changes no hash
 - Compatibility and migration notes synchronized: SCP compatibility section; existing stores must be re-hashed under the accepted encoding profile
 - Verification commands and results: `python .github/scripts/validate_scp_activation.py` passes; `python .github/scripts/test_validate_scp_activation.py` passes; `mkdocs build --strict` passes; every markdown link resolves and every `conformance/cases.tsv` path exists
 

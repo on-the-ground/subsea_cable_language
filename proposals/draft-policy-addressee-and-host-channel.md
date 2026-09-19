@@ -71,8 +71,12 @@ that envelope to the Host capability. What is missing is narrower and sharper:
 - there is no **filtered projection**, so honouring one entry would mean reading
   all of them, including Scheduler-addressed policies the Host must not see.
 
-So the gap is a rule about who a policy is for, plus a named projection of a
-field that already exists — not a new port and not a new field on the request.
+So the gap is a rule about who a policy is for, plus a named projection of
+metadata that already travels with the request: **no new port, and no new policy
+payload**. The Host-facing request schema does change — `directPolicies[]` comes
+out of it and `hostPolicies[]` goes in — because a projection that leaves the
+full envelope in place would hide nothing. What this proposal does not add is a
+second channel or a second kind of metadata.
 
 ## Existing invariant under pressure
 
@@ -335,29 +339,38 @@ the behavior.
 - A Touchdown content descriptor stays policy-erased (SCP-0004).
 - Provenance records the split: which policies were Scheduler-addressed, which
   were Host-addressed, the pinned Scheduler registry version, the pinned Host
-  capability snapshot and Host identity, the pinned forwarding-allowlist
-  revision, and the granted capabilities.
+  capability snapshot and Host identity, the **pinned Host implementation
+  revision/digest**, the pinned forwarding-allowlist revision, and the granted
+  capabilities.
 - Consequently a future Outcome Journal MUST key an outcome by at least the
-  Touchdown descriptor, the Host identity, the **pinned Host capability
-  snapshot/profile identity and its version**, the Host-addressed policy digest,
-  and the granted capabilities including the pinned allowlist revision. Two
-  attempts with identical structure but
-  different Host-addressed policies — `@dryRun` and a real run — MUST NOT share
-  a journal entry, and neither may two attempts that differ only in the Host's
-  implementation or capability profile version.
-- The capability version belongs in the key because SCP-0004 places Host
-  implementation and capability version in **outcome-reuse policy and the
-  journal**, not in structural identity. The same Host identity with the same
-  allowlist and granted capabilities can still be a different implementation
-  after an upgrade, and its earlier outcomes are not reusable.
+  Touchdown descriptor, the Host identity, the **pinned Host implementation
+  revision/digest**, the **pinned Host capability snapshot/profile identity and
+  its version**, the Host-addressed policy digest, and the granted capabilities
+  including the pinned allowlist revision. Two attempts with identical structure
+  but different Host-addressed policies — `@dryRun` and a real run — MUST NOT
+  share a journal entry, and neither may two attempts that differ only in the
+  Host's implementation revision or capability profile version.
+- Implementation revision is keyed **separately** from the capability
+  version because the two move independently: a Host binary or adapter can be
+  upgraded while its capability manifest, allowlist and granted capabilities all
+  stay byte-identical, and the outcome meaning can still change. A deployment
+  that cannot expose an implementation revision MAY instead guarantee that its
+  capability snapshot identity changes whenever any implementation revision
+  that can affect outcome meaning changes, and MUST state that guarantee; a
+  Runtime relying on it records which of the two schemes is in force.
+- Both belong in the key rather than in structural identity because SCP-0004
+  places Host implementation and capability version in **outcome-reuse policy
+  and the journal**. The same Host identity with the same allowlist and granted
+  capabilities can still be a different implementation after an upgrade, and its
+  earlier outcomes are not reusable.
 
 ### Capability reporting
 
 A Runtime reports, for the attached Host and Scheduler: Anchor identifiers,
 Host-addressed policy identifiers with schemas, Scheduler-addressed policy
-identifiers, and the three pinned identities — Scheduler registry version, Host
-capability snapshot/profile version, and forwarding-allowlist revision — with
-the allowlist contents in effect.
+identifiers, and the pinned identities — Scheduler registry version, Host
+implementation revision/digest, Host capability snapshot/profile version, and
+forwarding-allowlist revision — with the allowlist contents in effect.
 
 ## Alternatives
 
@@ -446,7 +459,10 @@ the allowlist contents in effect.
       phase with `PolicyDenied` and traced;
   12. two attempts differing only in Host-addressed policies produce different
       Outcome Journal keys, and so do two attempts differing only in the pinned
-      Host capability snapshot/profile version or the pinned allowlist revision.
+      Host implementation revision, only in the pinned capability
+      snapshot/profile version, or only in the pinned allowlist revision — the
+      implementation case is exercised with the capability manifest, allowlist
+      and granted capabilities held identical.
 
 ## Reference experiment
 
@@ -527,6 +543,16 @@ doubles.
   Host-policy context has read-only attempt identity and cancellation signal and
   simply has no retry/settle/extend operation, so there is no surface, phase or
   outcome left to specify.
+- Review round 4 (2026-09-19, language PR #8): one P1 and one P2, both
+  addressed. The Outcome Journal key gains the pinned Host implementation
+  revision/digest as a separate element, because a binary or adapter can be
+  upgraded while the capability manifest, allowlist and granted capabilities
+  stay identical; a deployment that cannot expose one must instead guarantee
+  that its capability snapshot identity changes with any outcome-affecting
+  implementation revision, and say so. The motivation no longer claims "not a
+  new field on the request": the Host-facing request schema does change — this
+  proposal adds no new port and no new policy payload, but `directPolicies[]`
+  leaves that schema and `hostPolicies[]` enters it.
 
 ## Final rationale
 

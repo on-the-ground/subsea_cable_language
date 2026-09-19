@@ -1,7 +1,9 @@
+import subprocess
 import unittest
 
 from validate_scp_activation import (
     is_core_projection,
+    resolve_comparison_base,
     status_of,
     validate_activation_document,
 )
@@ -57,6 +59,40 @@ class ActivationValidatorTests(unittest.TestCase):
         self.assertTrue(is_core_projection("SubseaCable.g4"))
         self.assertTrue(is_core_projection("conformance/cases.tsv"))
         self.assertFalse(is_core_projection("METAPHORS.md"))
+
+    def test_runtime_contract_is_a_normative_projection(self) -> None:
+        # A decision that only changes the Runtime contract is correctly
+        # activated by touching it alone.
+        self.assertTrue(is_core_projection("implementation/RUNTIME_CONTRACT.md"))
+
+    def test_non_normative_implementation_plans_are_not_projections(self) -> None:
+        self.assertFalse(is_core_projection("implementation/CAROUSEL_ENGINE_PLAN.md"))
+        self.assertFalse(is_core_projection("implementation/README.md"))
+
+    def test_absent_baseline_yields_no_comparison_base(self) -> None:
+        # A push event supplies the all-zero sha on a branch's first push and
+        # after a force-push; that is an absent baseline, not a violation.
+        zero = "0" * 40
+        self.assertIsNotNone(resolve_comparison_base("HEAD~1", "HEAD"))
+        self.assertEqual(resolve_comparison_base(zero, "HEAD"), _first_parent())
+
+    def test_absent_baseline_on_a_root_commit_is_tolerated(self) -> None:
+        root = _root_commit()
+        self.assertIsNone(resolve_comparison_base("0" * 40, root))
+
+
+def _first_parent() -> str:
+    return subprocess.run(
+        ("git", "rev-parse", "--verify", "HEAD^"),
+        check=True, text=True, stdout=subprocess.PIPE,
+    ).stdout.strip()
+
+
+def _root_commit() -> str:
+    return subprocess.run(
+        ("git", "rev-list", "--max-parents=0", "HEAD"),
+        check=True, text=True, stdout=subprocess.PIPE,
+    ).stdout.split()[0]
 
 
 if __name__ == "__main__":

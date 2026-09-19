@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""Reject incomplete SCP status transitions to Accepted."""
+"""Reject incomplete SCP status transitions to Accepted.
+
+This check is a floor, not a proof of complete synchronization. It asks whether
+an activation diff touches at least one normative projection and whether the
+activated SCP carries its activation metadata. It does not verify that every
+affected projection was updated, and with several SCPs activated in one pull
+request it does not attribute a projection to a particular SCP. Reviewers still
+own completeness.
+"""
 
 from __future__ import annotations
 
@@ -10,7 +18,17 @@ import sys
 
 PROPOSAL_PATH = re.compile(r"^proposals/\d{4}-[^/]+\.md$")
 STATUS = re.compile(r"^- Status:[ \t]*(.*?)[ \t]*\r?$", re.MULTILINE)
-CORE_PROJECTIONS = {"README.md", "SubseaCable.g4", "SubseaCable.ebnf"}
+# Normative projections. implementation/RUNTIME_CONTRACT.md belongs here because
+# it states its own MUST/MUST NOT conformance requirements: a decision that only
+# changes the Runtime contract is correctly activated by touching it alone. The
+# rest of implementation/ is deliberately excluded, since a non-normative plan
+# such as CAROUSEL_ENGINE_PLAN.md must not satisfy this check on its own.
+CORE_PROJECTIONS = {
+    "README.md",
+    "SubseaCable.g4",
+    "SubseaCable.ebnf",
+    "implementation/RUNTIME_CONTRACT.md",
+}
 ACTIVATION_FIELDS = ("Activation pull request", "Effective language revision")
 ACTIVATION_RECORD_FIELDS = (
     "Canonical documents synchronized",
@@ -84,6 +102,21 @@ def validate_activation_document(path: str, document: str) -> list[str]:
     return errors
 
 
+def resolve_comparison_base(base: str, head: str) -> str | None:
+    """Return the revision to diff against, or None when there is no usable one.
+
+    A push event supplies the all-zero sha for a branch's first push and after a
+    force-push. Failing there would report a governance violation for what is an
+    absent baseline, so fall back to the head's first parent and finally to no
+    comparison at all.
+    """
+    merge_base = git("merge-base", base, head, allow_failure=True).strip()
+    if merge_base:
+        return merge_base
+    first_parent = git("rev-parse", "--verify", f"{head}^", allow_failure=True).strip()
+    return first_parent or None
+
+
 def is_core_projection(path: str) -> bool:
     return path in CORE_PROJECTIONS or path.startswith("conformance/")
 
@@ -109,7 +142,10 @@ def main(arguments: list[str]) -> int:
         return 2
 
     base, head = arguments
-    comparison_base = git("merge-base", base, head).strip()
+    comparison_base = resolve_comparison_base(base, head)
+    if comparison_base is None:
+        print(f"No usable comparison base for {base!r}; nothing to validate.")
+        return 0
     changed = {
         line.strip()
         for line in git(
@@ -126,7 +162,8 @@ def main(arguments: list[str]) -> int:
     if not any(is_core_projection(path) for path in changed):
         names = ", ".join(path for path, _ in activated)
         errors.append(
-            f"{names}: activation diff must touch README.md, a grammar, or conformance/"
+            f"{names}: activation diff must touch README.md, a grammar, "
+            f"implementation/RUNTIME_CONTRACT.md, or conformance/"
         )
 
     for path, document in activated:

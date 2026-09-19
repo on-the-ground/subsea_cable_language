@@ -7,6 +7,8 @@
 - Requires owner decision: yes
 - External implementation ADRs: Runtime orchestration review recorded by `on-the-ground/subsea_cable_runtime#1`
 - Evidence repositories/revisions: `on-the-ground/subsea_cable_runtime` POC; [language issue #2](https://github.com/on-the-ground/subsea_cable_language/issues/2)
+- Activation pull request: [#3](https://github.com/on-the-ground/subsea_cable_language/pull/3)
+- Effective language revision: `79debc4fe1106ccdee96278811b74609468e7dd6`
 - Supersedes: the former use of **Vessel** as the deduction component
 - Superseded by: —
 
@@ -159,6 +161,17 @@ and resource budgets remain separate plan decisions.
 - Decision date: 2026-09-17
 - Conditions: migrate all canonical documents together; never implement two
   deduction engines.
+
+## Activation record
+
+- Canonical documents synchronized: philosophy, semantics, agent guidance, and
+  implementation-neutral contracts and plans
+- Grammar projections synchronized: not applicable; no source syntax changed
+- Diagnostics and examples synchronized: canonical explanations and examples
+- Conformance cases synchronized: deduction documentation and cases
+- Compatibility and migration notes synchronized: SCP compatibility section
+  and migration playbook
+- Verification commands and results: activation PR checks passed
 
 ## Final rationale
 

@@ -62,8 +62,9 @@ Statuses:
 
 - **Draft** — evidence and design are being developed;
 - **Discussion** — sufficiently complete for focused review;
-- **Accepted** — approved language direction, pending or including normative
-  changes;
+- **Accepted** — the owner's decision has been incorporated into every affected
+  canonical projection and conformance case, and the activating pull request
+  has merged;
 - **Rejected** — considered and declined, with reasons retained;
 - **Deferred** — valid question lacking evidence or current need;
 - **Withdrawn** — author no longer proposes it;
@@ -77,10 +78,53 @@ Workflow:
    profile, policy, or deferred feature.
 4. The author presents alternatives, recommendation, compatibility, and
    conformance effects.
-5. Language maintainers request the owner's design decision where required.
-6. No semantic implementation is treated as standard before acceptance.
-7. Acceptance is completed by synchronized normative text, grammar, and
-   conformance changes.
+5. Language maintainers request the owner's design decision where required and
+   record its exact scope, rationale, conditions, and date in the SCP.
+6. An approving owner decision does not by itself make the SCP Accepted. While
+   integration is pending, the SCP remains Discussion and no implementation may
+   present the proposed behavior as standard Subsea Cable.
+7. The activation pull request synchronizes the SCP, every affected canonical
+   source, compatibility and migration notes, diagnostics, examples, and
+   conformance cases. It also changes the SCP status to Accepted and records the
+   activation pull request and effective language revision. Before merge, the
+   latter may be written as "the commit produced by merging PR #NN"; that
+   reference identifies the exact revision once the pull request merges.
+8. The SCP becomes Accepted, and its behavior becomes effective language, only
+   when that complete activation pull request merges. A merge that leaves an SCP
+   Draft or Discussion records design work only and has no semantic effect.
+
+### Merge, decision, and activation
+
+These are deliberately separate events:
+
+- **Merge is a record.** Merging a Draft or Discussion SCP preserves the
+  proposal, evidence, and review history. It neither approves nor activates the
+  proposed language behavior.
+- **Owner approval is a decision.** It authorizes a precisely scoped direction
+  for integration. The decision is recorded in the SCP, which remains
+  Discussion until activation.
+- **Accepted is effective.** The only pull request that may change an SCP to
+  Accepted is the activation pull request containing all applicable canonical
+  and conformance changes. Acceptance and effectiveness begin at that pull
+  request's merge commit.
+
+The activation change must be atomic from `main`'s perspective: the status
+change to Accepted must not merge before or after its required normative and
+conformance projections. If an SCP was previously merged for discussion, the
+activation pull request updates that same SCP alongside those projections.
+
+If the owner approves only part of an SCP, the approved scope must be separated
+from pending normative questions before activation. Move the pending portion to
+a follow-up Draft or Discussion SCP, or keep the entire original SCP in
+Discussion. An Accepted SCP may identify future extensions, but it must not mix
+its effective contract with undecided requirements inside that contract.
+
+An SCP is a decision and design-history record, not a substitute for the
+canonical sources listed above. If an Accepted SCP and a canonical projection
+disagree, that is a repository defect; implementations follow neither silently
+and must report the conflict. The effective revision recorded in the SCP is the
+first revision at which implementations may claim the new behavior as Subsea
+Cable semantics.
 
 Proposal discussion may use prototype implementations, but prototypes remain in
 external repositories.

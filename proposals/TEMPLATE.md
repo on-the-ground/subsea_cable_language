@@ -7,6 +7,8 @@
 - Requires owner decision: yes/no
 - External implementation ADRs:
 - Evidence repositories/revisions:
+- Activation pull request:
+- Effective language revision:
 - Supersedes:
 - Superseded by:
 
@@ -98,8 +100,30 @@ default.
 - Decision date:
 - Conditions:
 
+An approving response authorizes integration but does not change this SCP to
+Accepted. Keep the status Discussion until the activation pull request below
+merges.
+
+## Activation record
+
+Complete this section in the activation pull request. That pull request must
+propose changing this SCP's status to Accepted together with every applicable
+projection. Authoritative `main` still treats it as Discussion until that pull
+request merges. Complete the activation metadata above; the effective revision
+may be expressed as "the commit produced by merging PR #NN" so the pull request
+does not require a follow-up status commit.
+
+- Canonical documents synchronized:
+- Grammar projections synchronized:
+- Diagnostics and examples synchronized:
+- Conformance cases synchronized:
+- Compatibility and migration notes synchronized:
+- Verification commands and results:
+
 ## Final rationale
 
-Completed when Accepted, Rejected, Deferred, Withdrawn, or Superseded. Preserve
-the reasons so future implementers do not reopen the same question without new
-evidence.
+Completed when Accepted, Rejected, Deferred, Withdrawn, or Superseded. An SCP is
+Accepted in authoritative `main` only after the complete activation pull request
+has merged, not merely when the owner approves the direction or a pull-request
+branch proposes the status change. Preserve the reasons so future implementers
+do not reopen the same question without new evidence.

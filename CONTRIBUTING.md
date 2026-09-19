@@ -39,9 +39,14 @@ Subsea Cable-compatible.
 4. For a language question, open a Draft Subsea Cable Proposal here using
    `proposals/TEMPLATE.md`; link the external ADR and evidence.
 5. Keep the affected implementation path explicitly experimental or blocked
-   until the proposal is decided.
-6. After acceptance, update specification, both grammars, and conformance cases
-   before claiming the behavior as Subsea Cable semantics.
+   while the proposal is undecided and while an approving decision awaits
+   activation.
+6. After an approving owner decision, prepare one activation pull request that
+   updates the SCP to Accepted together with every affected specification,
+   grammar, diagnostic, example, compatibility note, and conformance case.
+7. Claim the behavior as Subsea Cable semantics only after that complete pull
+   request merges. Proposal-only merges and owner approval without activation
+   have no semantic effect.
 
 An implementation may continue unrelated work. It must not hide the issue behind
 a fallback, feature flag, permissive parser, Host special case, or undocumented
@@ -105,7 +110,7 @@ change.
 
 ## Required synchronization
 
-When applicable, one accepted change updates:
+When applicable, one activation pull request updates:
 
 - `README.md`;
 - `BRAND.md` when public naming, file extension, or identifiers change;
@@ -113,7 +118,13 @@ When applicable, one accepted change updates:
 - `SubseaCable.ebnf`;
 - `conformance/`;
 - `METAPHORS.md` or `FOR_AGENTS.md` when concepts change;
-- the accepted proposal and compatibility notes.
+- the proposal status to Accepted, its activation pull request and effective
+  revision, and its final rationale and compatibility notes.
+
+The status transition and every required projection must merge atomically. An
+owner-approved proposal remains Discussion until this synchronization is
+complete. See [Language Governance](GOVERNANCE.md#merge-decision-and-activation)
+for the distinction between a merged record, a decision, and effective language.
 
 Run all available conformance and grammar-generation checks. `git diff --check`
 must pass.

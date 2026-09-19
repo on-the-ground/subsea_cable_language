@@ -1,9 +1,9 @@
-# SCP-NNNN — Structure-valued ordinary lookup maps
+# SCP-0009 — Structure-valued ordinary lookup maps
 
-- Status: Draft
+- Status: Accepted
 - Author(s): Claude (agent) for on-the-ground
 - Created: 2026-09-17
-- Updated: 2026-09-17
+- Updated: 2026-09-20
 - Requires owner decision: yes
 - External implementation ADRs: [subsea_cable_runtime `0003-structure-valued-lookup-maps.md`](https://github.com/on-the-ground/subsea_cable_runtime/blob/main/docs/decisions/0003-structure-valued-lookup-maps.md)
 - Evidence repositories/revisions: `on-the-ground/subsea_cable_runtime@d62f1c3` (Carousel POC; evidence gathered while pinned to this repository at `cbc6f53`)
@@ -38,9 +38,42 @@ Validity of source and the meaning of structure are language questions.
 Recommended option A:
 
 - A structure-valued lookup map is a top-level non-Goal binding whose right-hand side is a map literal.
-- Every entry value must be Goal structure written with explicit suffixes (`A[]`, `$a`, a composition, or a Goal arrow). A bare identifier in an entry is a value name, so it is not Goal structure (`InvalidStructuralContext`).
+- Every entry value must be Goal structure written with an explicit suffix: a
+  deferred Goal reference `A[]`, an Anchor reference `$a`, or a serial or
+  parallel composition of those. A bare identifier in an entry is a value name,
+  so it is not Goal structure (`InvalidStructuralContext`). The grammar already
+  admits exactly these forms in a map-entry position, so no production changes.
+  An inline Goal arrow is not admitted there and stays out of scope: entries are
+  reached by lookup, not by routing, so a parameterized entry would have no
+  caller to supply its arguments. A brace literal inside an entry is an ordinary
+  map, not a resolving map, because a map is resolving only as the direct body
+  of a Goal arrow.
 - Such a map may be used only in a Goal-structure position; using it as a value is `InvalidStructuralContext`.
 - The selected entry receives no implicit upstream value; routing must be explicit in the entry.
+
+### Which diagnostic, and where
+
+Two accepted rules reject a bare uppercase name in structure position, with
+different kinds, because the positions differ:
+
+| Position | Rule | Kind |
+|---|---|---|
+| Conditional selector, `[Name, {…}]` | SCP-0005: the selector is a value expression, so `Name` is a value lookup | `UnboundName` when no value binding exists |
+| Structure-valued map entry, `{k: Name}` | This SCP: an entry must be Goal structure written with an explicit suffix | `InvalidStructuralContext` |
+| Serial or parallel composition stage | README: a bare uppercase identifier is a Goal stage | — (valid) |
+
+A named structure-valued map is **not** a conditional branch map. Writing
+`[sel, Routes]` is a two-stage serial composition whose second stage is the Goal
+stage `Routes`, not the conditional pipeline of SCP-0005, whose second element
+must be an authored branch-map literal. Selecting from a named map is written as
+a lookup, `Routes[key]`.
+
+### Identity
+
+A structure-valued lookup map is captured by structure, not by value: its keys
+and entry shapes enter the referencing artifact's `ArtifactHash`, while
+unqualified Goal references inside entries stay symbolic and resolve at demand
+time. See [SCP-0008](0008-artifact-hash-value-closure.md).
 
 ## Alternatives
 
@@ -77,16 +110,22 @@ The POC blocks structure-valued lookup with `UnsupportedByProfile` until a decis
 
 ## Unresolved questions
 
-- Whether a lookup map may be shared across artifacts, and how it enters `ArtifactHash` (see the artifact-closure proposal).
+- None. Capture is settled by SCP-0008; sharing follows from it, because a map
+  referenced by two artifacts contributes the same structural capture to both.
 
 ## Owner decision record
 
 - Decision requested on: 2026-09-17
 - Maintainer/agent recommendation: option A
-- Owner response: pending
-- Decision date: —
-- Conditions: —
+- Owner response: accepted — option A, with structural capture per SCP-0008 and
+  the diagnostic split above
+- Decision date: 2026-09-20
+- Conditions: entries stay explicit; no implicit routing into a selected entry
 
 ## Final rationale
 
-Pending.
+The language already lets a value choose structure; what was missing was where
+such a map may be written and what an entry must look like. Requiring explicit
+suffixes keeps one rule for bare uppercase names instead of a position-dependent
+guess, and refusing implicit routing keeps every value that reaches a Goal
+visible at the place it is passed.

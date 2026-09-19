@@ -1,7 +1,6 @@
 # SCP-0006 — Live Vessel–Host cooperation
 
-- Status: Discussion — live cooperation and deployment-neutral core accepted;
-  compiler/profile details awaiting owner confirmation
+- Status: Accepted
 - Author(s): Codex (agent) for on-the-ground
 - Created: 2026-09-18
 - Updated: 2026-09-20
@@ -220,8 +219,11 @@ spelling implementation-specific.
   separate process.
 - Accepted core: live Vessel–Host cooperation and deployment-topology
   neutrality.
-- Submitted for confirmation: compiler/static-preparation limits, general
-  Vessel profile-claim rules, and the synchronized runtime cases.
+- Accepted in full on 2026-09-20: the compiler/static-preparation limits, the general
+  Vessel profile-claim rule, and the synchronized runtime cases were confirmed
+  after the PR #7 review rounds and are normative in
+  `implementation/RUNTIME_CONTRACT.md` §1.1 and `conformance/DEDUCTION.md`
+  §§16–18.
 - Review round 1 (2026-09-20, language PR #7): two P1 and three P2 findings are
   addressed in this revision. Static preparation no longer performs deduction;
   general Vessel conformance is an observable profile claim rather than a rule

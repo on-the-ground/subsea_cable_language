@@ -288,20 +288,29 @@ Here is what is still open, so you know where the edges are.
 - **The structure language** (this repository) is well specified: grammar in
   EBNF and ANTLR4, with the semantic model in [README.md](README.md). No official
   Consumer Runtime, Carousel, Host, or Scheduler exists; that is by design.
-- **Anchoring policy semantics** are not designed yet. The `@policy` surface
-  syntax and occurrence targeting exist, but conflict resolution, inheritance
-  over composites, and the Scheduler behavior of individual policies remain open.
-- **Controlled data-dependent expansion** has one accepted core direction: a
-  pure selector followed by a conditional structural branch map. Its detailed
-  contract remains in Discussion. It guards direct and mutual recursion by
-  creating fresh child occurrences. Every selected conditional child is an
+- **Anchoring policy semantics** are partly settled. Who each policy is
+  addressed to, how the two declarations are pinned, where a Host-addressed
+  policy may be attached, and which diagnostic each failure reports are accepted
+  in [SCP-0011](proposals/0011-policy-addressee-and-host-channel.md). What
+  individual policies *mean* to the Scheduler, and how two of them compose, are
+  still undiscovered.
+- **Controlled data-dependent expansion** is accepted: a pure selector followed
+  by a conditional structural branch map. It guards direct and mutual recursion
+  by creating fresh child occurrences, and every selected conditional child is an
   explicit-demand boundary, regardless of whether local analysis classifies its
-  edge as recursive; see
-  [Recursion.md](Recursion.md) and [SCP-0005](proposals/0005-guarded-conditional-recursion.md).
-  General reusable structure-valued ordinary map bindings remain open.
+  edge as recursive; see [Recursion.md](Recursion.md) and
+  [SCP-0005](proposals/0005-guarded-conditional-recursion.md). Reusable
+  structure-valued ordinary map bindings are accepted separately in
+  [SCP-0009](proposals/0009-structure-valued-lookup-maps.md): a top-level map
+  literal whose entries are explicit Goal structure, usable only in a
+  Goal-structure position and routed explicitly.
 - **Canonical encoding and hash mechanics**: Goals live in an abstract
   content-addressed codebase. Hash-qualified references are pinned; unqualified
-  `Name/Arity` references remain symbolic until occurrence deduction. The exact
+  `Name/Arity` references remain symbolic until occurrence deduction. *What* an
+  artifact captures is settled in
+  [SCP-0008](proposals/0008-artifact-hash-value-closure.md) — the closure of the
+  top-level values it names, with structure-valued lookup maps captured by
+  structure — but the exact
   artifact encoding, hash algorithm, short-prefix rules, codebase-revision
   identity, deduction-record encoding, and stable occurrence identities still
   need specification and conformance tests. The language-level text boundary is

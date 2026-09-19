@@ -121,6 +121,7 @@ before deduction begins. It MUST cover at least:
 - statically decidable lookup/destructuring failures;
 - conditional selector purity and branch-map structure;
 - guarded-recursion analysis and unguarded cycles;
+- structure-valued lookup map binding site, entry form, and use position;
 - all cases in `conformance/cases.tsv`.
 
 Outside a function-arrow leaf, validation MUST reject a `Goal(...)` or
@@ -144,6 +145,20 @@ optional trailing comma. A later serial stage must contain that pipeline as one
 nested stage. A bare Goal name in selector position is value lookup, not Goal
 shorthand, and reports `UnboundName` when no value binding exists.
 
+A structure-valued ordinary lookup map is a top-level binding whose right-hand
+side is a map literal and whose entries are Goal structure. Validation MUST
+require every entry to be a deferred Goal reference, an Anchor reference, or a
+serial or parallel composition of those, and MUST reject a bare identifier entry
+as
+`InvalidStructuralContext`, because a bare identifier in that position is a
+value name. Such a map MUST be used only in a Goal-structure position; using it
+as a value is `InvalidStructuralContext`. A selected entry receives no implicit
+upstream value. A named map is never a conditional branch map: the conditional
+pipeline's second element MUST be an authored branch-map literal, so `[sel,
+Routes]` is a two-stage serial composition and selection from a named map is
+written `Routes[key]`
+([SCP-0009](../proposals/0009-structure-valued-lookup-maps.md)).
+
 Anchor and policy argument expressions undergo ordinary validation. The external
 Anchor identifier, signature, policy identifier, applicability, and behavior do
 not belong to structural validation.
@@ -159,7 +174,14 @@ name resolution:
 - a hash-qualified reference MUST resolve to exactly one full `ArtifactHash`
   before storage and MUST retain that pinned hash;
 - referenced arity MUST be checked whenever its target is statically known;
-- `$Anchor` and `@policy` identifiers MUST remain external symbolic names.
+- `$Anchor` and `@policy` identifiers MUST remain external symbolic names;
+- a prepared artifact MUST capture the transitive closure of the top-level value
+  bindings its term references by name, in canonical order, and MUST NOT capture
+  a Goal reference, which stays symbolic;
+- a captured structure-valued lookup map MUST be captured by structure: its keys
+  and entry shapes are part of the artifact, while an unqualified Goal reference
+  inside an entry stays symbolic `Name/Arity`
+  ([SCP-0008](../proposals/0008-artifact-hash-value-closure.md)).
 
 The prepared artifact MUST retain enough source information for diagnostics and
 human-readable traces. Unqualified references are intentionally not fully
@@ -201,7 +223,14 @@ The error ownership table in `README.md` is normative. In particular:
 - Host primitive failures while routing are reported in the deduction context;
 - arrow-function and Anchor lookup/signature/implementation failures are Host
   errors;
-- unknown, conflicting, or inapplicable policies are policy errors.
+- unknown, conflicting, or inapplicable policies are policy errors, including
+  `PolicyConflict` for an identifier claimed by both pinned declarations and
+  `PolicyDenied` for a Host-addressed policy the deployment's forwarding
+  allowlist withholds;
+- a Host leaf returning `NoOutput` where a value is required reports the single
+  kind `NoOutputNotRoutable`: phase `deduction` when detected while routing into
+  a deduction, and phase `host` when detected inside a function-leaf body
+  ([SCP-0010](../proposals/0010-dynamic-nooutput-errors.md)).
 
 ## 4. Value contract
 
@@ -266,8 +295,9 @@ MUST NOT be claimed interoperable.
 An implementation MUST distinguish:
 
 - **Authored artifact projection**: canonical prepared Goal term including
-  ordered policy metadata. Incidental formatting and source spans remain
-  sidecar metadata unless a later language contract deliberately includes them;
+  ordered policy metadata and the captured closure of referenced top-level value
+  bindings. Incidental formatting and source spans remain sidecar metadata
+  unless a later language contract deliberately includes them;
 - **Structural projection**: the same term with policy metadata erased;
 - **GoalNodeId**: structural identity plus arity;
 - **Occurrence identity**: one concrete structural occurrence/edge;
@@ -402,7 +432,8 @@ artifactHash?        selected full hash after deduction
 codebaseRevision?    revision observed by unqualified alias resolution
 goalNodeId?          present after a Goal occurrence resolves
 deductionState       undeduced | committed | failed
-occurrenceKind       Goal | serial | parallel | resolving-map | function-leaf | anchor
+occurrenceKind       Goal | serial | parallel | resolving-map | goal-arrow-stage
+                     | function-leaf | anchor
 lineages[]
 directPolicies[]     only policies authored on this exact occurrence
 dependencies[]
@@ -412,6 +443,30 @@ source/provenance
 This record preserves composite policy targets without inventing policy
 inheritance. Containment and dependency are distinct relationships and MUST NOT
 be collapsed.
+
+### 8.1 Inline Goal-arrow stages
+
+An inline Goal-arrow stage such as `[{code, logs}] -> Diagnose[code, logs]` is an
+occurrence of kind `goal-arrow-stage`
+([SCP-0007](../proposals/0007-inline-goal-arrow-stage-occurrence.md)). It MUST:
+
+- stay undeduced until it is demanded **and** its routed input resolves, under
+  the ordinary conservative value barrier;
+- bind that input to its parameters on deduction, reporting a deduction-phase
+  `DestructureMismatch` on a mismatch, and then reduce its body;
+- commit a deduction record with `referenceKind = inline-arrow`, the parameter
+  arity, no requested name and no artifact hash — the enclosing artifact
+  supplies identity;
+- add no lineage segment: its children inherit the enclosing Goal lineage;
+- take one child-ordinal segment like any other committed reduction, so it
+  occupies a position in every descendant leaf's root-to-leaf ordinal vector
+  under SCP-0004. Lineage and ordinal position are separate axes; a Runtime that
+  skipped the segment would produce a different `touchdownCableHash` for the
+  same voyage.
+
+A Scheduler-addressed `@policy` MAY target it like any other occurrence. It is a
+composite, so `Reattempt` on it is rejected with `UnsupportedPolicyTarget`. A
+Host-addressed policy MUST NOT target it.
 
 Every grounded arrow-function or Anchor occurrence delivered across the runtime
 execution boundary additionally carries an envelope equivalent to:
@@ -426,12 +481,25 @@ leafKind             function-leaf | anchor
 leafIdentifier       function implementation ID or $Anchor identifier
 arguments[]
 directPolicies[]     each with identifier, decoded arguments, target span
+hostPolicies[]       the source-order Host-addressed subsequence of directPolicies[]
 dependencies[]       occurrence/evaluation prerequisites
 provenance           Host primitive profile, codebase revision, runtime profile, source references
 ```
 
 The exact serialization is profile-specific. The information and distinctions
 are mandatory.
+
+### 8.2 The Host-facing request carries only `hostPolicies[]`
+
+The envelope above is Runtime-internal. The request the Dispatcher builds for
+the Host MUST carry `hostPolicies[]` and MUST NOT carry `directPolicies[]`:
+handing the Host the full envelope and asking it to read only a projection is
+not a boundary, so a Scheduler-addressed entry has to be absent from what
+crosses. `hostPolicies[]` preserves the same decoded arguments, target spans and
+relative source order; an empty list is the ordinary case and MUST NOT be
+conflated with a missing field. The Scheduler MUST NOT interpret, reorder, drop,
+or synthesize the Host-addressed subsequence
+([SCP-0011](../proposals/0011-policy-addressee-and-host-channel.md)).
 
 ## 9. Host Port contract
 
@@ -509,6 +577,53 @@ The Scheduler MUST preserve each ordered policy list and target occurrence. It
 MUST reject unsupported policy identifiers explicitly. It MUST NOT silently
 drop, rename, inherit, or copy a policy to child occurrences unless a documented
 concrete policy specification requires that behavior.
+
+### 10.1 Policy addressee resolution
+
+Every `@policy` is addressed either to the Scheduler or to the Host. A policy is
+Scheduler-addressed when it changes eligibility, the attempt lifecycle, or a
+scope's outcome, and Host-addressed when it changes only what happens inside
+exactly one grounded leaf invocation. Coalescing or batching several leaves
+crosses more than one occurrence and is therefore Scheduler work.
+
+A Runtime MUST pin three declarations at run start and resolve every
+occurrence's policies against them, never against whatever is registered when
+the occurrence happens to be disclosed:
+
+- a versioned Scheduler policy registry identity;
+- a Host capability snapshot/profile identity, declaring Host-addressed policy
+  identifiers with their arity or argument schema alongside Anchors;
+- the forwarding-allowlist revision.
+
+When any of the three cannot be pinned the run MUST refuse to start, before any
+occurrence is disclosed and before deduction begins; that refusal is a
+profile-negotiation failure and adds no language diagnostic. Provenance records
+all three identities, and a Runtime MUST NOT re-resolve an already disclosed
+occurrence's addressee.
+
+Resolution outcomes: claimed by the Scheduler only, it is Scheduler-addressed
+and never crosses to the Host; claimed by the Host only, it is Host-addressed
+and rides in the Host-facing request as `hostPolicies[]`; claimed by both, it is
+`PolicyConflict`; claimed by neither, it is `UnknownPolicy`. `PolicyConflict`,
+Host argument-schema mismatch (`InvalidPolicyArguments`), and an allowlist
+refusal (`PolicyDenied`) are all authoritative in the `policy` phase at
+occurrence disclosure. A `check` or lint pass with profiles attached MAY report
+the same conflict earlier as a non-authoritative preflight diagnostic; the
+authoritative phase does not change and the Frontend and Codebase still depend
+on no registry.
+
+A Host-addressed policy has `targetKinds = {function-leaf, anchor}`. On any
+non-leaf occurrence kind it is `UnsupportedPolicyTarget`, and a composite's
+policy is never forwarded to a descendant leaf. The Scheduler attempt lifecycle
+wraps the Host invocation: a Host-addressed policy MAY read its own invocation's
+attempt identity and cancellation signal, and the Host-policy surface exposes no
+operation to create, retry, settle, extend or abandon an attempt, so the only
+way that invocation changes Runtime attempt state is the outcome it returns.
+Cancellation stays cooperative: the Host MUST forward a cancellation request to
+a delegated worker and trace it, MAY still return a late `Succeeded`, and the
+Scheduler decides what that means.
+
+See [SCP-0011](../proposals/0011-policy-addressee-and-host-channel.md).
 
 An implementation MAY ship a deterministic baseline Scheduler profile.
 That profile MUST have a distinct name/version and MUST NOT be described as
@@ -620,6 +735,19 @@ Host work requires a separately authorized Outcome Journal or cache policy. The
 complete portable contract is
 [SCP-0004](../proposals/0004-voyage-plans-and-touchdown-cable-artifacts.md).
 
+Where such a journal exists, it MUST key an outcome by at least the Touchdown
+descriptor, the Host identity, the Host implementation revision/digest and the
+Host capability snapshot identity **the serving attempt reported**, the
+Host-addressed policy digest, and the granted capabilities including the pinned
+allowlist revision. Only the attempt knows which implementation actually ran it,
+and a Runtime cannot verify a no-swap promise, so these come from the attempt's
+report rather than from the run-start pin; an outcome whose attempt reports no
+implementation revision MUST NOT be journal-reusable, and a reported capability
+identity differing from the pinned one is recorded as drift and is not reusable
+under the pinned identity. Addressee resolution still uses the pinned
+identities. See
+[SCP-0011](../proposals/0011-policy-addressee-and-host-channel.md).
+
 ## 13. Run and recovery boundary
 
 For the first local runtime:
@@ -665,6 +793,12 @@ An implementation is not suitable as conformance or proposal evidence if it:
 - allows Host functions to alter Goal topology invisibly;
 - hardcodes policy semantics inside the Carousel;
 - ignores unknown policies;
+- commits a deduction record outside a voyage, for example in a compiler or
+  static preparation pass;
+- delivers `directPolicies[]` to the Host instead of the `hostPolicies[]`
+  projection, or lets the Host interpret a Scheduler-addressed policy;
+- resolves a policy addressee against a declaration that was not pinned at run
+  start;
 - uses one giant Anchor to retain the original program's orchestration;
 - reports original tests as evidence while weakening their assertions;
 - exposes implementation-language exceptions as the only diagnostic contract.

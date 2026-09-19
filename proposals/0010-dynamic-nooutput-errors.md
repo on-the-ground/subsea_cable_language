@@ -1,9 +1,9 @@
-# SCP-NNNN — Errors for NoOutput where a value is required at runtime
+# SCP-0010 — Errors for NoOutput where a value is required at runtime
 
-- Status: Draft
+- Status: Accepted
 - Author(s): Claude (agent) for on-the-ground
 - Created: 2026-09-17
-- Updated: 2026-09-17
+- Updated: 2026-09-20
 - Requires owner decision: yes
 - External implementation ADRs: [subsea_cable_runtime `0005-dynamic-nooutput-errors.md`](https://github.com/on-the-ground/subsea_cable_runtime/blob/main/docs/decisions/0005-dynamic-nooutput-errors.md)
 - Evidence repositories/revisions: `on-the-ground/subsea_cable_runtime@d62f1c3` (Carousel POC; evidence gathered while pinned to this repository at `cbc6f53`)
@@ -33,6 +33,14 @@ Recommended option A: a single kind `NoOutputNotRoutable`.
 
 - Phase `deduction` when detected while routing into a deduction (a routed input or a resolving-map result being bound).
 - Phase `host` when detected inside a function-leaf body evaluation.
+
+This is the dual-phase pattern `KeyNotFound` and `DestructureMismatch` already
+use: one stable kind, and a phase decided by where the failure is detected. The
+kind is scoped to the failing occurrence like any other deduction error, so
+earlier committed deductions are untouched and recovery stays Scheduler policy.
+
+A leaf returning `NoOutput` where a value was required is therefore distinct
+from a leaf that fails: the outcome arrived, it simply cannot be routed.
 
 ## Alternatives
 
@@ -68,16 +76,22 @@ The POC reports the option B kinds, marked experimental (ADR 0005).
 
 ## Unresolved questions
 
-- Whether a Scheduler policy may convert the failure (for example into a retry) remains policy discovery.
+- Whether a Scheduler policy may convert the failure (for example into a retry)
+  remains policy discovery. The kind and phase do not depend on that answer.
 
 ## Owner decision record
 
 - Decision requested on: 2026-09-17
 - Maintainer/agent recommendation: option A
-- Owner response: pending
-- Decision date: —
+- Owner response: accepted — option A, one kind `NoOutputNotRoutable` with the
+  phase decided by the detection point
+- Decision date: 2026-09-20
 - Conditions: —
 
 ## Final rationale
 
-Pending.
+`NoOutput` is not a value, so a Host leaf that produces it where a value was
+required has not failed at the Host — it has failed where the language tried to
+route it. Naming one kind and letting the phase follow the detection point puts
+the error where the reader can act on it, and keeps the Host's phase for the
+Host's own failures.

@@ -128,8 +128,9 @@ build the site to understand Subsea Cable.
 | Carousel deduction engine and Touchdown prefetch plan | [implementation/CAROUSEL_ENGINE_PLAN.md](implementation/CAROUSEL_ENGINE_PLAN.md) |
 | Runtime orchestration of Carousel, Host, and policy | [implementation/RUNTIME_ORCHESTRATION_PLAN.md](implementation/RUNTIME_ORCHESTRATION_PLAN.md) |
 | Findings from the external Carousel POC | [implementation/CAROUSEL_POC_FINDINGS.md](implementation/CAROUSEL_POC_FINDINGS.md) |
-| Accepted boundary and language decisions | [SCP-0002](proposals/0002-carousel-runtime-boundaries.md), [SCP-0003](proposals/0003-explicit-value-producing-call-staging.md), [SCP-0004](proposals/0004-voyage-plans-and-touchdown-cable-artifacts.md), [SCP-0005](proposals/0005-guarded-conditional-recursion.md) |
-| Live Vessel–Host cooperation | [SCP-0006](proposals/0006-live-vessel-host-cooperation.md) — core accepted; compiler/profile details under discussion |
+| Accepted boundary and language decisions | [SCP-0002](proposals/0002-carousel-runtime-boundaries.md), [SCP-0003](proposals/0003-explicit-value-producing-call-staging.md), [SCP-0004](proposals/0004-voyage-plans-and-touchdown-cable-artifacts.md), [SCP-0005](proposals/0005-guarded-conditional-recursion.md), [SCP-0006](proposals/0006-live-vessel-host-cooperation.md) |
+| Occurrence kinds, artifact identity, and diagnostics | [SCP-0007](proposals/0007-inline-goal-arrow-stage-occurrence.md), [SCP-0008](proposals/0008-artifact-hash-value-closure.md), [SCP-0009](proposals/0009-structure-valued-lookup-maps.md), [SCP-0010](proposals/0010-dynamic-nooutput-errors.md) |
+| Policy addressee and the Host policy channel | [SCP-0011](proposals/0011-policy-addressee-and-host-channel.md) |
 | Proposing a language change | [proposals](proposals/README.md) |
 | Governance and contribution scope | [GOVERNANCE.md](GOVERNANCE.md), [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Independent implementations | [ECOSYSTEM.md](ECOSYSTEM.md) |
@@ -726,6 +727,39 @@ it does not serialize its children or copy a separate timeout onto each child:
 @timeout("30s") {Goal1, Goal1}
 ```
 
+### Who a policy is addressed to
+
+A `@policy` is metadata addressed to somebody, and there are two addressees.
+
+- **Scheduler-addressed** policies change eligibility, the attempt lifecycle, or
+  a scope's outcome: retry, timeout, cancellation, completion criteria. The
+  Scheduler interprets them.
+- **Host-addressed** policies change what happens inside exactly one grounded
+  leaf invocation: run it in a separate process, use a resource class. The Host
+  interprets them; the Scheduler must not.
+
+The test is mechanical: if it changes eligibility, the attempt lifecycle, or a
+scope's outcome, it is Scheduler-addressed; if it changes only what happens
+inside exactly one grounded leaf invocation, it is Host-addressed. Batching or
+coalescing several leaves crosses more than one occurrence, so it is Scheduler
+work even though the Host ultimately executes the batch.
+
+A Runtime resolves each occurrence's ordered policies against the Scheduler
+policy registry and the Host capability declaration, both pinned at run start:
+
+| Claimed by | Result |
+|---|---|
+| Scheduler only | Scheduler-addressed; it never crosses to the Host |
+| Host only | Host-addressed; it rides in the Host-facing request as `hostPolicies[]` |
+| Both | `PolicyConflict` in the `policy` phase at disclosure |
+| Neither | `UnknownPolicy`, unchanged |
+
+A Host-addressed policy may only be authored on a grounded leaf — a
+function-leaf or an Anchor occurrence. On any non-leaf occurrence it is
+`UnsupportedPolicyTarget`, and a composite's policy is never forwarded to a
+descendant leaf, because policies do not inherit. See
+[SCP-0011](proposals/0011-policy-addressee-and-host-channel.md).
+
 ---
 
 ## Names, Codebase References, and Anchors
@@ -858,6 +892,24 @@ is statically known, otherwise as a deduction error. Resolving maps are
 different: their concrete keyed entries declare independent branches and
 explicit key-to-result relationships.
 
+A lookup map whose entries are Goal structure is a **structure-valued lookup
+map**. It is a top-level binding whose right-hand side is a map literal, and it
+may be used only in a Goal-structure position; using it as a value is
+`InvalidStructuralContext`. Every entry must be Goal structure written with an
+explicit suffix: a deferred Goal reference `A[]`, an Anchor reference `$a`, or a
+serial or parallel composition of those. A bare identifier in an entry is a
+value name, not a Goal stage, so it is `InvalidStructuralContext`. An inline
+Goal arrow is not an entry form. The selected entry receives no implicit upstream
+value; routing into it must be written explicitly.
+
+A named structure-valued map is not a conditional branch map. `[sel, Routes]` is
+a two-stage serial composition whose second stage is the Goal stage `Routes`;
+the conditional pipeline of
+[SCP-0005](proposals/0005-guarded-conditional-recursion.md) requires an authored
+branch-map literal as its second element. Selecting from a named map is written
+as the lookup `Routes[key]`. See
+[SCP-0009](proposals/0009-structure-valued-lookup-maps.md).
+
 Nothing else in the language depends on case.
 
 Top-level bindings form one order-independent scope. A binding may refer to a
@@ -967,13 +1019,23 @@ and deduction-time errors carry active lineage information.
 |---|---|---|
 | source | decoder/parser | `InvalidSourceEncoding`, `SyntaxError` |
 | validation | structural language | `DuplicateBinding`, `DuplicateParameter`, `InvalidRoot`, `InvalidStructuralContext`, `InvalidUnicodeEscape`, `UnboundName`, statically provable `GoalNotFound`, `ArityMismatch`, `HashNotFound`, `AmbiguousHashPrefix`, `NotCallable`, `DuplicateMapKey`, `CycleDetected` |
-| deduction | Carousel using Codebase and Host primitive semantics | dynamic `GoalNotFound`, `ArityMismatch`, `CycleDetected`, `KeyNotFound`, `DestructureMismatch`, `PrimitiveError` |
-| host | Host | `AnchorNotFound`, `AnchorSignatureMismatch`, arrow-function or Anchor leaf implementation failures |
-| policy | Scheduler/anchoring layer | `UnknownPolicy`, `InvalidPolicyArguments`, `UnsupportedPolicyTarget`, `PolicyConflict`, scheduling and upstream-failure outcomes |
+| deduction | Carousel using Codebase and Host primitive semantics | dynamic `GoalNotFound`, `ArityMismatch`, `CycleDetected`, `KeyNotFound`, `DestructureMismatch`, `PrimitiveError`, `NoOutputNotRoutable` |
+| host | Host | `AnchorNotFound`, `AnchorSignatureMismatch`, `NoOutputNotRoutable` inside a function-leaf body, arrow-function or Anchor leaf implementation failures |
+| policy | Scheduler/anchoring layer | `UnknownPolicy`, `InvalidPolicyArguments`, `UnsupportedPolicyTarget`, `PolicyConflict`, `PolicyDenied`, scheduling and upstream-failure outcomes |
 
 `KeyNotFound` and `DestructureMismatch` retain the same `kind` when statically
 provable, but their phase is `validation`; otherwise they arise during
-`deduction`. Late alias resolution can likewise move `GoalNotFound`,
+`deduction`. `NoOutputNotRoutable` follows the same dual-phase pattern: a Host
+leaf may return `NoOutput` at runtime, and the failure is `deduction` when it is
+detected while routing into a deduction — a routed input, or a resolving-map
+result being bound — and `host` when it is detected inside a function-leaf body
+evaluation ([SCP-0010](proposals/0010-dynamic-nooutput-errors.md)). The outcome
+arrived; it simply cannot be routed, so this is distinct from a leaf failure.
+`PolicyDenied` reports a Host-addressed policy that a Host advertises but the
+deployment's forwarding allowlist withholds; `UnknownPolicy` is wrong there
+because the Host knows the identifier, and `UnsupportedPolicyTarget` is wrong
+because the target is legal
+([SCP-0011](proposals/0011-policy-addressee-and-host-channel.md)). Late alias resolution can likewise move `GoalNotFound`,
 `ArityMismatch`, and `CycleDetected` to deduction without changing their kinds.
 `CycleDetected` applies to an unguarded definition cycle or an invalid attempt
 to introduce an occurrence back-edge; it does not apply merely because a
@@ -1048,7 +1110,16 @@ deduction. A hash-qualified reference stores a full pinned hash and bypasses the
 mutable name index.
 
 An `ArtifactHash` identifies the stored authored Goal term, including its policy
-projection. Its policy-erased `StructureHash` supplies `GoalNodeId` and structural
+projection. It also captures the **transitive closure of the top-level value
+bindings the term references by name**, in canonical order, so two units whose
+Goals read different values never share a hash and an unrelated value edit never
+changes one. Unqualified Goal references are not captured: they stay symbolic and
+resolve when their own occurrence is demanded. A structure-valued lookup map is
+captured by structure rather than by value — its keys and entry shapes are part
+of the hash while Goal references inside its entries stay symbolic. See
+[SCP-0008](proposals/0008-artifact-hash-value-closure.md).
+
+Its policy-erased `StructureHash` supplies `GoalNodeId` and structural
 sharing. This lets two artifacts with identical structure but different
 `@policy` metadata share structural nodes without becoming the same authored
 artifact. For an unqualified reference, that node identity becomes known only

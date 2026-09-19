@@ -1,10 +1,9 @@
 # SCP-0005 — Guarded conditional recursion
 
-- Status: Discussion — core guarded-recursion direction accepted; detailed
-  contract awaiting owner confirmation
+- Status: Accepted
 - Author(s): Codex (agent) for on-the-ground
 - Created: 2026-09-18
-- Updated: 2026-09-18
+- Updated: 2026-09-20
 - Requires owner decision: yes
 - External implementation ADRs: pending
 - Evidence repositories/revisions: owner reproduction in the language design review
@@ -351,7 +350,11 @@ yield at every selected conditional child until explicit demand arrives.
 - Conditions on accepted core: selected branches alone enter the realized
   structure; recursive steps create fresh occurrences so the realized Cable
   remains a DAG
-- Pending detailed confirmation: local SCC/exit analysis, the ancestor-chain
+- Accepted in full on 2026-09-20: every item below was confirmed after the PR #6
+  review rounds and is now normative in `README.md`, `Recursion.md`,
+  `implementation/RUNTIME_CONTRACT.md`, `conformance/DEDUCTION.md` §§9–15 and
+  `conformance/cases.tsv`
+- Previously pending, now confirmed: local SCC/exit analysis, the ancestor-chain
   late-cycle rule, selector purity and value barriers, explicit demand at each
   selected conditional branch edge, selector trace/reuse fields, and concrete
   conformance cases

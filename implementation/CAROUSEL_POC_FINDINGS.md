@@ -14,12 +14,15 @@ Related plans: [CAROUSEL_ENGINE_PLAN.md](CAROUSEL_ENGINE_PLAN.md) and
 
 ## Open language-level gaps
 
-| ID | Gap | Proposal | External ADR | POC path |
+None. Every gap this POC surfaced has an accepted SCP; the table below records
+where each one landed so the POC can be brought onto the decided contract.
+
+| ID | Gap | Decision | External ADR | POC path |
 |---|---|---|---|---|
-| F3 | Occurrence kind, deduction record, and lineage of an inline Goal-arrow stage | [Draft SCP](../proposals/draft-inline-goal-arrow-stage-occurrence.md) | `docs/decisions/0002-inline-goal-arrow-stages.md` | experimental |
-| F8 | Binding site, entry form, and routing of structure-valued lookup maps | [Draft SCP](../proposals/draft-structure-valued-lookup-maps.md) | `docs/decisions/0003-structure-valued-lookup-maps.md` | blocked (`UnsupportedByProfile`) |
-| F9 | Which top-level values an artifact captures in its hash | [Draft SCP](../proposals/draft-artifact-hash-value-closure.md) | `docs/decisions/0004-artifact-hash-value-closure.md` | experimental |
-| F10 | Error kind and phase for runtime `NoOutput` where a value is required | [Draft SCP](../proposals/draft-dynamic-nooutput-errors.md) | `docs/decisions/0005-dynamic-nooutput-errors.md` | experimental |
+| F3 | Occurrence kind, deduction record, and lineage of an inline Goal-arrow stage | [SCP-0007](../proposals/0007-inline-goal-arrow-stage-occurrence.md) — accepted; the stage also takes one child-ordinal segment | `docs/decisions/0002-inline-goal-arrow-stages.md` | experimental; align with `RUNTIME_CONTRACT.md` §8.1 |
+| F8 | Binding site, entry form, and routing of structure-valued lookup maps | [SCP-0009](../proposals/0009-structure-valued-lookup-maps.md) — accepted | `docs/decisions/0003-structure-valued-lookup-maps.md` | blocked (`UnsupportedByProfile`); unblock and implement |
+| F9 | Which top-level values an artifact captures in its hash | [SCP-0008](../proposals/0008-artifact-hash-value-closure.md) — accepted option A (referenced closure) | `docs/decisions/0004-artifact-hash-value-closure.md` | experimental; POC still captures all unit values (option B) |
+| F10 | Error kind and phase for runtime `NoOutput` where a value is required | [SCP-0010](../proposals/0010-dynamic-nooutput-errors.md) — accepted `NoOutputNotRoutable` | `docs/decisions/0005-dynamic-nooutput-errors.md` | experimental; POC still reports the two option-B kinds |
 
 ADR paths are relative to the runtime repository.
 

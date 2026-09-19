@@ -1,13 +1,12 @@
-# Draft SCP — Policy addressee and the Host policy channel
+# SCP-0011 — Policy addressee and the Host policy channel
 
-- Status: Discussion — addressee model and double-claim handling accepted by the owner; the remaining contract is submitted for confirmation
+- Status: Accepted
 - Author(s): Claude (agent) for on-the-ground
 - Created: 2026-09-18
 - Updated: 2026-09-20
-- Requires owner decision: yes (Owner decision R9 stays open; this proposal decides only the addressee question)
+- Requires owner decision: yes (decided; Owner decision R9 stays open separately)
 - External implementation ADRs: pending (subsea_cable_runtime, Host policy channel)
 - Evidence repositories/revisions: `on-the-ground/subsea_cable_runtime` POC; owner design review 2026-09-18
-- Number: assigned on acceptance
 - Supersedes: the implicit assumption that every `@policy` is addressed to the Scheduler
 - Superseded by: —
 
@@ -185,9 +184,15 @@ An evaluation request exists only for a grounded leaf. A Host-addressed policy
 therefore has `targetKinds = {function-leaf, anchor}`: it MUST be authored
 directly on the grounded leaf occurrence it configures.
 
-- A Host-addressed identifier attached directly to a Goal, serial, parallel, or
-  resolving-map occurrence is `UnsupportedPolicyTarget` — the kind already used
-  when a policy targets an occurrence kind that cannot carry it.
+- A Host-addressed identifier attached directly to any non-leaf occurrence —
+  Goal, serial, parallel, resolving-map, or `goal-arrow-stage`
+  ([SCP-0007](0007-inline-goal-arrow-stage-occurrence.md)) — is
+  `UnsupportedPolicyTarget`, the kind already used when a policy targets an
+  occurrence kind that cannot carry it. The rule is the occurrence-kind list,
+  not a fixed enumeration: any future non-leaf kind is excluded by the same
+  sentence, because an evaluation request exists only for a grounded leaf.
+- A Scheduler-addressed policy is unaffected and may target a
+  `goal-arrow-stage` like any other occurrence.
 - A composite's policy MUST NOT be forwarded to its descendant leaves. Policies
   do not inherit (RUNTIME_CONTRACT §8: `directPolicies[]` is *only* policies
   authored on this exact occurrence), and forwarding would silently create the
@@ -484,9 +489,10 @@ capability-snapshot substitution.
      it earlier as a non-authoritative preflight diagnostic and the
      authoritative phase does not change;
   4. a policy claimed by neither is `UnknownPolicy`, unchanged;
-  5. a Host-addressed identifier attached to a Goal, serial, parallel, or
-     resolving-map occurrence is `UnsupportedPolicyTarget`, and a composite's
-     policy never reaches a descendant leaf's `hostPolicies[]`;
+  5. a Host-addressed identifier attached to a Goal, serial, parallel,
+     resolving-map or `goal-arrow-stage` occurrence is
+     `UnsupportedPolicyTarget`, and a composite's policy never reaches a
+     descendant leaf's `hostPolicies[]`;
   6. a registry or capability change mid-run does not alter the addressee of a
      later-disclosed occurrence, and provenance records the pinned versions; a
      run whose declarations cannot be pinned refuses to start before any
@@ -543,9 +549,8 @@ doubles.
   is a separate question; this proposal only routes identifiers.
 - Whether a Host may observe Scheduler-addressed policies for logging is left
   closed for now: it may not.
-- `PolicyDenied` is proposed here as a new stable kind for the deployment
-  allowlist. If the owner would rather not add a kind, the allowlist section
-  drops to unresolved and its MUST and runtime case come out with it.
+- `PolicyDenied` is confirmed as a new stable kind for the deployment
+  allowlist (owner decision 2026-09-20).
 - How a deployment pins a Host capability snapshot when the Host is a live
   external process — a declared profile identity, a signed manifest, or a
   handshake digest — is a Runtime-profile question. The requirement here is only
@@ -553,6 +558,9 @@ doubles.
 
 ## Owner decision record
 
+- Status: Accepted on 2026-09-20. The core, every item previously submitted for
+  confirmation, and `PolicyDenied` as a new stable diagnostic kind are all
+  decided.
 - Decision requested on: 2026-09-18
 - Options presented: Host capability declaration versus encoding the addressee
   in the identifier
@@ -643,3 +651,16 @@ policies meant for the Host are the same kind of name and belong in the same
 request. Naming the addressee explicitly keeps the Scheduler from interpreting
 sentences that were never addressed to it, and keeps the Host from acquiring
 any say over structure.
+
+## Ratification note (2026-09-20)
+
+Accepted together with SCP-0007–SCP-0010. Two cross-proposal seams were closed
+in that pass:
+
+- the non-leaf enumeration for `UnsupportedPolicyTarget` now names
+  `goal-arrow-stage` and states the rule as "any non-leaf occurrence kind", so
+  a later kind cannot silently become a legal Host-policy target;
+- `PolicyDenied` is a decided kind, recorded in the error-ownership table in
+  `README.md` and in `implementation/RUNTIME_CONTRACT.md` §3.
+
+The runtime cases are recorded in `conformance/POLICY.md`.

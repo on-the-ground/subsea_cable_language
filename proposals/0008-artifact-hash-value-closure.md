@@ -1,9 +1,9 @@
-# SCP-NNNN — Top-level values in artifact identity
+# SCP-0008 — Top-level values in artifact identity
 
-- Status: Draft
+- Status: Accepted
 - Author(s): Claude (agent) for on-the-ground
 - Created: 2026-09-17
-- Updated: 2026-09-17
+- Updated: 2026-09-20
 - Requires owner decision: yes
 - External implementation ADRs: [subsea_cable_runtime `0004-artifact-hash-value-closure.md`](https://github.com/on-the-ground/subsea_cable_runtime/blob/main/docs/decisions/0004-artifact-hash-value-closure.md)
 - Evidence repositories/revisions: `on-the-ground/subsea_cable_runtime@d62f1c3` (Carousel POC; evidence gathered while pinned to this repository at `cbc6f53`)
@@ -34,6 +34,37 @@ Recommended option A:
 - An artifact captures the transitive closure of top-level value bindings its term references by name, in canonical order.
 - Captured values are part of both the authored and the structural projection; policies inside them are erased only in the structural projection.
 - Goal references stay symbolic and are not captured.
+
+### Structure-valued lookup maps are captured by structure
+
+A structure-valued ordinary lookup map
+([SCP-0009](0009-structure-valued-lookup-maps.md)) is a top-level binding whose
+entries are Goal structure, so the plain value rule would capture Goal
+references inside it and freeze them into the artifact's identity. That would
+destroy demand-time alias resolution for every Goal named in the map.
+
+Such a map is therefore captured **by structure, not by value**:
+
+- its keys and the shape of each entry are part of the capturing artifact's
+  `ArtifactHash`, exactly as authored;
+- an unqualified Goal reference inside an entry is captured as the symbolic
+  `Name/Arity` it is, and still resolves when its own occurrence is demanded;
+- a hash-qualified reference inside an entry is captured with its pinned hash,
+  as everywhere else;
+- policies authored inside entries follow the ordinary rule: part of the
+  authored projection, erased in the structural projection.
+
+Editing an entry's structure therefore changes the hash; rebinding a Goal the
+entry names does not. This is the same split the language already applies to a
+Goal body, applied to a map that holds Goal structure.
+
+### What this does not cover
+
+Captured values are **compile-time identity**: they say what the authored term
+can observe. They are unrelated to SCP-0004's value-slot fingerprints, which are
+**runtime observations** recorded so a later voyage can decide whether a
+committed segment is reusable. A value can appear in both, for different
+reasons, and neither substitutes for the other.
 
 ## Alternatives
 
@@ -70,16 +101,25 @@ The POC uses option B under profile `poc-sha256-canon/1`, marked experimental (A
 
 ## Unresolved questions
 
-- Canonical encoding and hash algorithm for cross-runtime interoperability remain open.
+- Canonical encoding and hash algorithm for cross-runtime interoperability
+  remain open. This SCP fixes *what* is captured; a future encoding profile
+  fixes *how* it is serialized and hashed.
 
 ## Owner decision record
 
 - Decision requested on: 2026-09-17
 - Maintainer/agent recommendation: option A
-- Owner response: pending
-- Decision date: —
-- Conditions: —
+- Owner response: accepted — option A, the referenced value closure, with
+  structure-valued lookup maps captured by structure rather than by value
+- Decision date: 2026-09-20
+- Conditions: unqualified Goal references inside a captured map stay symbolic
 
 ## Final rationale
 
-Pending.
+An artifact's identity should cover what its term can actually observe, and
+nothing else. Capturing the whole unit makes unrelated edits invalidate
+unrelated hashes; capturing nothing makes two different programs share one. The
+closure is the smallest set that is still honest. The one exception exists for
+the same reason: a map full of Goal structure is not data the term reads, it is
+structure the term selects from, and freezing the names inside it would trade
+identity precision for the language's central property.

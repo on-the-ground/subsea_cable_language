@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v7
@@ -29,6 +31,24 @@ jobs:
 
       - name: Install documentation dependencies
         run: python -m pip install --requirement site/requirements.txt
+
+      - name: Validate SCP activation transitions
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base="${{ github.event.pull_request.base.sha }}"
+            head="${{ github.event.pull_request.head.sha }}"
+          elif [[ "${{ github.event_name }}" == "push" ]]; then
+            base="${{ github.event.before }}"
+            head="${{ github.sha }}"
+          else
+            base="HEAD^"
+            head="HEAD"
+          fi
+          python .github/scripts/validate_scp_activation.py "$base" "$head"
+
+      - name: Test SCP activation validator
+        run: python .github/scripts/test_validate_scp_activation.py
 
       - name: Build canonical documentation projection strictly
         run: mkdocs build --strict --config-file site/mkdocs.yml --site-dir "${{ runner.temp }}/subsea-cable-site"

@@ -401,9 +401,14 @@ to PEPs. Do not begin by editing the grammar.
 6. Request the owner's explicit decision whenever syntax, semantics, identity,
    error phase, policy composition, or the Host/Carousel/Scheduler boundary would
    change. Record that decision in the SCP.
-7. Only after acceptance, update normative text, both grammars, examples,
-   diagnostics, and conformance cases together. A prototype may demonstrate the
-   proposal, but its Runtime code remains in the external repository.
+7. An approving owner decision authorizes integration but is not acceptance.
+   Keep the SCP in Discussion while preparing one activation pull request that
+   changes it to Accepted together with every affected normative text, grammar,
+   example, diagnostic, compatibility note, and conformance case.
+8. Treat the behavior as Subsea Cable semantics only after that complete pull
+   request merges. A proposal-only merge records design history and has no
+   semantic effect. A prototype may demonstrate the proposal, but its Runtime
+   code remains in the external repository.
 
 The stop condition matters: when the specification, grammar, and conformance
 corpus disagree, or when a convenient implementation answer would create new

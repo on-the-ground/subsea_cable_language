@@ -39,9 +39,14 @@ Subsea Cable-compatible.
 4. For a language question, open a Draft Subsea Cable Proposal here using
    `proposals/TEMPLATE.md`; link the external ADR and evidence.
 5. Keep the affected implementation path explicitly experimental or blocked
-   until the proposal is decided.
-6. After acceptance, update specification, both grammars, and conformance cases
-   before claiming the behavior as Subsea Cable semantics.
+   while the proposal is undecided and while an approving decision awaits
+   activation.
+6. After an approving owner decision, prepare one activation pull request that
+   updates the SCP to Accepted together with every affected specification,
+   grammar, diagnostic, example, compatibility note, and conformance case.
+7. Claim the behavior as Subsea Cable semantics only after that complete pull
+   request merges. Proposal-only merges and owner approval without activation
+   have no semantic effect.
 
 An implementation may continue unrelated work. It must not hide the issue behind
 a fallback, feature flag, permissive parser, Host special case, or undocumented
@@ -70,6 +75,15 @@ Requires a proposal. Include:
 - grammar and semantic changes;
 - compatibility impact;
 - conformance additions.
+
+### Governance or process change
+
+Changes proposal statuses, roles, review gates, activation procedure, or
+repository enforcement without changing language behavior. State the migration
+effect on existing records and add automated enforcement where the rule is
+mechanically observable. This type does not require an SCP unless it also
+changes language syntax, semantics, identity, diagnostics, component
+boundaries, or portable policy contracts.
 
 ### Ecosystem listing
 
@@ -103,9 +117,14 @@ A language-changing PR is reviewed in this order:
 Passing one Runtime's tests is evidence, not sufficient proof of a good language
 change.
 
+The `validate` check rejects a transition to Accepted unless the SCP contains
+activation metadata and a complete activation record and the same pull request
+touches at least one core canonical projection. This is a minimum consistency
+guard, not proof that review identified every affected projection.
+
 ## Required synchronization
 
-When applicable, one accepted change updates:
+When applicable, one activation pull request updates:
 
 - `README.md`;
 - `BRAND.md` when public naming, file extension, or identifiers change;
@@ -113,7 +132,15 @@ When applicable, one accepted change updates:
 - `SubseaCable.ebnf`;
 - `conformance/`;
 - `METAPHORS.md` or `FOR_AGENTS.md` when concepts change;
-- the accepted proposal and compatibility notes.
+- the proposal status to Accepted, its activation pull request and effective
+  revision, and its final rationale and compatibility notes.
+
+The status transition and every required projection must merge atomically. An
+owner-approved proposal remains Discussion until this synchronization is
+complete. See [Language Governance](GOVERNANCE.md#merge-decision-and-activation)
+for the distinction between a merged record, a decision, and effective language.
+One activation pull request may activate multiple SCPs; each records the same
+pull request and squash revision.
 
 Run all available conformance and grammar-generation checks. `git diff --check`
 must pass.

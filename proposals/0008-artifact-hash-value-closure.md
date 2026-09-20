@@ -95,7 +95,9 @@ Identity only; routing, policy, and demand-time alias resolution are unaffected.
 - Diagnostic impact: none.
 - Migration strategy: re-store artifacts under the adopting profile; defer any
   cross-runtime rehash until a canonical encoding profile exists.
-- Version/profile requirement: canonical encoding profile revision.
+- Version/profile requirement: language identity-contract revision, plus a
+  store/profile revision for each adopting implementation; a future canonical
+  encoding profile is separate.
 
 ## Grammar and conformance impact
 
@@ -131,7 +133,9 @@ The POC uses option B under profile `poc-sha256-canon/1`, marked experimental (A
   case that fails a direct-only capture (`Goal` → value `a` → value `b`, change
   `b`) and a case fixing that reordering binding declarations changes no hash
 - Compatibility and migration notes synchronized: SCP compatibility section,
-  scoping the rehash to profile-specific stores adopting this revision; existing stores must be re-hashed under the accepted encoding profile
+  scoping rewrite and rehash to profile-specific stores adopting this revision
+  and explicitly deferring cross-runtime canonical rehash until an encoding
+  profile is accepted
 - Verification commands and results: `python .github/scripts/validate_scp_activation.py` passes; `python .github/scripts/test_validate_scp_activation.py` passes; `mkdocs build --strict` passes; every markdown link resolves and every `conformance/cases.tsv` path exists
 
 ## Final rationale

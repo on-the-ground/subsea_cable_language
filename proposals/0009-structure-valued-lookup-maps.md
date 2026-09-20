@@ -17,7 +17,7 @@
 Specify where an ordinary map whose entries are Goal structure may be bound, how its entries are validated, and how a selected entry receives routed input.
 
 [SCP-0005](0005-guarded-conditional-recursion.md) separately accepts the
-contextual `[selector, {key: GoalBranch}]` form. This draft now concerns only
+contextual `[selector, {key: GoalBranch}]` form. This Accepted SCP concerns only
 reusable structure-valued ordinary map bindings outside that conditional
 pipeline.
 
@@ -105,7 +105,9 @@ Selection stays a deduction-time value decision using Host primitive semantics; 
   artifacts that reference such a map. Artifacts that reference none are
   unaffected.
 - Diagnostic impact: `InvalidStructuralContext` for the cases above.
-- Migration strategy: add explicit suffixes and routing.
+- Migration strategy: add explicit suffixes and routing, and recompute the
+  identity of artifacts that reference a structure-valued map when the prior
+  profile omitted that structure or captured the map by value.
 - Version/profile requirement: language revision.
 
 ## Grammar and conformance impact

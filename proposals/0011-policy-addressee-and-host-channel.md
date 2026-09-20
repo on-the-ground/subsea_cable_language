@@ -644,8 +644,19 @@ doubles.
 
 ## Activation record
 
-- Canonical documents synchronized: `README.md` policy-addressee section, policy-ownership paragraph and error-ownership table, `implementation/RUNTIME_CONTRACT.md` §3, §8 envelope, §8.2, §10.1, §12 and §15, `AGENTS.md` Scheduler definition and policy-addressee glossary, `FOR_AGENTS.md`, `implementation/README.md`, `implementation/RUNTIME_ORCHESTRATION_PLAN.md` §8.1, §8.2 scoped to Scheduler-addressed interpreters and the new §8.6 for the Host-addressed path
-- Grammar projections synchronized: no production change; the error-ownership comment in `SubseaCable.g4` and `SubseaCable.ebnf` now attributes policy existence, applicability and conflicts to the resolved addressee rather than to the Scheduler alone
+- Canonical documents synchronized: `README.md` policy-addressee,
+  policy-ownership and error-ownership sections; both grammar policy-boundary
+  projections; `implementation/RUNTIME_CONTRACT.md` §3, §8 envelope, §8.2, §10
+  and §10.1, §12 and §15; `AGENTS.md`; `FOR_AGENTS.md`;
+  `implementation/README.md`; `implementation/POLICY_DISCOVERY.md`; and
+  `implementation/RUNTIME_ORCHESTRATION_PLAN.md` §8.1, §§8.2–8.5 scoped to
+  Scheduler-addressed interpreters, and §8.6 for the Host-addressed path;
+  `implementation/CAROUSEL_ENGINE_PLAN.md`; and
+  `implementation/CAROUSEL_POC_FINDINGS.md`
+- Grammar projections synchronized: no production change; both grammar comments
+  separate Runtime-owned resolution, collision, target and allowlist checks from
+  addressee-owned interpretation, while keeping non-inheritance and Scheduler
+  lifecycle ownership explicit
 - Diagnostics and examples synchronized: `PolicyConflict` in the `policy` phase, `InvalidPolicyArguments`, `UnsupportedPolicyTarget` for any non-leaf occurrence kind, and the new stable kind `PolicyDenied`
 - Conformance cases synchronized: `conformance/POLICY.md` §§1–13, with §§12–13 covering the execution-identity tagged union: variant-tag collision, an admissible `capabilitySnapshotSubstitute`, and the four reporting shapes
 - Compatibility and migration notes synchronized: SCP compatibility section; no previously valid source changes meaning and no stored hash impact

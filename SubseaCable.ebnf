@@ -487,12 +487,14 @@
  *   `@policy` prefixes attach How metadata to exactly the following structural
  *   occurrence. They never change dependency topology, GoalNodeId, arguments,
  *   or result routing. Stacked prefixes attach an ordered policy list to the
- *   same target. Policy meaning, applicability, inheritance over a composite,
- *   conflicts, and execution belong to the addressee the two declarations
- *   resolve, and an identifier neither declares is `UnknownPolicy` rather than
- *   a Scheduler default. Only interpretation inside one grounded leaf
- *   invocation ever moves to the Host; eligibility, the attempt lifecycle and
- *   scope outcomes stay with the Scheduler.
+ *   same target. Policy-specific meaning, argument schema, same-addressee
+ *   composition, and execution belong to the addressee the two declarations
+ *   resolve. The Runtime policy phase owns resolution, cross-addressee
+ *   collisions, target enforcement, and the forwarding allowlist; an identifier
+ *   neither declaration claims is `UnknownPolicy`. Policies never inherit or
+ *   copy to descendants. Only interpretation inside one grounded leaf invocation
+ *   ever moves to the Host; eligibility, the attempt lifecycle, and scope
+ *   outcomes stay with the Scheduler.
  *       @retry Goal1
  *       @retry @atLeastOnce $foo
  *       @timeout("30s") {Goal1, Goal1}

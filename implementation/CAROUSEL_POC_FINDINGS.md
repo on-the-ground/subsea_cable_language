@@ -48,9 +48,11 @@ in the plan text.
 
 ## Policy discovery
 
-The POC ships no concrete policy interpreters. It keeps `@policy` as opaque,
-ordered occurrence metadata and rejects every policy with `UnknownPolicy` when
-its occurrence is disclosed. Concrete policy semantics wait for migration
+The POC ships no concrete policy interpreters. Its pinned Scheduler registry and
+Host policy capability set are both empty, so it keeps `@policy` as opaque,
+ordered occurrence metadata and rejects every identifier as unclaimed with
+`UnknownPolicy` when its occurrence is disclosed. It does not claim the
+SCP-0011 Host-policy channel. Concrete policy semantics wait for migration
 evidence, an ADR, and an owner decision, as `POLICY_DISCOVERY.md` requires.
 
 ## POC-only diagnostic kinds

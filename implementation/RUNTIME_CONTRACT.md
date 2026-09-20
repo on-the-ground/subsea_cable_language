@@ -570,15 +570,19 @@ It owns:
 
 - readiness and upstream-outcome interpretation;
 - concurrency and resource ordering;
-- concrete policy lookup and execution;
+- lookup, composition, and execution of Scheduler-addressed policies only;
 - cancellation and retry decisions;
 - duplicate/coalescing behavior;
 - run-level outcome and failure aggregation.
 
-The Scheduler MUST preserve each ordered policy list and target occurrence. It
-MUST reject unsupported policy identifiers explicitly. It MUST NOT silently
-drop, rename, inherit, or copy a policy to child occurrences unless a documented
-concrete policy specification requires that behavior.
+The Runtime MUST preserve each occurrence's complete ordered
+`directPolicies[]` list for addressee resolution and provenance. The Scheduler
+receives and interprets only the Scheduler-addressed subsequence. It MUST NOT
+silently drop or rename an entry in that subsequence, and no component may
+inherit or copy any policy to a child occurrence. A concrete policy may govern
+the composite occurrence it targets; it never becomes a descendant's policy.
+Policies claimed by neither pinned declaration are rejected explicitly under
+§10.1 rather than handed to either addressee.
 
 ### 10.1 Policy addressee resolution
 

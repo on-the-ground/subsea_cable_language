@@ -69,10 +69,17 @@ Structure/execution separation, Goal/function separation, policy erasure, and de
 
 - Previously valid source affected: none.
 - Previously invalid source newly accepted: none.
-- Stored artifact/hash impact: none.
+- Stored artifact/hash impact: no `ArtifactHash` or `StructureHash` change. A
+  Runtime that previously omitted the stage's ordinal segment may produce
+  different root-to-leaf ordinal vectors, Fully Touchdown Cable ordering, and
+  `touchdownCableHash` after adopting this contract; affected voyage-result and
+  provenance records therefore require a version boundary or recomputation.
 - Diagnostic impact: none.
-- Migration strategy: Runtimes add the occurrence kind and record.
-- Version/profile requirement: Runtime Contract revision.
+- Migration strategy: Runtimes add the occurrence kind and record, then
+  invalidate or recompute voyage-result ordering and hashes produced under an
+  ordinal convention that omitted the stage segment.
+- Version/profile requirement: Runtime Contract and voyage-result ordering
+  revision.
 
 ## Grammar and conformance impact
 
@@ -105,7 +112,10 @@ The POC implements option A as an experimental path (ADR 0002). Tests: `TestValu
 - Grammar projections synchronized: not applicable; the stage was already grammatical
 - Diagnostics and examples synchronized: deduction-phase `DestructureMismatch` on a stage binding mismatch; `UnsupportedPolicyTarget` for `Reattempt` on the stage
 - Conformance cases synchronized: `conformance/DEDUCTION.md` §19 and `conformance/POLICY.md` §5
-- Compatibility and migration notes synchronized: SCP compatibility section; no stored artifact or hash impact
+- Compatibility and migration notes synchronized: SCP compatibility section;
+  no artifact-identity change, with voyage-result ordering and
+  `touchdownCableHash` migration scoped to Runtimes that omitted the inline
+  stage's ordinal segment
 - Verification commands and results: `python .github/scripts/validate_scp_activation.py` passes; `python .github/scripts/test_validate_scp_activation.py` passes; `mkdocs build --strict` passes; every markdown link resolves and every `conformance/cases.tsv` path exists
 
 ## Final rationale

@@ -353,13 +353,14 @@ HostCapabilityChanged
 
 Fixed by the language: a policy targets exactly the following occurrence,
 stacks in source order, has validated value arguments, never changes topology,
-and is never copied to children. Its addressee is resolved against the pinned
-declarations of `RUNTIME_CONTRACT.md` §10.1: a Scheduler-addressed policy is
-interpreted by the Scheduler, a Host-addressed one by the Host, and one claimed
-by neither is rejected as `UnknownPolicy`.
+and never inherits or copies to children. Its addressee is resolved against the
+pinned declarations of `RUNTIME_CONTRACT.md` §10.1: a Scheduler-addressed policy
+is interpreted by the Scheduler, a Host-addressed one by the Host, and one
+claimed by neither is rejected as `UnknownPolicy`.
 
-Not fixed: every concrete policy's meaning, inheritance, and composition. This
-design supplies a **mechanism** only.
+Not fixed: every concrete policy's meaning and same-addressee composition. This
+design supplies a **mechanism** only; descendant inheritance is not one of its
+extension points.
 
 ### 8.2 Scheduler-addressed policy registry and interpreters
 
@@ -446,11 +447,13 @@ No action can edit topology, routing, aliases, or committed deductions.
   erasure. The invariant is therefore conditional: for corresponding
   occurrences that select the same artifact with the same arguments, erasing
   policy metadata does not change the structural reduction result.
-- **Unsupported policies fail where they are disclosed.** Policies become known
-  only as occurrences are exposed. With an empty registry, a run starts
-  normally; each policy-bearing occurrence fails its own scope with
-  `UnknownPolicy` when it is exposed, before any affected execution. Policies
-  are never silently ignored to manufacture a comparison run.
+- **Unclaimed policies fail where they are disclosed.** Policies become known
+  only as occurrences are exposed. A run whose pinned declarations claim no
+  identifiers starts normally; each policy-bearing occurrence then fails its own
+  scope with `UnknownPolicy` when it is exposed, before any affected execution.
+  More generally, the same failure applies to each identifier claimed by neither
+  declaration. Policies are never silently ignored to manufacture a comparison
+  run.
 
 ### 8.6 Host-addressed policies take a different path
 
@@ -461,8 +464,11 @@ occurrence.directPolicies[]  --(addressee resolution, §10.1)-->  hostPolicies[]
 hostPolicies[]               --(Dispatcher, Host-facing request)-->  Host
 ```
 
-- It is resolved against the pinned Host capability declaration, not the
-  Scheduler registry, and a double claim is `PolicyConflict`.
+- Addressee resolution first compares the pinned Scheduler registry and pinned
+  Host capability declaration. Only a Host-only claim enters this path; a double
+  claim is `PolicyConflict`, and a claim by neither is `UnknownPolicy`.
+- Before forwarding, the pinned deployment allowlist may still refuse a
+  Host-only policy with `PolicyDenied`.
 - It reaches only `{function-leaf, anchor}` occurrences; anywhere else is
   `UnsupportedPolicyTarget`.
 - It observes no Scheduler event and returns no action. It may read the current

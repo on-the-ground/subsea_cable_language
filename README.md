@@ -712,18 +712,20 @@ Each `@policy` prefix attaches How metadata to exactly the following structural
 occurrence. It never changes dependency topology, `GoalNodeId`, argument routing,
 or result routing. Stacked policies attach to the same target in source order.
 
-Policy meaning, applicability, inheritance over a composite, conflict handling,
-and execution belong to the policy's **addressee**, which the next section shows
-is resolved against two declarations rather than defaulted. A
-Scheduler-addressed policy is the Scheduler's. A Host-addressed policy — one
-that changes only what happens inside exactly one grounded leaf invocation — is
-the Host's to interpret, and the Scheduler must not interpret it. An identifier
-neither declaration claims is `UnknownPolicy`; it does not fall back to either
-side.
+Policy-specific meaning, argument schema, same-addressee composition, and
+execution belong to the policy's **resolved addressee**. The Runtime policy
+phase owns addressee resolution, cross-addressee collision detection,
+target-kind enforcement, and the forwarding allowlist; none of those decisions
+falls through to an addressee by default. A Scheduler-addressed policy is the
+Scheduler's to interpret. A Host-addressed policy — one that changes only what
+happens inside exactly one grounded leaf invocation — is the Host's to
+interpret, and the Scheduler must not interpret it. An identifier neither
+declaration claims is `UnknownPolicy`.
 
-What never moves: eligibility, the attempt lifecycle, and scope outcomes stay
-with the Scheduler whatever policies exist. Neither addressee may change
-topology, and neither inherits to a descendant occurrence.
+Eligibility, the attempt lifecycle, and scope outcomes stay with the Scheduler
+whatever policies exist. Policy inheritance is not delegated to either
+addressee: a policy never copies to a descendant occurrence. Neither addressee
+may change topology.
 
 A policy on a Goal reference belongs to that occurrence/edge and its lineage,
 never to the shared Goal definition or node. Erasing every policy annotation

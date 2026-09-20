@@ -49,6 +49,7 @@ nav:
   - Conformance:
       - Conformance Corpus: conformance/README.md
       - Deduction Scenarios: conformance/DEDUCTION.md
+      - Policy Scenarios: conformance/POLICY.md
   - Implementers:
       - Implementation Guide: implementation/README.md
       - Starting Point: implementation/STATUS.md
@@ -75,6 +76,11 @@ nav:
           - "SCP-0004: Voyage and Cable artifacts": proposals/0004-voyage-plans-and-touchdown-cable-artifacts.md
           - "SCP-0005: Guarded conditional recursion": proposals/0005-guarded-conditional-recursion.md
           - "SCP-0006: Live Vessel–Host cooperation": proposals/0006-live-vessel-host-cooperation.md
+          - "SCP-0007: Inline Goal-arrow stages": proposals/0007-inline-goal-arrow-stage-occurrence.md
+          - "SCP-0008: Values in artifact identity": proposals/0008-artifact-hash-value-closure.md
+          - "SCP-0009: Structure-valued lookup maps": proposals/0009-structure-valued-lookup-maps.md
+          - "SCP-0010: NoOutput errors": proposals/0010-dynamic-nooutput-errors.md
+          - "SCP-0011: Policy addressee and Host channel": proposals/0011-policy-addressee-and-host-channel.md
 
 plugins:
   - search

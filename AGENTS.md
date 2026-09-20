@@ -23,11 +23,21 @@ Before implementing a Subsea Cable consumer/runtime, read these files in order:
 9. `proposals/0004-voyage-plans-and-touchdown-cable-artifacts.md` — the
    Voyage Plan input, Fully Touchdown Cable output, provenance, and incremental
    reuse contract.
-10. `proposals/0005-guarded-conditional-recursion.md` — the accepted core and
-    pending details for selective branching and guarded recursion.
+10. `proposals/0005-guarded-conditional-recursion.md` — selective branching and
+    guarded recursion.
 11. `proposals/0006-live-vessel-host-cooperation.md` — the live, bidirectional
-    Vessel–Host voyage lifecycle, its accepted deployment-neutral core, and
-    pending compiler/profile details.
+    Vessel–Host voyage lifecycle and the deployment-neutral compiler boundary.
+12. `proposals/0011-policy-addressee-and-host-channel.md` — who each `@policy`
+    is addressed to and how a Host-addressed one reaches the Host.
+
+Proposals `0001`–`0011` are Accepted. `0001`–`0004` became effective at their
+own activation pull requests; `0005`–`0011` become effective at the commit on
+`main` produced by squash-merging PR #10. Merging a Draft or Discussion proposal
+before that records design history only.
+
+If an Accepted SCP and a canonical projection disagree, follow **neither**
+silently: stop that implementation path and report the conflict as a repository
+defect (`GOVERNANCE.md`).
 
 Use **Subsea Cable** as the language name, **`__C`** only as its visual short
 mark, `.vyg` for source files, and `subsea-cable` for portable slugs/language
@@ -63,7 +73,17 @@ Keep these terms separate:
   routed values; Carousel may only read resolved values through a narrow port.
 - **Host**: primitive semantics, arrow-function leaf evaluation, and `$Anchor`
   resolution/invocation.
-- **Scheduler**: execution eligibility, outcomes, and `@policy` only.
+- **Scheduler**: execution eligibility, outcomes, and Scheduler-addressed
+  `@policy` only. A Host-addressed policy is the Host's to interpret.
+- **Occurrence kinds**: `Goal`, `serial`, `parallel`, `resolving-map`,
+  `goal-arrow-stage`, `function-leaf`, `anchor`. An inline Goal-arrow stage is a
+  real deducible occurrence: it waits for its routed input, binds it, commits a
+  record without a requested name or hash, adds no lineage segment, and still
+  takes one child-ordinal segment.
+- **Policy addressee**: a `@policy` is Scheduler-addressed when it changes
+  eligibility, the attempt lifecycle, or a scope's outcome, and Host-addressed
+  when it changes only what happens inside one grounded leaf invocation. Only
+  `hostPolicies[]` crosses to the Host; `directPolicies[]` never does.
 
 A general-purpose Vessel is not a compiler that emits Host code or a prospective
 Cable and then disappears. It remains the logical owner of the voyage while
@@ -72,6 +92,12 @@ returns outcomes, and routed values enable later deductions. This may all occur
 inside one process or library; the rule fixes lifecycle ownership, not process
 topology. A generated deployment may advertise general Vessel conformance only
 when it embeds, links, or communicates with the same live feedback loop.
+
+Never deduce outside a voyage. A compiler or static-preparation pass may
+validate, normalize, cache prepared artifacts, or generate bindings, but it
+keeps every unqualified Goal reference symbolic and commits no deduction record.
+An artifact captures the value closure it references by name; a structure-valued
+lookup map is captured by structure, so the Goal names inside it stay symbolic.
 
 Never resolve an unqualified Goal reference to a hash merely because its parent
 was parsed, stored, or deduced. It remains a symbolic `Name/Arity` occurrence

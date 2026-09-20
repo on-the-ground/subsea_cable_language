@@ -6,9 +6,14 @@ phase and outcome; a conforming implementation must parse every `valid` and
 the listed validation kind for each `invalid-semantic` input.
 
 [`DEDUCTION.md`](DEDUCTION.md) contains the complementary Runtime scenarios for
-demand-time alias resolution, commit atomicity, recovery, and the Host boundary.
-They cannot be expressed by a single source fixture and are normative for a
-Runtime claiming deduction conformance.
+demand-time alias resolution, commit atomicity, recovery, occurrence kinds,
+artifact identity, and the Host boundary. They cannot be expressed by a single
+source fixture and are normative for a Runtime claiming deduction conformance.
+
+[`POLICY.md`](POLICY.md) contains the Runtime scenarios for `@policy` addressee
+resolution and the Host policy channel. They depend on an attached Scheduler
+registry and Host capability, so they are stated with test doubles and are
+normative for a Runtime claiming the policy profile.
 
 ## Required lexical preprocessing
 
@@ -49,6 +54,7 @@ Any language change is incomplete until all applicable projections agree:
 - `SubseaCable.g4`: executable ANTLR4 grammar
 - `conformance/cases.tsv` and its source files: observable acceptance/rejection
 - `conformance/DEDUCTION.md`: observable demand-time deduction behavior
+- `conformance/POLICY.md`: observable policy addressee and Host-channel behavior
 
 The ANTLR grammar must generate without warnings or errors, generated Java must
 compile against the matching ANTLR runtime, every syntax-valid case must reach

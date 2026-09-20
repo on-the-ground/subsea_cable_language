@@ -82,8 +82,8 @@ Consumer Runtime
     Codebase
     Carousel          deduction engine
     Outcome & Value Store
-    Scheduler Port    evaluation eligibility and policy
-    Host Port         concrete computation
+    Scheduler Port    evaluation eligibility and Scheduler-addressed policy
+    Host Port         concrete computation and Host-addressed policy
     Diagnostics/Trace
 ```
 
@@ -253,6 +253,7 @@ reduction, or retarget a committed occurrence.
 - primitive value semantics requested during deduction;
 - evaluation of grounded arrow-function leaves;
 - `$Anchor` lookup, signature checking, invocation, and result conversion;
+- interpretation of `hostPolicies[]` inside one grounded leaf invocation;
 - Host-phase failures.
 
 The Host cannot unfold Goal structure or choose aliases.

@@ -1,10 +1,13 @@
 # Runtime Orchestration — Coordinating Carousel, Host, and Policy
 
 > **Status:** proposed operational design. The live Vessel–Host feedback-loop
-> and deployment-neutral core are accepted in
-> [SCP-0006](../proposals/0006-live-vessel-host-cooperation.md), whose
-> compiler/profile details remain under discussion; concrete APIs,
-> baseline outcome rules, and policy mechanics in this document remain
+> boundary is accepted in
+> [SCP-0006](../proposals/0006-live-vessel-host-cooperation.md), and policy
+> addressee resolution, the `hostPolicies[]` projection and the pinned
+> declarations are accepted in
+> [SCP-0011](../proposals/0011-policy-addressee-and-host-channel.md) and
+> normative in `RUNTIME_CONTRACT.md` §10.1. Concrete APIs, baseline outcome
+> rules, and the remaining policy mechanics in this document stay
 > non-normative. It extends
 > [CAROUSEL_ENGINE_PLAN.md](CAROUSEL_ENGINE_PLAN.md) and must not be implemented
 > on any path marked **Owner decision** until that decision is recorded.
@@ -350,19 +353,35 @@ HostCapabilityChanged
 
 Fixed by the language: a policy targets exactly the following occurrence,
 stacks in source order, has validated value arguments, never changes topology,
-and is never copied to children. The Scheduler interprets it and must reject
-unsupported ones.
+and never inherits or copies to children. Its addressee is resolved against the
+pinned declarations of `RUNTIME_CONTRACT.md` §10.1: a Scheduler-addressed policy
+is interpreted by the Scheduler, a Host-addressed one by the Host, and one
+claimed by neither is rejected as `UnknownPolicy`.
 
-Not fixed: every concrete policy's meaning, inheritance, and composition. This
-design supplies a **mechanism** only.
+Not fixed: every concrete policy's meaning and same-addressee composition. This
+design supplies a **mechanism** only; descendant inheritance is not one of its
+extension points.
 
-### 8.2 Policy registry and interpreters
+### 8.2 Scheduler-addressed policy registry and interpreters
+
+**Sections 8.2 through 8.5 describe Scheduler-addressed policies only.** The
+interface below observes Scheduler events and returns attempt-lifecycle actions
+such as `Reattempt`, `CancelScope` and `FailScope`. A Host-addressed policy MUST
+NOT be given this interface: the accepted Host-policy surface exposes no
+attempt-lifecycle operation at all
+([SCP-0011](../proposals/0011-policy-addressee-and-host-channel.md), and
+`RUNTIME_CONTRACT.md` §10.1). Restricting `targetKinds` would not preserve that
+difference, because the difference is authority, not target.
+
+A Host-addressed policy takes the separate path in §8.6: the Dispatcher filters
+it into `hostPolicies[]`, the Host interprets it inside one invocation, and no
+Scheduler event or action is involved.
 
 ```text
-PolicyInterpreter
+SchedulerPolicyInterpreter
   id, version
   targetKinds          subset of {Goal, serial, parallel, resolving-map,
-                                   function-leaf, anchor}
+                                   goal-arrow-stage, function-leaf, anchor}
   validateArgs(args)   -> ok | InvalidPolicyArguments
   attach(scopeCtx)     -> state
   on(event, state, scopeCtx) -> [Action]
@@ -415,6 +434,9 @@ No action can edit topology, routing, aliases, or committed deductions.
 - **Scope reattempt is undefined.** Retrying a composite would need
   attempt-scoped occurrence identities. **Owner decision R4**; until then,
   `Reattempt` on a composite target is rejected with `UnsupportedPolicyTarget`.
+  A `goal-arrow-stage` occurrence is a composite for this rule: a
+  Scheduler-addressed policy may target it, but `Reattempt` on it is rejected
+  (SCP-0007).
 - **Stacking needs a declared pairing.** The registry publishes a composition
   table for supported ordered pairs. A pair missing from the table is
   `PolicyConflict` at attach time. This design deliberately chooses no nesting
@@ -425,13 +447,38 @@ No action can edit topology, routing, aliases, or committed deductions.
   erasure. The invariant is therefore conditional: for corresponding
   occurrences that select the same artifact with the same arguments, erasing
   policy metadata does not change the structural reduction result.
-- **Unsupported policies fail where they are disclosed.** Policies become known
-  only as occurrences are exposed. With an empty registry, a run starts
-  normally; each policy-bearing occurrence fails its own scope with
-  `UnknownPolicy` when it is exposed, before any affected execution. Policies
-  are never silently ignored to manufacture a comparison run.
+- **Unclaimed policies fail where they are disclosed.** Policies become known
+  only as occurrences are exposed. A run whose pinned declarations claim no
+  identifiers starts normally; each policy-bearing occurrence then fails its own
+  scope with `UnknownPolicy` when it is exposed, before any affected execution.
+  More generally, the same failure applies to each identifier claimed by neither
+  declaration. Policies are never silently ignored to manufacture a comparison
+  run.
 
-### 8.6 Illustration only
+### 8.6 Host-addressed policies take a different path
+
+A Host-addressed policy never enters the registry above. Its path is:
+
+```text
+occurrence.directPolicies[]  --(addressee resolution, §10.1)-->  hostPolicies[]
+hostPolicies[]               --(Dispatcher, Host-facing request)-->  Host
+```
+
+- Addressee resolution first compares the pinned Scheduler registry and pinned
+  Host capability declaration. Only a Host-only claim enters this path; a double
+  claim is `PolicyConflict`, and a claim by neither is `UnknownPolicy`.
+- Before forwarding, the pinned deployment allowlist may still refuse a
+  Host-only policy with `PolicyDenied`.
+- It reaches only `{function-leaf, anchor}` occurrences; anywhere else is
+  `UnsupportedPolicyTarget`.
+- It observes no Scheduler event and returns no action. It may read the current
+  invocation's attempt identity and cancellation signal, and the surface exposes
+  no operation to create, retry, settle, extend or abandon an attempt. The only
+  way it changes Runtime attempt state is the outcome the invocation returns.
+- Everything in §§8.3–8.5 — the event set, the closed action set, and the flow
+  invariants — therefore does not apply to it.
+
+### 8.7 Illustration only
 
 ```subsea
 Patch = [d] -> @retry $editFiles(d)

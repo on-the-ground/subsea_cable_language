@@ -1,8 +1,10 @@
 # Evidence-Driven Policy Discovery
 
 This document governs how a behavior observed during migration becomes a
-Subsea Cable `@policy`. It prevents the first runtime, scheduler, or source framework
-from defining policy semantics by accident.
+Subsea Cable `@policy`. It prevents the first Runtime, Scheduler, Host, or source
+framework from defining policy semantics by accident. Scheduler-addressed and
+Host-addressed candidates follow the same evidence discipline, but they are
+declared and interpreted by different addressees.
 
 ## 1. What exists before concrete policies
 
@@ -14,11 +16,16 @@ The language already guarantees:
 - policy metadata does not change topology or routing;
 - policies belong to occurrences/edges, never shared Goal definitions;
 - erasing policies yields the same structural projection;
-- the Scheduler owns interpretation;
-- unsupported policies are rejected explicitly.
+- the Runtime resolves each identifier against the pinned Scheduler registry and
+  Host capability declaration;
+- the resolved addressee alone owns policy-specific interpretation;
+- eligibility, attempt lifecycle, and scope outcomes remain Scheduler-owned;
+- policies never inherit or copy to descendant occurrences; and
+- identifiers claimed by neither declaration are rejected explicitly.
 
-Nothing else is assumed. In particular, there is no implicit inheritance,
-precedence, conflict resolution, retry model, timeout clock, or success rule.
+Nothing else is assumed. In particular, there is no default addressee,
+precedence, retry model, timeout clock, success rule, or unspecified
+same-addressee composition rule.
 
 ## 2. Promotion stages
 
@@ -29,24 +36,28 @@ fault. Record the behavior without assigning a final policy name.
 
 ### Candidate
 
-The behavior survives classification as Scheduler policy rather than structure,
-value routing, or Anchor contract. Define the smallest testable model and target.
-Open a proposed ADR. Candidate status does not authorize implementation or
-language documentation changes.
+The behavior survives classification as policy rather than structure, value
+routing, or an Anchor contract. Classify its addressee: Scheduler-addressed when
+it changes eligibility, the attempt lifecycle, or a scope outcome;
+Host-addressed when it changes only what happens inside one grounded leaf
+invocation. Define the smallest testable model and target. Open a proposed ADR.
+Candidate status does not authorize implementation or language documentation
+changes.
 
 ### Provisional
 
-The external Runtime implements the candidate behind a versioned policy
-identifier. Conformance cases cover success, failure, target scoping, erasure,
-and unsupported combinations. Documentation clearly marks unresolved
-interactions. Promotion to Provisional requires the owner's explicit acceptance
-of the ADR.
+The external Runtime implements the candidate behind a versioned Scheduler
+registry entry or Host capability declaration, according to its addressee.
+Conformance cases cover success, failure, target scoping, erasure, and
+unsupported combinations. Documentation clearly marks unresolved interactions.
+Promotion to Provisional requires the owner's explicit acceptance of the ADR.
 
 ### Stable
 
 At least two independent workloads require the semantics, or an accepted
 external contract supplies equivalent evidence. The definition is portable
-across implementation languages and Scheduler designs.
+across implementation languages and across implementations of its declared
+addressee.
 
 ## 3. Required policy specification
 
@@ -55,12 +66,14 @@ A Provisional policy document must state:
 ```text
 Identifier and version
 Motivating evidence
+Addressee and declaration surface
 Valid target occurrence kinds
 Argument schema and validation
 Observable state machine
 Clock or attempt model, if any
 Host outcomes consumed
-Scheduler actions permitted
+Scheduler actions permitted (Scheduler-addressed only)
+Host invocation behavior (Host-addressed only)
 Result/failure exposed downstream
 Cancellation behavior
 Duplicate/replay behavior
@@ -80,10 +93,10 @@ Before accepting a Candidate, answer:
 1. Can corrected Goal structure express the behavior?
 2. Can explicit value routing express it?
 3. Is it actually an Anchor signature or effect contract?
-4. Is it merely a choice of the baseline Scheduler profile?
+4. Is it merely a choice of the baseline Scheduler or Host capability profile?
 5. Does it preserve the same policy-erased graph?
-6. Can another Scheduler implement it without imitating the first runtime's
-   internal control flow?
+6. Can another implementation of the same addressee implement it without
+   imitating the first Runtime's internal control flow?
 
 A “yes” to 1–4 rejects or reclassifies the policy. A “no” to 5–6 rejects it as a
 portable policy.
@@ -108,9 +121,9 @@ pair used in an experiment, specify whether the combination is:
 - rejected as `PolicyConflict`;
 - unresolved and therefore unsupported.
 
-Never infer that outer textual order means retry wraps timeout, timeout wraps
-retry, or either policy is inherited by children. Those are concrete semantics
-requiring evidence and tests.
+Never infer that outer textual order means retry wraps timeout or timeout wraps
+retry. Those are concrete composition semantics requiring evidence and tests.
+Inheritance is not a candidate semantic: no policy becomes a child's policy.
 
 ## 7. Required tests
 
@@ -139,14 +152,16 @@ Strong evidence is, in descending order:
 
 Implementation convenience alone cannot promote a policy.
 
-Any choice of policy target, state machine, downstream outcome, inheritance,
-stacking, or conflict behavior is a design decision. The discovering agent must
-present evidence and a recommendation, but the owner decides before that
-behavior is implemented.
+Any choice of policy target within the language's fixed constraints, state
+machine, downstream outcome, stacking, or same-addressee conflict behavior is a
+design decision. Descendant inheritance and cross-addressee precedence are not
+available choices. The discovering agent must present evidence and a
+recommendation, but the owner decides before that behavior is implemented.
 
-## 9. Policy registry layout
+## 9. Policy declaration layout
 
-When the first Candidate exists, create a dedicated directory:
+When the first Candidate exists, create a dedicated directory. Record whether
+the identifier belongs to the Scheduler registry or the Host capability:
 
 ```text
 policies/

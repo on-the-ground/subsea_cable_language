@@ -173,8 +173,13 @@ grammar SubseaCable;
  *   errors when statically provable and otherwise deduction errors. Primitive
  *   semantics are Host-provided; a failure requested while reducing is reported
  *   in the deduction context. Arrow-function and Anchor leaf failures are Host-
- *   owned. Policy existence, applicability, conflicts, scheduling, and upstream
- *   outcomes are Scheduler-owned. A failed deduction commits no partial result
+ *   owned. Scheduling and upstream outcomes are Scheduler-owned without
+ *   exception. Policy existence, applicability and conflicts are resolved
+ *   against two declarations: a Scheduler policy registry and a Host capability.
+ *   An identifier claimed by the Scheduler is interpreted by the Scheduler; one
+ *   claimed by the Host is interpreted by the Host inside a single grounded leaf
+ *   invocation; one claimed by both is `PolicyConflict`; one claimed by neither
+ *   is `UnknownPolicy` and does not fall back to either side. A failed deduction commits no partial result
  *   and never rewrites any earlier deduction. Each error has a stable kind and
  *   phase; source span, artifact, occurrence, and active lineages are attached
  *   when available.
@@ -499,8 +504,14 @@ grammar SubseaCable;
  *   `@policy` prefixes attach How metadata to exactly the following structural
  *   occurrence. They never change dependency topology, GoalNodeId, arguments,
  *   or result routing. Stacked prefixes attach an ordered policy list to the
- *   same target. Policy meaning, applicability, inheritance over a composite,
- *   conflicts, and execution are Scheduler concerns.
+ *   same target. Policy-specific meaning, argument schema, same-addressee
+ *   composition, and execution belong to the addressee the two declarations
+ *   resolve. The Runtime policy phase owns resolution, cross-addressee
+ *   collisions, target enforcement, and the forwarding allowlist; an identifier
+ *   neither declaration claims is `UnknownPolicy`. Policies never inherit or
+ *   copy to descendants. Only interpretation inside one grounded leaf invocation
+ *   ever moves to the Host; eligibility, the attempt lifecycle, and scope
+ *   outcomes stay with the Scheduler.
  *       @retry Goal1
  *       @retry @atLeastOnce $foo
  *       @timeout("30s") {Goal1, Goal1}

@@ -11,9 +11,11 @@ and phased delivery plan are tracked separately in
 [CAROUSEL_ENGINE_PLAN.md](CAROUSEL_ENGINE_PLAN.md). Read it before freezing a
 Runtime component model; its ownership boundary is accepted in SCP-0002 and
 propagated into the normative Runtime Contract. The live Vessel–Host feedback
-loop and deployment-neutral core are accepted in
-[SCP-0006](../proposals/0006-live-vessel-host-cooperation.md); its
-compiler/profile details remain under discussion. The remaining
+loop, the deployment-neutral core and the compiler boundary are accepted in
+[SCP-0006](../proposals/0006-live-vessel-host-cooperation.md). Occurrence kinds,
+artifact identity, diagnostics and the policy channel are accepted in
+[SCP-0007](../proposals/0007-inline-goal-arrow-stage-occurrence.md)–[SCP-0011](../proposals/0011-policy-addressee-and-host-channel.md).
+The remaining
 proposed coordination of Carousel, Host, and `@policy` from a run command to the
 Root outcome is in [RUNTIME_ORCHESTRATION_PLAN.md](RUNTIME_ORCHESTRATION_PLAN.md),
 and evidence from an external proof of concept is in
@@ -95,13 +97,15 @@ Source Frontend  → UTF-8, preprocessing, parse, validation, artifact preparati
 Codebase         → immutable Goal artifacts, mutable aliases, revisions, deduction ledger
 Carousel         → lazy deduction, reduction rules, occurrences, lineages, frontier
 Outcome/Value    → live run outcomes and resolved routed values
-Scheduler Port   → readiness/outcomes and opaque @policy delivery
-Host Port        → primitive semantics, arrow-leaf evaluation, $Anchor resolution/invocation
+Scheduler Port   → readiness/outcomes and Scheduler-addressed @policy interpretation
+Host Port        → primitives, leaves, $Anchor invocation, and hostPolicies[] interpretation
 Diagnostics      → errors, traces, provenance, and conformance evidence
 ```
 
 The Host supplies concrete computation semantics. The Scheduler interprets
-`@policy`. Carousel owns demand-time Goal alias resolution and structural
+Scheduler-addressed `@policy`; a Host-addressed policy reaches the Host as the
+`hostPolicies[]` projection and the Scheduler does not interpret it
+([SCP-0011](../proposals/0011-policy-addressee-and-host-channel.md)). Carousel owns demand-time Goal alias resolution and structural
 deduction, but delegates primitive value semantics to the Host and never
 evaluates grounded leaves. The Runtime owns the Outcome & Value Store; Scheduler
 writes outcomes and Carousel reads committed values through a narrow port.
@@ -126,7 +130,7 @@ first implementation must not become an accidental source of language law.
 ## What is deliberately deferred
 
 - concrete retry, timeout, delivery, cancellation, and aggregation policies;
-- policy inheritance and policy-conflict rules;
+- same-addressee policy composition and conflict rules;
 - unconditional definition cycles, static termination proofs, and a portable
   default resource limit or diagnostic for explicitly demanded non-terminating
   guarded recursion;
@@ -135,8 +139,11 @@ first implementation must not become an accidental source of language law.
 - cross-runtime canonical hash compatibility until its encoding ADR is accepted.
 
 The `@policy` carrier itself is not deferred: policy order, arguments, target
-occurrence, provenance, and lossless delivery to the Scheduler Port are required.
-Unsupported policies must never be ignored silently.
+occurrence, provenance, addressee resolution, and lossless delivery to the
+resolved addressee are required. Scheduler-addressed entries stay at the
+Scheduler Port; Host-addressed entries cross only as the Host-facing
+`hostPolicies[]` projection. Policies never inherit to descendants, and a policy
+claimed by neither pinned declaration must never be ignored silently.
 
 ## Phase 0 — Freeze the implementation profile
 
@@ -250,18 +257,21 @@ Implement the abstract ports in `RUNTIME_CONTRACT.md` without adding production
 policies.
 
 The Host Port supplies primitive semantics to Carousel deductions and evaluates
-grounded arrow-function and Anchor leaves. The Scheduler Port receives every
-deduced structural occurrence—including policy-bearing composites—plus grounded
-leaves and reports execution outcomes. A composite policy remains on
-that composite occurrence; it is not copied onto descendants. Outcomes are
-committed to the Runtime-owned Outcome & Value Store; Carousel observes only
-resolved values needed for deduction. Carousel remains unaware of Host
-registries, retries, timeout clocks, success aggregation, or cancellation
-strategy.
+grounded arrow-function and Anchor leaves. The Runtime preserves every
+occurrence's `directPolicies[]` for addressee resolution and provenance. The
+Scheduler Port receives every deduced structural occurrence—including
+policy-bearing composites—plus grounded leaves, interprets only the
+Scheduler-addressed subsequence, and reports execution outcomes. The Dispatcher
+places only the Host-addressed subsequence of a grounded leaf in the Host-facing
+`hostPolicies[]` request. A policy remains on its authored occurrence and is
+never copied onto descendants. Outcomes are committed to the Runtime-owned
+Outcome & Value Store; Carousel observes only resolved values needed for
+deduction. Carousel remains unaware of Host registries, retries, timeout clocks,
+success aggregation, or cancellation strategy.
 
-Add a deterministic test Host and a named baseline test Scheduler. Unknown
-policies must produce an explicit policy-phase error before affected execution;
-they must not be dropped.
+Add a deterministic test Host and a named baseline test Scheduler. A policy
+claimed by neither pinned declaration must produce an explicit policy-phase
+`UnknownPolicy` before affected execution; it must not be dropped.
 
 ### Gate 3
 
@@ -270,8 +280,9 @@ they must not be dropped.
 - Arrow-function and Anchor resolution/signature failures are Host-phase errors.
 - Unsupported policies are policy-phase errors.
 - Removing every policy changes no topology or routing trace.
-- A policy on a composite reaches the Scheduler with its original target and
-  without appearing as a direct child policy.
+- A Scheduler-addressed policy on a composite reaches the Scheduler with its
+  original target and without appearing as a direct child policy; a
+  Host-addressed policy on that target is `UnsupportedPolicyTarget`.
 - Replacing the baseline Scheduler requires no parser, Codebase, or Carousel
   changes.
 - Replacing the Host profile requires no parser, Codebase, or Scheduler changes;

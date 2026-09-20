@@ -2,8 +2,7 @@
 
 ## Status
 
-The core direction for guarded direct and mutual Goal recursion is accepted;
-the detailed contract remains in Discussion under
+Guarded direct and mutual Goal recursion is accepted, contract and all, under
 [SCP-0005](proposals/0005-guarded-conditional-recursion.md). Unconditional
 definition cycles, and recursive conditional components with no structural exit
 branch, remain `CycleDetected`.

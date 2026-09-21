@@ -5,8 +5,8 @@
 - Created: 2026-09-17
 - Updated: 2026-09-20
 - Requires owner decision: yes
-- External implementation ADRs: [subsea_cable_runtime `0004-artifact-hash-value-closure.md`](https://github.com/on-the-ground/subsea_cable_runtime/blob/main/docs/decisions/0004-artifact-hash-value-closure.md)
-- Evidence repositories/revisions: `on-the-ground/subsea_cable_runtime@d62f1c3` (Carousel POC; evidence gathered while pinned to this repository at `cbc6f53`)
+- External implementation ADRs: [subsea_cable_vessel `0004-artifact-hash-value-closure.md`](https://github.com/on-the-ground/subsea_cable_vessel/blob/main/docs/decisions/0004-artifact-hash-value-closure.md)
+- Evidence repositories/revisions: `on-the-ground/subsea_cable_vessel@d62f1c3` (Carousel POC; evidence gathered while pinned to this repository at `cbc6f53`)
 - Activation pull request: [#10](https://github.com/on-the-ground/subsea_cable_language/pull/10)
 - Effective language revision: the commit on `main` produced by squash-merging PR #10
 - Supersedes: —

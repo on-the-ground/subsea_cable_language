@@ -5,8 +5,8 @@
 - Created: 2026-09-17
 - Updated: 2026-09-17
 - Requires owner decision: yes (Owner decision R3)
-- External implementation ADRs: [subsea_cable_runtime `docs/decisions/0006-argument-position-call-staging.md`](https://github.com/on-the-ground/subsea_cable_runtime/blob/main/docs/decisions/0006-argument-position-call-staging.md)
-- Evidence repositories/revisions: `on-the-ground/subsea_cable_runtime` Carousel POC; [language issue #2](https://github.com/on-the-ground/subsea_cable_language/issues/2)
+- External implementation ADRs: [subsea_cable_vessel `docs/decisions/0006-argument-position-call-staging.md`](https://github.com/on-the-ground/subsea_cable_vessel/blob/main/docs/decisions/0006-argument-position-call-staging.md)
+- Evidence repositories/revisions: `on-the-ground/subsea_cable_vessel` Carousel POC; [language issue #2](https://github.com/on-the-ground/subsea_cable_language/issues/2)
 - Activation pull request: [#3](https://github.com/on-the-ground/subsea_cable_language/pull/3)
 - Effective language revision: `79debc4fe1106ccdee96278811b74609468e7dd6`
 - Supersedes: `draft-argument-position-call-staging.md`

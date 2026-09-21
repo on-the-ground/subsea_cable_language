@@ -5,8 +5,8 @@
 - Created: 2026-09-18
 - Updated: 2026-09-20
 - Requires owner decision: yes (decided; Owner decision R9 stays open separately)
-- External implementation ADRs: pending (subsea_cable_runtime, Host policy channel)
-- Evidence repositories/revisions: `on-the-ground/subsea_cable_runtime` POC; owner design review 2026-09-18
+- External implementation ADRs: pending (subsea_cable_vessel, Host policy channel)
+- Evidence repositories/revisions: `on-the-ground/subsea_cable_vessel` POC; owner design review 2026-09-18
 - Activation pull request: [#10](https://github.com/on-the-ground/subsea_cable_language/pull/10)
 - Effective language revision: the commit on `main` produced by squash-merging PR #10
 - Supersedes: the implicit assumption that every `@policy` is addressed to the Scheduler

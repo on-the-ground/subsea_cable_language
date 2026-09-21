@@ -5,8 +5,8 @@
 - Created: 2026-09-18
 - Updated: 2026-09-18
 - Requires owner decision: yes
-- External implementation ADRs: [runtime ADR 0007 — Voyage results and incremental reuse boundary](https://github.com/on-the-ground/subsea_cable_runtime/blob/main/docs/decisions/0007-voyage-results-and-incremental-reuse.md) (proposed; link becomes valid after the companion Runtime PR merges)
-- Evidence repositories/revisions: `on-the-ground/subsea_cable_runtime` POC and the owner-directed Vessel plan
+- External implementation ADRs: [runtime ADR 0007 — Voyage results and incremental reuse boundary](https://github.com/on-the-ground/subsea_cable_vessel/blob/main/docs/decisions/0007-voyage-results-and-incremental-reuse.md) (proposed; link becomes valid after the companion Runtime PR merges)
+- Evidence repositories/revisions: `on-the-ground/subsea_cable_vessel` POC and the owner-directed Vessel plan
 - Activation pull request: [#5](https://github.com/on-the-ground/subsea_cable_language/pull/5)
 - Effective language revision: `003b1e2404e01ad3e33eee8781ec2f408055091c`
 - Supersedes: the source-level equation “Program = Cable” and the `.subc` source extension
@@ -394,7 +394,7 @@ simple ordered hash list.
 
 ## Reference experiment
 
-The external `on-the-ground/subsea_cable_runtime` POC is pinned to this language
+The external `on-the-ground/subsea_cable_vessel` POC is pinned to this language
 PR by submodule while the two proposals are reviewed. It proves demand-time
 alias selection, immutable per-occurrence deductions, Touchdown publication,
 discard/consume acknowledgement, conservative value barriers, and strict

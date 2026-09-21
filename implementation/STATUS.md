@@ -14,7 +14,7 @@
 - No concrete anchoring policy semantics have been accepted.
 - No open-source migration experiment has started.
 - An independent, non-normative Carousel/Runtime proof of concept exists in
-  `on-the-ground/subsea_cable_runtime`; its findings are in
+  `on-the-ground/subsea_cable_vessel`; its findings are in
   `CAROUSEL_POC_FINDINGS.md`. It provides evidence but has no authority to settle
   an open decision.
 - No production Carousel deduction engine implementation has started. Its objective,

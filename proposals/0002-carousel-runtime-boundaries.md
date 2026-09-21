@@ -5,8 +5,8 @@
 - Created: 2026-09-17
 - Updated: 2026-09-17
 - Requires owner decision: yes
-- External implementation ADRs: Runtime orchestration review recorded by `on-the-ground/subsea_cable_runtime#1`
-- Evidence repositories/revisions: `on-the-ground/subsea_cable_runtime` POC; [language issue #2](https://github.com/on-the-ground/subsea_cable_language/issues/2)
+- External implementation ADRs: Runtime orchestration review recorded by `on-the-ground/subsea_cable_vessel#1`
+- Evidence repositories/revisions: `on-the-ground/subsea_cable_vessel` POC; [language issue #2](https://github.com/on-the-ground/subsea_cable_language/issues/2)
 - Activation pull request: [#3](https://github.com/on-the-ground/subsea_cable_language/pull/3)
 - Effective language revision: `79debc4fe1106ccdee96278811b74609468e7dd6`
 - Supersedes: the former use of **Vessel** as the deduction component

@@ -3,7 +3,7 @@
 > **Status:** index of evidence, not normative. Findings come from an
 > independent proof of concept of the Carousel and its orchestrating Runtime,
 > maintained at
-> [on-the-ground/subsea_cable_runtime](https://github.com/on-the-ground/subsea_cable_runtime).
+> [on-the-ground/subsea_cable_vessel](https://github.com/on-the-ground/subsea_cable_vessel).
 > This page does not decide anything and does not replace the ADR/SCP process:
 > every language-level gap links an external ADR and a Subsea Cable Proposal,
 > and the POC marks the affected path as experimental or blocked until the

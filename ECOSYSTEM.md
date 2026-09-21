@@ -21,11 +21,11 @@ not a meaningful claim.
 
 ## Implementations
 
-### subsea_cable_runtime (Carousel POC)
+### subsea_cable_vessel (Carousel POC)
 
 | Field | Value |
 |---|---|
-| Repository | [on-the-ground/subsea_cable_runtime](https://github.com/on-the-ground/subsea_cable_runtime) |
+| Repository | [on-the-ground/subsea_cable_vessel](https://github.com/on-the-ground/subsea_cable_vessel) (renamed from `subsea_cable_runtime`; commit references recorded here under the old name address the same repository) |
 | License | Apache-2.0 |
 | Toolchain | Go 1.24, no third-party modules |
 | Language pin | a git submodule carrying the grammar, conformance corpus, `README.md` semantics, and the design documents below; the runtime README records the exact revision |

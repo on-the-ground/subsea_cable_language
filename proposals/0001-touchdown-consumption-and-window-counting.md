@@ -5,8 +5,8 @@
 - Created: 2026-09-17
 - Updated: 2026-09-17
 - Requires owner decision: yes
-- External implementation ADRs: [subsea_cable_runtime `docs/decisions/0001-touchdown-consumption.md`](https://github.com/on-the-ground/subsea_cable_runtime/blob/main/docs/decisions/0001-touchdown-consumption.md)
-- Evidence repositories/revisions: `on-the-ground/subsea_cable_runtime@d62f1c3` (Carousel POC; evidence gathered while pinned to this repository at `cbc6f53`)
+- External implementation ADRs: [subsea_cable_vessel `docs/decisions/0001-touchdown-consumption.md`](https://github.com/on-the-ground/subsea_cable_vessel/blob/main/docs/decisions/0001-touchdown-consumption.md)
+- Evidence repositories/revisions: `on-the-ground/subsea_cable_vessel@d62f1c3` (Carousel POC; evidence gathered while pinned to this repository at `cbc6f53`)
 - Activation pull request: [#1](https://github.com/on-the-ground/subsea_cable_language/pull/1)
 - Effective language revision: `eabb5052b674901e107aed385cbf5d61a122d618`
 - Supersedes: —

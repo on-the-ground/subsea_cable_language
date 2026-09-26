@@ -33,6 +33,13 @@ work, but the next input does not begin until the current segment's
 produced only after `decommision(cable)` and complete drainage, and it causes
 the connected pipeline to stand down.
 
+A failed or cancelled `EndOfResult` terminates only its input segment. Values
+and Touchdowns already published by that segment remain committed, and the next
+queued input proceeds after the terminal propagates. The final Cable result
+therefore carries the Fully Touchdown Cable together with an ordered outcome
+for every admitted `Input(k)`; `EndOfStream` does not aggregate those outcomes
+into a second whole-Cable success or failure.
+
 When a `/N` Goal emits several Values, the Value payload and its FIFO emission
 position are different things. The k-th Value carries Runtime/provenance
 metadata `emissionOrdinal = k`; that metadata is not a Subsea value. Any
@@ -101,6 +108,7 @@ outputMultiplicity                   0 | 1 | N
 
 per-input terminal                   EndOfResult(outcome), with no ID
 whole-Cable terminal                 EndOfStream
+final result                         Fully Touchdown Cable + ordered segment outcomes
 authored position segment            Authored(k)
 /N emission position segment         Emission(k), k is zero-based FIFO order
 input provenance prefix              Input(k), k is accepted-input order
@@ -296,6 +304,8 @@ After decommission begins:
 - already accepted inputs remain ordered and are drained;
 - the active input segment and every downstream operation it caused are allowed
   to reach a terminal outcome, subject to cancellation and policy;
+- a failed or cancelled segment does not prevent later accepted inputs from
+  being drained;
 - the Vessel emits `EndOfStream` only after complete drainage.
 
 If the Cable is never decommissioned, it remains live and no absence of Values
@@ -435,6 +445,13 @@ EndOfResult(Cancelled(diagnostic?))
 The exact wire encoding is a Runtime protocol concern. A normal Value is never
 invented to represent failure.
 
+A failed or cancelled terminal is local to the current input segment. Values,
+effects, immutable deduction records, and Touchdowns already produced by that
+segment are not rolled back. After that terminal has propagated and all work
+caused by the segment has drained, the next queued input becomes active under
+its own isolated state and pins. The Cable does not fail-fast or discard later
+admitted inputs merely because an earlier segment was unsuccessful.
+
 ### 5.2 `EndOfStream`
 
 `EndOfStream` is not an alias for `EndOfResult`.
@@ -445,6 +462,8 @@ invented to represent failure.
 The Vessel emits `EndOfStream` only after `decommision(cable)`, input admission
 has stopped, accepted work has drained, and the final `EndOfResult` has
 propagated. Connected consumers stand down when they observe `EndOfStream`.
+`EndOfStream` carries no aggregate success or failure and does not replace the
+ordered per-segment outcomes.
 
 ## 6. Goal signature and identity
 
@@ -760,6 +779,27 @@ stream. They remain distinct:
   artifact;
 - `EndOfResult` and `EndOfStream` are control frames and are not item hashes.
 
+After decommission and drainage, the final Cable result exposes an ordered
+segment-outcome entry for every successfully admitted input:
+
+```text
+SegmentOutcome(Input(k), Succeeded | Failed(diagnostic) |
+                          Cancelled(diagnostic?))
+```
+
+The entries are ordered by increasing `Input(k)`. They are result/provenance
+records, not channel frames, so this association does not add an ID to
+`EndOfResult`. Rejected sends have no `Input(k)` and no segment-outcome entry.
+There is no additional whole-Cable aggregate outcome; callers inspect the
+ordered entries when they need to determine whether any segment failed or was
+cancelled.
+
+A failed or cancelled segment still contributes every Touchdown published
+before its terminal, using SCP-0004's monotonic publication-time membership
+rule. Its already emitted Values and effects are likewise not rolled back. A
+later admitted segment remains a separate ordered member of the same final
+result and executes normally.
+
 ## 11. Deliberately deferred features
 
 The following are outside this core and acquire no default semantics here:
@@ -813,6 +853,13 @@ multiplicity `/0`; a following implicitly connected Goal is invoked zero times,
 and the composite serial expression completes successfully with effective
 multiplicity `/0`.
 
+SCP-0014 supersedes SCP-0004's one-voyage/one-Root-outcome envelope for a laid
+Cable. The replacement is one Fully Touchdown Cable plus ordered
+`SegmentOutcome(Input(k), outcome)` entries. SCP-0004's monotonic membership
+rule remains in force: published Touchdowns from failed or cancelled segments
+remain Cable members. No aggregate Cable outcome is inferred from those
+entries or encoded in `EndOfStream`.
+
 ### 12.1 Conflict with the planned evaluation surface and memo work
 
 The final designs recorded in language issues
@@ -830,7 +877,8 @@ In particular:
   sends, and `decommision`;
 - the planned `EvaluationResult` and result-retention surface assumes one Root
   result and must represent Value sequences, per-input `EndOfResult`, final
-  `EndOfStream`, and decommissioning;
+  `EndOfStream`, ordered segment outcomes without a whole-Cable aggregate, and
+  decommissioning;
 - ADR 0008's run-start pinning must move from one input-bearing evaluation
   start to per-send segment admission; `lay` itself performs no such pinning;
 - each successful ADR 0008 pin must retain its immutable declaration snapshot
@@ -896,7 +944,8 @@ An eventual activation must synchronize at least:
   per-input serialization, terminal propagation, and Anchor sinks;
 - Scheduler contract: admission and completion of per-Value downstream work;
 - SCP-0004 projection: streaming-triggered evaluation identity without timing-
-  based Cable reordering;
+  based Cable reordering, plus replacement of the single Root outcome by
+  ordered per-input segment outcomes;
 - SCP-0010 projection: remove `NoOutputNotRoutable` from routed channel absence,
   retain it only for explicitly scalar resolving-map/function-leaf contexts,
   and classify missing `/1` output as a multiplicity protocol violation;
@@ -991,7 +1040,15 @@ Minimum conformance coverage includes:
 44. all nine cells of the routed serial multiplicity composition table;
 45. `[A/N, B/1]` deriving `/N` and invoking B once for every A Value;
 46. `[A/N, B[y]/1]` discarding A's Values, invoking B once with its complete
-    explicit tuple, and deriving `/1`.
+    explicit tuple, and deriving `/1`;
+47. a failed or cancelled segment retaining its already published Values,
+    effects, deduction records, and Touchdown membership without rollback;
+48. a queued later input starting normally after an earlier non-success
+    `EndOfResult` has propagated and its caused work has drained;
+49. the final Cable result containing one outcome entry per admitted `Input(k)`
+    in ordinal order, including successful, failed, and cancelled segments;
+50. `EndOfStream` carrying no aggregate outcome and being emitted only after
+    every accepted segment, including those following a failure, has drained.
 
 ## 14. Remaining drafting questions
 

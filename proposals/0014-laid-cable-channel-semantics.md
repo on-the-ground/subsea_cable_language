@@ -525,7 +525,7 @@ identity, but it is not an alias lookup or overload axis.
 
 An unkeyed parallel composite has effective multiplicity `/0`. Its branches may
 produce Values internally, but the composite publishes no outward Value and
-emits one composite `EndOfResult` as specified in Section 8.
+emits one composite `EndOfResult` as specified in Section 4.
 
 For a routed serial connection, compose the upstream and downstream effective
 multiplicities with the following table:
@@ -550,7 +550,7 @@ Goal. A downstream stage whose complete argument tuple is written explicitly
 does not consume the upstream Values; it starts once after its structural
 predecessor completes and resets the composite's effective multiplicity to its
 own. For example, `[A/N, B[y]/1]` has effective multiplicity `/1`, while A's
-Values are discarded as specified in Section 9.
+Values are discarded as specified in Section 8.
 
 ## 7. Host result obligations
 
@@ -846,12 +846,12 @@ SCP-0010 remains in force for a legacy/internal `NoOutput` used where a scalar
 value is explicitly required inside a resolving-map binding or function-leaf
 body; those are not empty channel segments.
 
-SCP-0014 also supersedes the current README rule that rejects a bare unary Goal
-after an unkeyed parallel expression because that parallel expression has no
-single routable result. An unkeyed parallel composite now has effective
-multiplicity `/0`; a following implicitly connected Goal is invoked zero times,
-and the composite serial expression completes successfully with effective
-multiplicity `/0`.
+SCP-0014 also supersedes the current README rules that reject either a bare
+unary Goal or a Goal-arrow binding after an unkeyed parallel expression because
+that parallel expression has no single routable result. An unkeyed parallel
+composite now has effective multiplicity `/0`; either following form is invoked
+zero times, no Goal-arrow parameter is bound, and the composite serial
+expression completes successfully with effective multiplicity `/0`.
 
 SCP-0014 supersedes SCP-0004's one-voyage/one-Root-outcome envelope for a laid
 Cable. The replacement is one Fully Touchdown Cable plus ordered

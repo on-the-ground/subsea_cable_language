@@ -433,6 +433,8 @@ propagated. Connected consumers stand down when they observe `EndOfStream`.
 
 ## 6. Goal signature and identity
 
+### 6.1 Declared Goal multiplicity
+
 The canonical explanatory signature notation becomes:
 
 ```text
@@ -480,6 +482,41 @@ GoalNodeId = StructureHash(including outputMultiplicity) + inputArity
 It is not appended as a second lookup key or overload component. Goal-step memo
 keys that contain `GoalNodeId` therefore distinguish artifacts whose output
 multiplicity differs.
+
+### 6.2 Derived composite multiplicity
+
+Every composite Goal has one effective output multiplicity derived from its
+structure. That derived multiplicity is part of the composite's structural
+identity, but it is not an alias lookup or overload axis.
+
+An unkeyed parallel composite has effective multiplicity `/0`. Its branches may
+produce Values internally, but the composite publishes no outward Value and
+emits one composite `EndOfResult` as specified in Section 8.
+
+For a routed serial connection, compose the upstream and downstream effective
+multiplicities with the following table:
+
+| upstream | downstream `/0` | downstream `/1` | downstream `/N` |
+| --- | --- | --- | --- |
+| `/0` | `/0` | `/0` | `/0` |
+| `/1` | `/0` | `/1` | `/N` |
+| `/N` | `/0` | `/N` | `/N` |
+
+Thus `/0` absorbs, `/1` is the identity, and `/N` propagates unless a later
+routed stage is `/0`. For example:
+
+```text
+[A/N, B/1] -> /N
+[A/1, B/N] -> /N
+[A/N, B/0] -> /0
+```
+
+This table applies only when the upstream Value is routed into the downstream
+Goal. A downstream stage whose complete argument tuple is written explicitly
+does not consume the upstream Values; it starts once after its structural
+predecessor completes and resets the composite's effective multiplicity to its
+own. For example, `[A/N, B[y]/1]` has effective multiplicity `/1`, while A's
+Values are discarded as specified in Section 9.
 
 ## 7. Host result obligations
 
@@ -754,6 +791,13 @@ SCP-0010 remains in force for a legacy/internal `NoOutput` used where a scalar
 value is explicitly required inside a resolving-map binding or function-leaf
 body; those are not empty channel segments.
 
+SCP-0014 also supersedes the current README rule that rejects a bare unary Goal
+after an unkeyed parallel expression because that parallel expression has no
+single routable result. An unkeyed parallel composite now has effective
+multiplicity `/0`; a following implicitly connected Goal is invoked zero times,
+and the composite serial expression completes successfully with effective
+multiplicity `/0`.
+
 ### 12.1 Conflict with the planned evaluation surface and memo work
 
 The final designs recorded in language issues
@@ -917,7 +961,13 @@ Minimum conformance coverage includes:
 39. no implicit first-value selection, collection, or multiplicity failure when
     routing `/N` Values one frame at a time;
 40. nested Goal/Anchor use in a scalar position remaining
-    `InvalidStructuralContext` rather than becoming a stream conversion.
+    `InvalidStructuralContext` rather than becoming a stream conversion;
+41. an unkeyed parallel composite deriving effective multiplicity `/0`,
+    publishing no branch Value, and emitting one composite terminal;
+42. all nine cells of the routed serial multiplicity composition table;
+43. `[A/N, B/1]` deriving `/N` and invoking B once for every A Value;
+44. `[A/N, B[y]/1]` discarding A's Values, invoking B once with its complete
+    explicit tuple, and deriving `/1`.
 
 ## 14. Remaining drafting questions
 

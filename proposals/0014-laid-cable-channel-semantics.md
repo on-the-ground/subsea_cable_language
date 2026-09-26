@@ -103,6 +103,7 @@ per-input terminal                   EndOfResult(outcome), with no ID
 whole-Cable terminal                 EndOfStream
 authored position segment            Authored(k)
 /N emission position segment         Emission(k), k is zero-based FIFO order
+input provenance prefix              Input(k), k is accepted-input order
 ```
 
 The following explored models are **not** part of this design:
@@ -389,9 +390,11 @@ not merge namespaces: every record remains owned by its segment, and reuse may
 only refer to an earlier immutable record through the separately activated memo
 contract.
 
-This isolation does not create a portable `ResultScope` object. Implementations
-may use an internal segment key to enforce storage and provenance ownership, but
-it is not attached to `Value`, `EndOfResult`, or `EndOfStream` frames.
+This isolation does not create a portable `ResultScope` object. Every
+successfully admitted input receives a zero-based `Input(k)` provenance and
+ordering prefix, but that ordinal is not attached to `Value`, `EndOfResult`, or
+`EndOfStream` frames. Implementations may use a different internal segment key
+in addition to `Input(k)`.
 
 ## 5. Terminal protocol
 
@@ -635,11 +638,21 @@ that special case. It is not inferred from ordinary Anchor invocation.
 ## 10. Interaction with Fully Touchdown Cable identity
 
 Separate top-level input segments do not execute concurrently in one laid
-Cable. Their grounded work therefore remains ordered by input admission and
-`EndOfResult` propagation.
+Cable. Each successfully admitted input receives `Input(k)`, where `k` is its
+zero-based admission ordinal. A rejected send consumes no ordinal. The complete
+occurrence position is:
 
-Within one input segment, occurrence position is a lexicographic vector of
-tagged non-negative segments:
+```text
+Input(k) / <within-segment tagged position vector>
+```
+
+The Fully Touchdown Cable is the concatenation of each segment's ordered items
+in increasing `Input(k)` order. `Input(0)` is fully ordered before `Input(1)`,
+and so on. This outer order follows admission and `EndOfResult` propagation,
+not Host timing.
+
+Within one input segment, the inner occurrence position is a lexicographic
+vector of tagged non-negative segments:
 
 ```text
 Authored(k)   authored reduction-result position
@@ -654,12 +667,13 @@ kinds compare by numeric `k`; mixed kinds compare `Authored` before `Emission`.
 The concrete encoding is profile-versioned but must preserve those tags and
 that order. A proper-prefix position precedes its descendants.
 
-This supersedes SCP-0004 and `implementation/RUNTIME_CONTRACT.md` §12 where
-they say the ordering vector contains only untagged child ordinals drawn from
-authored result order. Content hashes remain unchanged: tagged position lives
-in occurrence/provenance identity and Fully Touchdown Cable ordering, never in
-an individual Touchdown content hash. Completion timing, Host latency, or
-Scheduler dispatch timing must not reorder the Fully Touchdown Cable.
+This supersedes SCP-0004 and `implementation/RUNTIME_CONTRACT.md` §12 where they
+say the ordering vector contains only untagged child ordinals drawn from
+authored result order. Content hashes remain unchanged: `Input(k)` and tagged
+inner positions live in occurrence/provenance identity and Fully Touchdown Cable
+ordering, never in an individual Touchdown content hash. Completion timing,
+Host latency, or Scheduler dispatch timing must not reorder the Fully Touchdown
+Cable.
 
 This draft does not replace the Fully Touchdown Cable with the user Value
 stream. They remain distinct:
@@ -840,7 +854,14 @@ Minimum conformance coverage includes:
 32. a shared ledger backend preserving distinct immutable deduction namespaces
     for successive segments on the same Cable;
 33. Cable-level buffers and lifecycle state remaining distinct from both
-    segment-private live state and Runtime-shared services.
+    segment-private live state and Runtime-shared services;
+34. successfully admitted inputs receiving consecutive `Input(k)` provenance
+    prefixes while rejected sends consume no ordinal;
+35. duplicate inner occurrence paths in different segments remaining distinct
+    through their `Input(k)` prefix;
+36. the Fully Touchdown Cable concatenating segment-local ordered lists by
+    increasing `Input(k)` without adding that ordinal to any control frame or
+    Touchdown content hash.
 
 ## 14. Remaining drafting questions
 

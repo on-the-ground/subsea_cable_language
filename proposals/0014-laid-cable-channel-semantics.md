@@ -239,6 +239,19 @@ long-lived Cable may therefore use different declaration identities. Cable
 provenance records the pins associated with each admitted segment, and a later
 registry or allowlist change never rewrites an earlier segment's pins.
 
+Neither `lay` nor segment admission pins a codebase revision or resolves the
+laid Root Goal to an artifact. An unqualified laid target remains symbolic
+`Name/inputArity`. When a segment becomes active, its Root occurrence resolves
+that alias only when the occurrence is actually demanded; every descendant
+unqualified occurrence follows the same existing demand-time rule.
+
+Consequently successive segments on one Cable may execute different artifacts,
+and a segment admitted into the input queue may observe an alias revision newer
+than the one current at admission. Alias observations are recorded in that
+segment's immutable deduction provenance. Rebinding never changes an already
+deduced occurrence, but no earlier segment, Cable creation event, or queued
+input freezes an undeduced occurrence for a later segment.
+
 There is no one-shot `evaluate(GoalTarget(goalRef, arguments))` operation and no
 equivalent input-bearing Goal entry under another name. An operator or debugger
 that targets an arbitrary Goal must use the same lifecycle as every other
@@ -703,6 +716,8 @@ In particular:
   `EndOfStream`, and decommissioning;
 - ADR 0008's run-start pinning must move from one input-bearing evaluation
   start to per-send segment admission; `lay` itself performs no such pinning;
+- ADR 0008 must not turn those per-segment declaration pins into a codebase or
+  Root-artifact pin: aliases remain occurrence-local demand-time observations;
 - a Goal-step memo key that includes `GoalNodeId` must observe the
   multiplicity-bearing `StructureHash` defined here;
 - memo and isolation work must not treat a laid Cable's successive input
@@ -792,7 +807,12 @@ Minimum conformance coverage includes:
     before occurrence disclosure or deduction;
 26. pin failure rejecting only that send with `ProfileNegotiationFailed` and
     producing no segment, occurrence, Cable member, or `EndOfResult`;
-27. successive segments on one Cable retaining distinct immutable pin sets.
+27. successive segments on one Cable retaining distinct immutable pin sets;
+28. rebinding the laid Root alias between two sends causing the later segment
+    to select the artifact visible at its own Root-demand time;
+29. a queued later segment observing no alias until it becomes active and its
+    Root occurrence is demanded;
+30. rebinding leaving every already deduced occurrence unchanged.
 
 ## 14. Remaining drafting questions
 

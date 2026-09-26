@@ -2,6 +2,7 @@ import subprocess
 import unittest
 
 from validate_scp_activation import (
+    PROPOSAL_PATH,
     is_core_projection,
     resolve_comparison_base,
     status_of,
@@ -32,6 +33,11 @@ Done.
 
 
 class ActivationValidatorTests(unittest.TestCase):
+    def test_numbered_and_draft_proposal_paths_are_validated(self) -> None:
+        self.assertIsNotNone(PROPOSAL_PATH.fullmatch("proposals/0014-example.md"))
+        self.assertIsNotNone(PROPOSAL_PATH.fullmatch("proposals/draft-example.md"))
+        self.assertIsNone(PROPOSAL_PATH.fullmatch("proposals/README.md"))
+
     def test_complete_activation_document_is_valid(self) -> None:
         self.assertEqual(
             validate_activation_document("proposals/0012-example.md", VALID_DOCUMENT),

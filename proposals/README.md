@@ -5,8 +5,11 @@ syntax, semantics, identity, diagnostics, component boundaries, or portable
 policy contracts.
 
 Use `TEMPLATE.md` and allocate a number during review. Draft filenames may begin
-with `draft-`; proposal history is retained when a proposal is rejected,
-withdrawn, or superseded.
+with `draft-`, but a proposal MUST receive its numeric filename before its
+status may transition to Accepted. Proposal history is retained when a proposal
+is rejected, withdrawn, or superseded. The activation validator recognizes both
+numbered and `draft-` proposal paths so an accidental status transition cannot
+bypass the atomic-activation checks.
 
 Implementation ADRs remain in their external implementation repositories. An SCP
 links those ADRs and extracts the implementation-independent language question.
@@ -50,4 +53,5 @@ parts into follow-up proposals.
 
 ## Proposals under discussion
 
-None. Every submitted proposal was decided on 2026-09-20.
+- [SCP-0014 — Laid Cable channel semantics and Goal output multiplicity](0014-laid-cable-channel-semantics.md)
+  — Draft; owner-decided direction with remaining activation details

@@ -81,6 +81,7 @@ nav:
           - "SCP-0009: Structure-valued lookup maps": proposals/0009-structure-valued-lookup-maps.md
           - "SCP-0010: NoOutput errors": proposals/0010-dynamic-nooutput-errors.md
           - "SCP-0011: Policy addressee and Host channel": proposals/0011-policy-addressee-and-host-channel.md
+          - "SCP-0014: Laid Cable channel semantics": proposals/0014-laid-cable-channel-semantics.md
 
 plugins:
   - search

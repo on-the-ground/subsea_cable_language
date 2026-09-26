@@ -552,6 +552,32 @@ predecessor completes and resets the composite's effective multiplicity to its
 own. For example, `[A/N, B[y]/1]` has effective multiplicity `/1`, while A's
 Values are discarded as specified in Section 8.
 
+Every resolving-map branch must have effective multiplicity exactly `/1`.
+After every branch supplies its one Value, the resolving map publishes one
+immutable map-shaped Value and therefore has effective multiplicity `/1`. A
+Goal-arrow stage whose direct body is that resolving map likewise has effective
+multiplicity `/1`.
+
+A `/0` or `/N` branch is invalid even if one particular `/N` invocation would
+happen to emit exactly one Value. The Runtime does not choose a first Value,
+collect several Values, omit a key, or wait to count actual Host emissions. It
+reports the stable diagnostic:
+
+```text
+OutputMultiplicityMismatch(
+  expected = /1,
+  actual = /0 | /N,
+  context = resolving-map-branch
+)
+```
+
+When the mismatch is provable from already concrete structure, it is a
+validation-phase diagnostic. When an unqualified branch's effective
+multiplicity becomes known only after demand-time alias resolution, it is a
+deduction-phase diagnostic raised before Host dispatch for that branch. This is
+a declared-structure incompatibility, not `NoOutputNotRoutable` and not a Host
+multiplicity protocol violation.
+
 ## 7. Host result obligations
 
 ### 7.1 `/0`
@@ -844,7 +870,10 @@ Under this proposal, declared `/0` and empty `/N` produce successful empty
 segments, while missing output from `/1` is a multiplicity protocol violation.
 SCP-0010 remains in force for a legacy/internal `NoOutput` used where a scalar
 value is explicitly required inside a resolving-map binding or function-leaf
-body; those are not empty channel segments.
+body and no declared branch-multiplicity mismatch has already rejected the
+structure; those are not empty channel segments. A declared resolving-map
+branch whose effective multiplicity is `/0` or `/N` instead reports
+`OutputMultiplicityMismatch` before Host dispatch.
 
 SCP-0014 also supersedes the current README rules that reject either a bare
 unary Goal or a Goal-arrow binding after an unkeyed parallel expression because
@@ -852,6 +881,13 @@ that parallel expression has no single routable result. An unkeyed parallel
 composite now has effective multiplicity `/0`; either following form is invoked
 zero times, no Goal-arrow parameter is bound, and the composite serial
 expression completes successfully with effective multiplicity `/0`.
+
+SCP-0014 narrows the current README rule that every resolving-map branch must
+export a value: every branch must now declare effective multiplicity exactly
+`/1`, the resolving map exports one map Value, and `/0` or `/N` branches report
+`OutputMultiplicityMismatch`. This replaces any reading that would admit `/N`
+and select or collect its runtime Values, or treat a declared `/0` branch as an
+ordinary successful empty key.
 
 SCP-0014 supersedes SCP-0004's one-voyage/one-Root-outcome envelope for a laid
 Cable. The replacement is one Fully Touchdown Cable plus ordered
@@ -935,7 +971,8 @@ An eventual activation must synchronize at least:
 - `AGENTS.md` and `FOR_AGENTS.md`: agent-facing precedence, entry, routing,
   signature, terminal, and Host/Vessel boundaries;
 - `README.md`: laid Cable model, signature notation, routing, terminals, and
-  removal/migration of the input-bearing Root form;
+  removal/migration of the input-bearing Root form, including replacement of
+  the resolving-map "exports a value" rule by the exact `/1` branch rule;
 - `METAPHORS.md`: live Cable ends, per-input result segments, decommissioning,
   and whole-Cable termination;
 - grammar projections: `lay`, send/connect syntax, `decommision`, signature
@@ -948,7 +985,8 @@ An eventual activation must synchronize at least:
   ordered per-input segment outcomes;
 - SCP-0010 projection: remove `NoOutputNotRoutable` from routed channel absence,
   retain it only for explicitly scalar resolving-map/function-leaf contexts,
-  and classify missing `/1` output as a multiplicity protocol violation;
+  classify missing `/1` output as a multiplicity protocol violation, and add
+  dual-phase `OutputMultiplicityMismatch` for resolving-map branch signatures;
 - compatibility and migration guidance for existing `.vyg` programs;
 - `conformance/DEDUCTION.md`, `conformance/cases.tsv`, and concrete fixtures;
 - `implementation/CAROUSEL_ENGINE_PLAN.md` and
@@ -1048,7 +1086,16 @@ Minimum conformance coverage includes:
 49. the final Cable result containing one outcome entry per admitted `Input(k)`
     in ordinal order, including successful, failed, and cancelled segments;
 50. `EndOfStream` carrying no aggregate outcome and being emitted only after
-    every accepted segment, including those following a failure, has drained.
+    every accepted segment, including those following a failure, has drained;
+51. a resolving map with only `/1` branches producing one immutable map Value,
+    with both the map and its containing Goal-arrow stage deriving `/1`;
+52. concrete `/0` and `/N` resolving-map branches reporting validation-phase
+    `OutputMultiplicityMismatch` before Host dispatch;
+53. an unqualified resolving-map branch that resolves to `/0` or `/N` reporting
+    deduction-phase `OutputMultiplicityMismatch` before Host dispatch;
+54. a declared `/N` resolving-map branch remaining invalid even when a
+    particular invocation would emit exactly one Value, with no implicit first,
+    collection, or missing-key behavior.
 
 ## 14. Remaining drafting questions
 

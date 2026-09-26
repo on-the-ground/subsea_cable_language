@@ -315,6 +315,12 @@ field.
 `EndOfResult` marks completion of the currently active input's result segment.
 It is a control frame, not a Subsea value, and carries no scope or message ID.
 
+A successful segment may contain no Value. In that case its first result frame
+is `EndOfResult(Succeeded)`. This is an ordinary empty result segment, not the
+legacy internal `NoOutput` value/state and not a routing failure. A downstream
+Goal connected to the edge is invoked zero times for that segment and the
+terminal continues through the Cable.
+
 Conceptually it retains the existing outcome distinction:
 
 ```text
@@ -394,6 +400,10 @@ multiplicity differs.
 On success the Host produces no Value. When Host work completes, the Vessel
 emits `EndOfResult(Succeeded)`.
 
+If a `/0` Goal has a downstream Value connection, that downstream Goal is
+invoked zero times and the successful empty segment propagates normally. The
+absence of a Value does not raise `NoOutputNotRoutable`.
+
 A successful `/0` Host operation that attempts to publish a Value violates its
 declared signature.
 
@@ -407,12 +417,17 @@ cancellation outcome; it does not fabricate a sentinel Subsea value. The Vessel
 then emits the corresponding non-success `EndOfResult`.
 
 A successful `/1` operation that produces zero Values or more than one Value is
-a Host protocol violation.
+a Host multiplicity protocol violation. Zero Values from `/1` is not reclassified
+as `NoOutputNotRoutable`.
 
 ### 7.3 `/N`
 
 On success the Host may produce zero or more Values and must explicitly signal
 exactly one `EndOfResult` for the current input.
+
+Zero Values followed by `EndOfResult(Succeeded)` is a valid empty `/N` result.
+Every connected downstream Goal is invoked zero times, and the terminal
+propagates without `NoOutputNotRoutable`.
 
 For one `/N` invocation, the Vessel assigns each successfully accepted Value a
 zero-based monotonically increasing `emissionOrdinal` in FIFO send order. For
@@ -607,6 +622,14 @@ This design changes foundational existing contracts:
 Activation therefore requires an explicit superseding audit rather than silent
 reinterpretation of accepted SCPs or canonical prose.
 
+SCP-0014 supersedes SCP-0010 specifically where SCP-0010 treats absence of a
+Goal result on a routed Goal-to-Goal or Cable edge as `NoOutputNotRoutable`.
+Under this proposal, declared `/0` and empty `/N` produce successful empty
+segments, while missing output from `/1` is a multiplicity protocol violation.
+SCP-0010 remains in force for a legacy/internal `NoOutput` used where a scalar
+value is explicitly required inside a resolving-map binding or function-leaf
+body; those are not empty channel segments.
+
 ### 12.1 Conflict with the planned evaluation surface and memo work
 
 The final designs recorded in language issues
@@ -655,8 +678,9 @@ An eventual activation must synchronize at least:
 - Scheduler contract: admission and completion of per-Value downstream work;
 - SCP-0004 projection: streaming-triggered evaluation identity without timing-
   based Cable reordering;
-- SCP-0010 projection: the relationship between declared `/0` or empty `/N`
-  output and `NoOutputNotRoutable`;
+- SCP-0010 projection: remove `NoOutputNotRoutable` from routed channel absence,
+  retain it only for explicitly scalar resolving-map/function-leaf contexts,
+  and classify missing `/1` output as a multiplicity protocol violation;
 - compatibility and migration guidance for existing `.vyg` programs;
 - `conformance/DEDUCTION.md`, `conformance/cases.tsv`, and concrete fixtures;
 - `implementation/CAROUSEL_ENGINE_PLAN.md` and
@@ -690,7 +714,11 @@ Minimum conformance coverage includes:
 15. queued later input receiving no disclosure, deduction, alias observation,
     prefetch, or Host dispatch before the active segment drains;
 16. `[A, B[y]]` preserving A's evaluation, effects, Touchdowns, outcome, and
-    provenance while discarding only its routed Values.
+    provenance while discarding only its routed Values;
+17. `/0` and empty `/N` invoking a downstream Goal zero times and propagating
+    `EndOfResult(Succeeded)` without `NoOutputNotRoutable`;
+18. missing `/1` output reported as a multiplicity protocol violation rather
+    than `NoOutputNotRoutable`.
 
 ## 14. Remaining drafting questions
 
@@ -702,16 +730,14 @@ These questions affect projection details but do not reopen the decisions above:
    outward Vessel operations, or a shared surface with identical semantics;
 4. whether one-shot `evaluate(target, arguments)` survives as explicit
    `lay + send + decommision` compatibility sugar;
-5. how declared `/0` and an empty `/N` supersede or coexist with SCP-0010's
-   `NoOutputNotRoutable` in a downstream Value connection;
-6. exact Host diagnostic names for multiplicity and terminal violations;
-7. retry and cancellation after partial `/N` publication;
-8. how parallel branches aggregate one downstream `EndOfResult` outcome;
-9. whether a channel-blocked send is pre-attempt ineligibility or an active
+5. exact Host diagnostic names for multiplicity and terminal violations;
+6. retry and cancellation after partial `/N` publication;
+7. how parallel branches aggregate one downstream `EndOfResult` outcome;
+8. whether a channel-blocked send is pre-attempt ineligibility or an active
    attempt for Scheduler accounting, and how channel capacity composes with the
    SCP-0001 Touchdown prefetch window;
-10. concrete buffer/profile declaration and observability;
-11. the precise accepted-input boundary during a race with
+9. concrete buffer/profile declaration and observability;
+10. the precise accepted-input boundary during a race with
    `decommision(cable)`.
 
 ## Owner decision record

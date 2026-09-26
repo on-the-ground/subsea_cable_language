@@ -583,6 +583,31 @@ explicitly:
 [A, [x] -> B[y, x]]
 ```
 
+There is no stream-to-scalar coercion. If A is `/N`, each Value frame binds `x`
+independently and creates one complete downstream evaluation:
+
+```text
+A/N emits 10, 20, 30
+
+[A, [x] -> B[y, x]]
+  -> B[y, 10]
+  -> B[y, 20]
+  -> B[y, 30]
+```
+
+The same per-Value rule applies when the complete downstream structure contains
+a resolving-map selector or a function-leaf argument: each invocation sees one
+ordinary Value, not the `/N` stream as a scalar object. An empty `/N` creates no
+such invocation. The Runtime never chooses the first Value, implicitly collects
+Values, or raises a multiplicity error merely because more than one Value was
+emitted.
+
+A source expression that tries to obtain a scalar by nesting a Goal or Anchor
+call inside an argument, selector, lookup key, operator operand, or ordinary
+value container remains `InvalidStructuralContext`. Collection, first-value
+selection, reduction, and similar behavior require an explicit Goal/Host
+primitive; they are not implicit routing behavior.
+
 The concrete call-suffix grammar shown in these compatibility examples is
 subject to the grammar migration required by the laid-Cable model. The semantic
 rules—full tuple binding and the sole bare-unary shorthand—are decided.
@@ -861,7 +886,14 @@ Minimum conformance coverage includes:
     through their `Input(k)` prefix;
 36. the Fully Touchdown Cable concatenating segment-local ordered lists by
     increasing `Input(k)` without adding that ordinal to any control frame or
-    Touchdown content hash.
+    Touchdown content hash;
+37. a three-Value `/N` source creating three independent complete downstream
+    bindings/evaluations in FIFO order;
+38. an empty `/N` creating no downstream scalar binding or invocation;
+39. no implicit first-value selection, collection, or multiplicity failure when
+    routing `/N` Values one frame at a time;
+40. nested Goal/Anchor use in a scalar position remaining
+    `InvalidStructuralContext` rather than becoming a stream conversion.
 
 ## 14. Remaining drafting questions
 

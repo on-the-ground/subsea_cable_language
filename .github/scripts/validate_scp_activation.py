@@ -16,7 +16,7 @@ import subprocess
 import sys
 
 
-PROPOSAL_PATH = re.compile(r"^proposals/\d{4}-[^/]+\.md$")
+PROPOSAL_PATH = re.compile(r"^proposals/(?:\d{4}|draft)-[^/]+\.md$")
 STATUS = re.compile(r"^- Status:[ \t]*(.*?)[ \t]*\r?$", re.MULTILINE)
 # Normative projections. implementation/RUNTIME_CONTRACT.md belongs here because
 # it states its own MUST/MUST NOT conformance requirements: a decision that only

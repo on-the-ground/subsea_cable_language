@@ -1,4 +1,4 @@
-# Draft — Laid Cable Channel Semantics and Goal Output Multiplicity
+# SCP-0014 — Laid Cable Channel Semantics and Goal Output Multiplicity
 
 - Status: Draft
 - Author(s): on-the-ground owner with Codex
@@ -32,6 +32,13 @@ work, but the next input does not begin until the current segment's
 `EndOfResult` requires no portable identifier. `EndOfStream` is distinct: it is
 produced only after `decommision(cable)` and complete drainage, and it causes
 the connected pipeline to stand down.
+
+When a `/N` Goal emits several Values, the Value payload and its FIFO emission
+position are different things. The k-th Value carries Runtime/provenance
+metadata `emissionOrdinal = k`; that metadata is not a Subsea value. Any
+downstream occurrence caused by it receives a tagged `Emission(k)` position
+segment, distinct from the tagged `Authored(k)` segments assigned by authored
+reduction-result order.
 
 Goal signatures gain an output multiplicity of exactly `0`, `1`, or `N`.
 Subsea declares and connects these signatures; the Host implementation produces
@@ -74,6 +81,12 @@ superseding every affected canonical, grammar, compatibility, migration, and
 conformance projection. After that merge, the conflicting earlier rules have
 no residual authority over the activated scope.
 
+This precedence governs review and activation work. An implementation claiming
+conformance to the current unactivated `main` must still obey `AGENTS.md`: if an
+Accepted SCP and a canonical projection disagree, it stops the affected path
+and reports the repository defect. It must not implement this Draft early or
+silently choose between conflicting contracts.
+
 ## Decision digest
 
 ```text
@@ -88,6 +101,8 @@ outputMultiplicity                   0 | 1 | N
 
 per-input terminal                   EndOfResult(outcome), with no ID
 whole-Cable terminal                 EndOfStream
+authored position segment            Authored(k)
+/N emission position segment         Emission(k), k is zero-based FIFO order
 ```
 
 The following explored models are **not** part of this design:
@@ -226,6 +241,8 @@ Subsea value or required source keyword.
 The portable behavioral contract is:
 
 - FIFO transmission for Values produced on the active connection;
+- a `/N` Value's zero-based FIFO position is control/provenance metadata, not
+  part of its payload and not visible as a Voyage value;
 - receiving from an empty live edge waits;
 - sending to a full buffer waits;
 - capacity `0` has rendezvous behavior;
@@ -236,6 +253,12 @@ The portable behavioral contract is:
 
 The implementation may use Go channels, queues, continuations, callbacks, or
 another mechanism, but observable behavior must satisfy the portable contract.
+
+Channel capacity does not replace SCP-0001's Touchdown prefetch window. The
+activation work must define how the two limits compose and whether waiting on a
+full channel is Scheduler ineligibility or an already-active attempt. Until
+then, implementations must not silently derive attempt accounting or policy
+semantics from a chosen queue implementation.
 
 ## 4. One active input segment per Cable
 
@@ -259,6 +282,12 @@ locally processed the first input. It begins only after the first input's
 `EndOfResult` has propagated through the complete connected Cable and all work
 caused by that input has drained.
 
+This prohibition includes structural work. While an earlier input segment is
+active, the Vessel may queue a later accepted input but must not disclose,
+deduce, prefetch across, resolve aliases for, or dispatch Host work for that
+later input. SCP-0001 Touchdown prefetch remains available inside the active
+segment only.
+
 Within one active segment:
 
 - Values may flow downstream immediately;
@@ -266,6 +295,13 @@ Within one active segment:
 - each Value connected to a Goal or Anchor may trigger downstream work;
 - the downstream edge emits its `EndOfResult` only after all work caused by the
   current segment has terminated.
+
+Parallel branches do not expose separate branch-local `EndOfResult` frames as
+separate input-segment terminals. The composition waits for every branch to
+reach a terminal state and emits exactly one downstream `EndOfResult`. The rule
+that combines successful, failed, and cancelled branch outcomes into that one
+outcome remains a drafting question; implementations must not infer it from
+arrival order.
 
 Because separate input segments never overlap, the portable `EndOfResult`
 frame needs no ID. The Vessel may retain internal correlation and provenance;
@@ -340,6 +376,17 @@ the one output multiplicity contract that applies.
 A change in output multiplicity changes structural identity and requires the
 same compatibility discipline as another structural signature change.
 
+Consequently multiplicity participates in `GoalNodeId` through the resolved
+artifact's `StructureHash`:
+
+```text
+GoalNodeId = StructureHash(including outputMultiplicity) + inputArity
+```
+
+It is not appended as a second lookup key or overload component. Goal-step memo
+keys that contain `GoalNodeId` therefore distinguish artifacts whose output
+multiplicity differs.
+
 ## 7. Host result obligations
 
 ### 7.1 `/0`
@@ -366,6 +413,13 @@ a Host protocol violation.
 
 On success the Host may produce zero or more Values and must explicitly signal
 exactly one `EndOfResult` for the current input.
+
+For one `/N` invocation, the Vessel assigns each successfully accepted Value a
+zero-based monotonically increasing `emissionOrdinal` in FIFO send order. For
+example, a payload `17` with `emissionOrdinal = 3` is the fourth Value; the
+number `3` is not inserted into the payload stream. Every downstream occurrence
+caused by that Value carries an `Emission(3)` position segment before the
+downstream occurrence's authored position segments.
 
 - a Value after `EndOfResult` is a Host protocol violation;
 - a second `EndOfResult` is a Host protocol violation;
@@ -413,6 +467,11 @@ Written arguments are complete and receive no implicit upstream insertion:
 
 selects a complete `B/1` input and discards A's Values. It does not partially
 apply `B/2` and wait for A to fill a missing argument.
+
+"Discards A's Values" does not erase A from the structure. A is still demanded
+and evaluated according to the serial dependency, its effects still happen,
+its Touchdowns remain Fully Touchdown Cable members, and its outcome and
+provenance remain observable. Only value binding from A into B is absent.
 
 To combine a lexical value with the routed Value, the author writes the binding
 explicitly:
@@ -479,10 +538,28 @@ Separate top-level input segments do not execute concurrently in one laid
 Cable. Their grounded work therefore remains ordered by input admission and
 `EndOfResult` propagation.
 
-Within one input segment, channel FIFO and existing structural child ordinals
-provide causal ordering for dynamically triggered downstream evaluations.
-Completion timing, Host latency, or Scheduler dispatch timing must not reorder
-the Fully Touchdown Cable, consistent with the existing SCP-0004 invariant.
+Within one input segment, occurrence position is a lexicographic vector of
+tagged non-negative segments:
+
+```text
+Authored(k)   authored reduction-result position
+Emission(k)  zero-based FIFO position of a Value from one /N invocation
+```
+
+An emitted Value's downstream path contains `Emission(k)` before the authored
+segments of the connected downstream structure. Segment kind is part of the
+canonical position encoding, so an output payload, an emission position, and an
+authored child position cannot be confused. At a common parent, equal segment
+kinds compare by numeric `k`; mixed kinds compare `Authored` before `Emission`.
+The concrete encoding is profile-versioned but must preserve those tags and
+that order. A proper-prefix position precedes its descendants.
+
+This supersedes SCP-0004 and `implementation/RUNTIME_CONTRACT.md` §12 where
+they say the ordering vector contains only untagged child ordinals drawn from
+authored result order. Content hashes remain unchanged: tagged position lives
+in occurrence/provenance identity and Fully Touchdown Cable ordering, never in
+an individual Touchdown content hash. Completion timing, Host latency, or
+Scheduler dispatch timing must not reorder the Fully Touchdown Cable.
 
 This draft does not replace the Fully Touchdown Cable with the user Value
 stream. They remain distinct:
@@ -530,10 +607,43 @@ This design changes foundational existing contracts:
 Activation therefore requires an explicit superseding audit rather than silent
 reinterpretation of accepted SCPs or canonical prose.
 
+### 12.1 Conflict with the planned evaluation surface and memo work
+
+The final designs recorded in language issues
+[#11](https://github.com/on-the-ground/subsea_cable_language/issues/11) and
+[#12](https://github.com/on-the-ground/subsea_cable_language/issues/12), the
+tracking order in
+[#13](https://github.com/on-the-ground/subsea_cable_language/issues/13), and
+Vessel ADRs 0008 and 0009 predate this direction and cannot proceed unchanged.
+In particular:
+
+- `evaluate(GoalTarget(goalRef, canonicalArguments))` treats arguments as part
+  of an input-bearing entry operation, while this proposal separates laying a
+  target from sending one or more inputs;
+- the planned `EvaluationResult` and result-retention surface assumes one Root
+  result and must represent Value sequences, per-input `EndOfResult`, final
+  `EndOfStream`, and decommissioning;
+- a Goal-step memo key that includes `GoalNodeId` must observe the
+  multiplicity-bearing `StructureHash` defined here;
+- memo and isolation work must not treat a laid Cable's successive input
+  segments as one canonical argument tuple or share live Values between them.
+
+The implementation work tracked by #13 must freeze every path that depends on
+those assumptions until this proposal decides their replacement or explicit
+compatibility projection. A conflict with the already written issues or ADRs is
+not authority to preserve their older entry/result model.
+
+One possible compatibility projection is to define one-shot `evaluate(target,
+arguments)` as `lay(target)` plus one send plus implicit decommissioning. That
+projection is **not decided by this Draft** and must not be implemented by
+inference.
+
 ## 13. Required canonical and conformance projections
 
 An eventual activation must synchronize at least:
 
+- `AGENTS.md` and `FOR_AGENTS.md`: agent-facing precedence, entry, routing,
+  signature, terminal, and Host/Vessel boundaries;
 - `README.md`: laid Cable model, signature notation, routing, terminals, and
   removal/migration of the input-bearing Root form;
 - `METAPHORS.md`: live Cable ends, per-input result segments, decommissioning,
@@ -545,8 +655,17 @@ An eventual activation must synchronize at least:
 - Scheduler contract: admission and completion of per-Value downstream work;
 - SCP-0004 projection: streaming-triggered evaluation identity without timing-
   based Cable reordering;
+- SCP-0010 projection: the relationship between declared `/0` or empty `/N`
+  output and `NoOutputNotRoutable`;
 - compatibility and migration guidance for existing `.vyg` programs;
-- agent guidance and examples.
+- `conformance/DEDUCTION.md`, `conformance/cases.tsv`, and concrete fixtures;
+- `implementation/CAROUSEL_ENGINE_PLAN.md` and
+  `implementation/RUNTIME_ORCHESTRATION_PLAN.md`;
+- `ECOSYSTEM.md` supported/unsupported capability tables;
+- Vessel ADRs 0007, 0008, and 0009 and the work schedule tracked by language
+  issue #13;
+- agent guidance and examples;
+- `proposals/README.md` and the documentation index.
 
 Minimum conformance coverage includes:
 
@@ -565,7 +684,13 @@ Minimum conformance coverage includes:
 11. no partial application and only the bare-unary routing shorthand;
 12. output multiplicity participating in structural identity but not alias
     overload selection;
-13. Fully Touchdown Cable ordering unaffected by Host completion timing.
+13. `/N` output payload and `Emission(k)` metadata remaining distinct;
+14. tagged `Authored(k)` and `Emission(k)` positions producing stable Fully
+    Touchdown Cable ordering independent of Host completion timing;
+15. queued later input receiving no disclosure, deduction, alias observation,
+    prefetch, or Host dispatch before the active segment drains;
+16. `[A, B[y]]` preserving A's evaluation, effects, Touchdowns, outcome, and
+    provenance while discarding only its routed Values.
 
 ## 14. Remaining drafting questions
 
@@ -575,10 +700,18 @@ These questions affect projection details but do not reopen the decisions above:
 2. exact grammar migration from current `Goal[...]` and `Goal(...)` forms;
 3. whether `lay`, send/connect, and `decommision` are portable Voyage syntax,
    outward Vessel operations, or a shared surface with identical semantics;
-4. exact Host diagnostic names for multiplicity and terminal violations;
-5. retry and cancellation after partial `/N` publication;
-6. concrete buffer/profile declaration and observability;
-7. the precise accepted-input boundary during a race with
+4. whether one-shot `evaluate(target, arguments)` survives as explicit
+   `lay + send + decommision` compatibility sugar;
+5. how declared `/0` and an empty `/N` supersede or coexist with SCP-0010's
+   `NoOutputNotRoutable` in a downstream Value connection;
+6. exact Host diagnostic names for multiplicity and terminal violations;
+7. retry and cancellation after partial `/N` publication;
+8. how parallel branches aggregate one downstream `EndOfResult` outcome;
+9. whether a channel-blocked send is pre-attempt ineligibility or an active
+   attempt for Scheduler accounting, and how channel capacity composes with the
+   SCP-0001 Touchdown prefetch window;
+10. concrete buffer/profile declaration and observability;
+11. the precise accepted-input boundary during a race with
    `decommision(cable)`.
 
 ## Owner decision record

@@ -374,6 +374,25 @@ frame needs no ID. The Vessel may retain internal correlation and provenance;
 those implementation records do not become a `resultScopeId` or portable frame
 field.
 
+Runtime state has three isolation layers:
+
+| Layer | State |
+|---|---|
+| input segment | declaration pins, occurrence/deduction namespace, attempts, Outcome & Value Store, routed Values, and one `EndOfResult` |
+| laid Cable | input queue, channel buffers, channel-capacity selection, lifecycle/decommission state, and aggregation of immutable segment provenance into the final Cable result |
+| shared Runtime | Codebase/alias index, append-only ledger backend and indexes, and an activated Goal-step memo or separately authorized Outcome Journal |
+
+The Outcome & Value Store is always segment-private. An attempt outcome,
+satisfied output, or routed Value from one segment must never satisfy a value
+barrier, binding, or occurrence in another segment. A shared ledger backend does
+not merge namespaces: every record remains owned by its segment, and reuse may
+only refer to an earlier immutable record through the separately activated memo
+contract.
+
+This isolation does not create a portable `ResultScope` object. Implementations
+may use an internal segment key to enforce storage and provenance ownership, but
+it is not attached to `Value`, `EndOfResult`, or `EndOfStream` frames.
+
 ## 5. Terminal protocol
 
 ### 5.1 `EndOfResult`
@@ -721,7 +740,10 @@ In particular:
 - a Goal-step memo key that includes `GoalNodeId` must observe the
   multiplicity-bearing `StructureHash` defined here;
 - memo and isolation work must not treat a laid Cable's successive input
-  segments as one canonical argument tuple or share live Values between them.
+  segments as one canonical argument tuple or share live Values between them;
+- ADR 0008's former two-layer evaluation/Runtime table must become the
+  segment/Cable/Runtime table defined here, with Outcome & Value Store and
+  deduction namespaces private to one segment.
 
 The implementation work tracked by #13 must freeze every path that depends on
 those assumptions until this proposal decides their replacement or explicit
@@ -759,7 +781,7 @@ An eventual activation must synchronize at least:
   `implementation/RUNTIME_ORCHESTRATION_PLAN.md`;
 - `ECOSYSTEM.md` supported/unsupported capability tables;
 - Vessel ADRs 0007, 0008, and 0009 and the work schedule tracked by language
-  issue #13;
+  issue #13, including ADR 0008's three-layer isolation table;
 - agent guidance and examples;
 - `proposals/README.md` and the documentation index.
 
@@ -812,7 +834,13 @@ Minimum conformance coverage includes:
     to select the artifact visible at its own Root-demand time;
 29. a queued later segment observing no alias until it becomes active and its
     Root occurrence is demanded;
-30. rebinding leaving every already deduced occurrence unchanged.
+30. rebinding leaving every already deduced occurrence unchanged;
+31. one segment's routed Values and attempt outcomes never satisfying another
+    segment's binding, value barrier, or occurrence;
+32. a shared ledger backend preserving distinct immutable deduction namespaces
+    for successive segments on the same Cable;
+33. Cable-level buffers and lifecycle state remaining distinct from both
+    segment-private live state and Runtime-shared services.
 
 ## 14. Remaining drafting questions
 

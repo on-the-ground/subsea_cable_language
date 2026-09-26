@@ -214,6 +214,31 @@ A laid Cable may accept multiple inputs over its lifetime:
 The exact placement of `lay` in portable source syntax versus the outward
 Vessel API remains a grammar-surface task. Its lifecycle meaning is fixed here.
 
+`lay` creates the live Cable but does not start an evaluation segment and does
+not pin the three run-start declarations. Each attempted input send performs
+segment admission in this order:
+
+```text
+input send
+  -> pin Scheduler registry identity
+  -> pin Host capability snapshot/profile identity
+  -> pin forwarding allowlist revision
+  -> admit and create the input segment
+  -> later disclose/deduce work for that segment
+```
+
+If any declaration cannot be pinned, the send returns
+`ProfileNegotiationFailed`. The input is not admitted, no segment or occurrence
+is created, and no `EndOfResult` is emitted for it. A successfully admitted
+later segment may wait behind the active segment, but its three pins are already
+immutable while it waits; no alias resolution, deduction, Touchdown, or Host
+work for it may begin early.
+
+Pins are per input segment, not per laid Cable. Successive segments on the same
+long-lived Cable may therefore use different declaration identities. Cable
+provenance records the pins associated with each admitted segment, and a later
+registry or allowlist change never rewrites an earlier segment's pins.
+
 There is no one-shot `evaluate(GoalTarget(goalRef, arguments))` operation and no
 equivalent input-bearing Goal entry under another name. An operator or debugger
 that targets an arbitrary Goal must use the same lifecycle as every other
@@ -676,6 +701,8 @@ In particular:
 - the planned `EvaluationResult` and result-retention surface assumes one Root
   result and must represent Value sequences, per-input `EndOfResult`, final
   `EndOfStream`, and decommissioning;
+- ADR 0008's run-start pinning must move from one input-bearing evaluation
+  start to per-send segment admission; `lay` itself performs no such pinning;
 - a Goal-step memo key that includes `GoalNodeId` must observe the
   multiplicity-bearing `StructureHash` defined here;
 - memo and isolation work must not treat a laid Cable's successive input
@@ -759,7 +786,13 @@ Minimum conformance coverage includes:
 22. a full-channel send remaining one active attempt rather than reverting to
     undispatched Scheduler ineligibility;
 23. Touchdown prefetch and channel capacity independently enforcing their own
-    structural and Value-flow bounds.
+    structural and Value-flow bounds;
+24. `lay` creating no evaluation segment and pinning no run-start declaration;
+25. every accepted input segment pinning all three declaration identities
+    before occurrence disclosure or deduction;
+26. pin failure rejecting only that send with `ProfileNegotiationFailed` and
+    producing no segment, occurrence, Cable member, or `EndOfResult`;
+27. successive segments on one Cable retaining distinct immutable pin sets.
 
 ## 14. Remaining drafting questions
 

@@ -240,6 +240,21 @@ long-lived Cable may therefore use different declaration identities. Cable
 provenance records the pins associated with each admitted segment, and a later
 registry or allowlist change never rewrites an earlier segment's pins.
 
+A successful pin is a lifetime guarantee, not merely an identity copied into
+provenance. Admission acquires an immutable reference or equivalent lease for
+each pinned declaration snapshot, and the Runtime must keep those snapshots
+resolvable until that segment's `EndOfResult` has propagated. A queued segment
+therefore cannot lose its pinned Scheduler registry, Host capability profile,
+or forwarding allowlist while waiting for activation. Activation performs no
+repinning, renegotiation, or substitution with a newer declaration.
+
+Evicting or invalidating a snapshot while an admitted segment holds such a pin
+is a Runtime contract violation, not an ordinary segment outcome. This lifetime
+rule preserves the declaration contract, not the operational availability of a
+Host endpoint: an endpoint outage or invocation failure is handled by the
+ordinary Scheduler/Host attempt protocol while retaining the same pinned
+capability snapshot.
+
 Neither `lay` nor segment admission pins a codebase revision or resolves the
 laid Root Goal to an artifact. An unqualified laid target remains symbolic
 `Name/inputArity`. When a segment becomes active, its Root occurrence resolves
@@ -818,6 +833,9 @@ In particular:
   `EndOfStream`, and decommissioning;
 - ADR 0008's run-start pinning must move from one input-bearing evaluation
   start to per-send segment admission; `lay` itself performs no such pinning;
+- each successful ADR 0008 pin must retain its immutable declaration snapshot
+  through that segment's terminal propagation; queued-segment activation must
+  not repin, renegotiate, or substitute declarations;
 - ADR 0008 must not turn those per-segment declaration pins into a codebase or
   Root-artifact pin: aliases remain occurrence-local demand-time observations;
 - a Goal-step memo key that includes `GoalNodeId` must observe the
@@ -937,36 +955,42 @@ Minimum conformance coverage includes:
 26. pin failure rejecting only that send with `ProfileNegotiationFailed` and
     producing no segment, occurrence, Cable member, or `EndOfResult`;
 27. successive segments on one Cable retaining distinct immutable pin sets;
-28. rebinding the laid Root alias between two sends causing the later segment
+28. an admitted queued segment retaining resolvable declaration snapshots until
+    its terminal propagates, without activation-time repinning, renegotiation,
+    or declaration substitution;
+29. attempted eviction of an in-use pinned snapshot being detected as a Runtime
+    contract violation, while Host endpoint unavailability remains an ordinary
+    attempt failure under the retained pin;
+30. rebinding the laid Root alias between two sends causing the later segment
     to select the artifact visible at its own Root-demand time;
-29. a queued later segment observing no alias until it becomes active and its
+31. a queued later segment observing no alias until it becomes active and its
     Root occurrence is demanded;
-30. rebinding leaving every already deduced occurrence unchanged;
-31. one segment's routed Values and attempt outcomes never satisfying another
+32. rebinding leaving every already deduced occurrence unchanged;
+33. one segment's routed Values and attempt outcomes never satisfying another
     segment's binding, value barrier, or occurrence;
-32. a shared ledger backend preserving distinct immutable deduction namespaces
+34. a shared ledger backend preserving distinct immutable deduction namespaces
     for successive segments on the same Cable;
-33. Cable-level buffers and lifecycle state remaining distinct from both
+35. Cable-level buffers and lifecycle state remaining distinct from both
     segment-private live state and Runtime-shared services;
-34. successfully admitted inputs receiving consecutive `Input(k)` provenance
+36. successfully admitted inputs receiving consecutive `Input(k)` provenance
     prefixes while rejected sends consume no ordinal;
-35. duplicate inner occurrence paths in different segments remaining distinct
+37. duplicate inner occurrence paths in different segments remaining distinct
     through their `Input(k)` prefix;
-36. the Fully Touchdown Cable concatenating segment-local ordered lists by
+38. the Fully Touchdown Cable concatenating segment-local ordered lists by
     increasing `Input(k)` without adding that ordinal to any control frame or
     Touchdown content hash;
-37. a three-Value `/N` source creating three independent complete downstream
+39. a three-Value `/N` source creating three independent complete downstream
     bindings/evaluations in FIFO order;
-38. an empty `/N` creating no downstream scalar binding or invocation;
-39. no implicit first-value selection, collection, or multiplicity failure when
+40. an empty `/N` creating no downstream scalar binding or invocation;
+41. no implicit first-value selection, collection, or multiplicity failure when
     routing `/N` Values one frame at a time;
-40. nested Goal/Anchor use in a scalar position remaining
+42. nested Goal/Anchor use in a scalar position remaining
     `InvalidStructuralContext` rather than becoming a stream conversion;
-41. an unkeyed parallel composite deriving effective multiplicity `/0`,
+43. an unkeyed parallel composite deriving effective multiplicity `/0`,
     publishing no branch Value, and emitting one composite terminal;
-42. all nine cells of the routed serial multiplicity composition table;
-43. `[A/N, B/1]` deriving `/N` and invoking B once for every A Value;
-44. `[A/N, B[y]/1]` discarding A's Values, invoking B once with its complete
+44. all nine cells of the routed serial multiplicity composition table;
+45. `[A/N, B/1]` deriving `/N` and invoking B once for every A Value;
+46. `[A/N, B[y]/1]` discarding A's Values, invoking B once with its complete
     explicit tuple, and deriving `/1`.
 
 ## 14. Remaining drafting questions

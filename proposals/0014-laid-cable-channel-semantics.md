@@ -784,10 +784,34 @@ In particular:
   segment/Cable/Runtime table defined here, with Outcome & Value Store and
   deduction namespaces private to one segment.
 
-The implementation work tracked by #13 must freeze every path that depends on
-those assumptions until this proposal decides their replacement or explicit
-compatibility projection. A conflict with the already written issues or ADRs is
-not authority to preserve their older entry/result model.
+The implementation work tracked by #13 is not frozen as one unit. The boundary
+is:
+
+- ADR 0008's input-bearing entry, `EvaluationResult`, pinning, and two-layer
+  isolation sections must be revised before merge; knowingly merging those
+  sections and promising to supersede them later would preserve a contract
+  already known to conflict with this proposal;
+- #13 T1 and T2 may proceed only after they use segment/Cable/Runtime isolation
+  and per-send segment pinning; T3 then consumes that revised lifecycle;
+- #13 T4–T8 and T16–T18 remain blocked where they expose or test
+  `evaluate(GoalTarget, arguments)`, one-result evaluation handles, or the old
+  result lifecycle; their replacement surface is `lay`, send, Cable
+  observation/control, and `decommision`;
+- the old planned evaluation-surface SCP work in T21/T23 must not be activated
+  independently in its former form; SCP-0014 owns the superseding entry and
+  result direction;
+- ADR 0009 and #13 T10–T14 may proceed after incorporating the
+  multiplicity-bearing `GoalNodeId` and segment-private namespaces. `Input(k)`,
+  `Authored(k)`, and `Emission(k)` are placement/provenance and do not enter a
+  Goal-step memo key;
+- #13 T19–T20 may develop memo-local comparison logic, but end-to-end lifecycle
+  parity waits for the revised Cable/segment harness.
+
+If one open Vessel pull request contains both ADR 0008 and ADR 0009, it must
+update or split the conflicting ADR 0008 portions before merge; the valid memo
+work is not a reason to merge a known-invalid entry contract. A conflict with
+already written issues, ADRs, or implementation plans is never authority to
+preserve their older entry/result model.
 
 One-shot `evaluate(GoalTarget, arguments)` is explicitly **not** a compatibility
 projection. Adapters must not recreate it as `lay + send + implicit

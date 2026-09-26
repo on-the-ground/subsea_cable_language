@@ -977,6 +977,14 @@ An eventual activation must synchronize at least:
   and whole-Cable termination;
 - grammar projections: `lay`, send/connect syntax, `decommision`, signature
   declaration, and any call-suffix migration;
+- diagnostic phase/owner records: the `README.md` phase table and the
+  `NAME RESOLUTION AND ERROR OWNERSHIP` commentary in both `SubseaCable.g4` and
+  `SubseaCable.ebnf`. `OutputMultiplicityMismatch` is dual-phase, so it belongs
+  in the validation and deduction rows and in the same "validation when
+  statically provable, otherwise deduction" sentence that already covers
+  `KeyNotFound`, `DestructureMismatch`, and cycles. The host row additionally
+  receives the Host multiplicity and terminal violation kinds once Section 14
+  question 4 names them;
 - Runtime/Vessel contracts: Host streaming protocol, channel blocking,
   per-input serialization, terminal propagation, and Anchor sinks;
 - Scheduler contract: admission and completion of per-Value downstream work;

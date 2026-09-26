@@ -214,6 +214,20 @@ A laid Cable may accept multiple inputs over its lifetime:
 The exact placement of `lay` in portable source syntax versus the outward
 Vessel API remains a grammar-surface task. Its lifecycle meaning is fixed here.
 
+There is no one-shot `evaluate(GoalTarget(goalRef, arguments))` operation and no
+equivalent input-bearing Goal entry under another name. An operator or debugger
+that targets an arbitrary Goal must use the same lifecycle as every other
+client:
+
+```text
+cable = lay(goalRef)
+arguments -> cable
+decommision(cable)
+```
+
+The resulting Cable handle is the observation and control handle. Debugging
+does not create a second evaluation model.
+
 ### 2.2 `decommision`
 
 The owner-selected lifecycle term and spelling is:
@@ -641,8 +655,10 @@ Vessel ADRs 0008 and 0009 predate this direction and cannot proceed unchanged.
 In particular:
 
 - `evaluate(GoalTarget(goalRef, canonicalArguments))` treats arguments as part
-  of an input-bearing entry operation, while this proposal separates laying a
-  target from sending one or more inputs;
+  of an input-bearing entry operation. SCP-0014 removes that operation and its
+  input-bearing `GoalTarget` variant rather than preserving either as sugar:
+  arbitrary-Goal operation and debugging must use `lay(goalRef)`, separate
+  sends, and `decommision`;
 - the planned `EvaluationResult` and result-retention surface assumes one Root
   result and must represent Value sequences, per-input `EndOfResult`, final
   `EndOfStream`, and decommissioning;
@@ -656,10 +672,10 @@ those assumptions until this proposal decides their replacement or explicit
 compatibility projection. A conflict with the already written issues or ADRs is
 not authority to preserve their older entry/result model.
 
-One possible compatibility projection is to define one-shot `evaluate(target,
-arguments)` as `lay(target)` plus one send plus implicit decommissioning. That
-projection is **not decided by this Draft** and must not be implemented by
-inference.
+One-shot `evaluate(GoalTarget, arguments)` is explicitly **not** a compatibility
+projection. Adapters must not recreate it as `lay + send + implicit
+decommision`, because that would restore the input-bearing entry model under a
+different API spelling.
 
 ## 13. Required canonical and conformance projections
 
@@ -718,7 +734,10 @@ Minimum conformance coverage includes:
 17. `/0` and empty `/N` invoking a downstream Goal zero times and propagating
     `EndOfResult(Succeeded)` without `NoOutputNotRoutable`;
 18. missing `/1` output reported as a multiplicity protocol violation rather
-    than `NoOutputNotRoutable`.
+    than `NoOutputNotRoutable`;
+19. TUI, MCP, library, and service adapters exposing arbitrary-Goal debugging
+    through `lay(goalRef)` plus separate send/decommission operations and
+    exposing no input-bearing `evaluate(GoalTarget, arguments)` equivalent.
 
 ## 14. Remaining drafting questions
 
@@ -728,16 +747,14 @@ These questions affect projection details but do not reopen the decisions above:
 2. exact grammar migration from current `Goal[...]` and `Goal(...)` forms;
 3. whether `lay`, send/connect, and `decommision` are portable Voyage syntax,
    outward Vessel operations, or a shared surface with identical semantics;
-4. whether one-shot `evaluate(target, arguments)` survives as explicit
-   `lay + send + decommision` compatibility sugar;
-5. exact Host diagnostic names for multiplicity and terminal violations;
-6. retry and cancellation after partial `/N` publication;
-7. how parallel branches aggregate one downstream `EndOfResult` outcome;
-8. whether a channel-blocked send is pre-attempt ineligibility or an active
+4. exact Host diagnostic names for multiplicity and terminal violations;
+5. retry and cancellation after partial `/N` publication;
+6. how parallel branches aggregate one downstream `EndOfResult` outcome;
+7. whether a channel-blocked send is pre-attempt ineligibility or an active
    attempt for Scheduler accounting, and how channel capacity composes with the
    SCP-0001 Touchdown prefetch window;
-9. concrete buffer/profile declaration and observability;
-10. the precise accepted-input boundary during a race with
+8. concrete buffer/profile declaration and observability;
+9. the precise accepted-input boundary during a race with
    `decommision(cable)`.
 
 ## Owner decision record

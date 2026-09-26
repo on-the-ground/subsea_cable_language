@@ -310,12 +310,13 @@ Within one active segment:
 - the downstream edge emits its `EndOfResult` only after all work caused by the
   current segment has terminated.
 
-Parallel branches do not expose separate branch-local `EndOfResult` frames as
-separate input-segment terminals. The composition waits for every branch to
-reach a terminal state and emits exactly one downstream `EndOfResult`. The rule
-that combines successful, failed, and cancelled branch outcomes into that one
-outcome remains a drafting question; implementations must not infer it from
-arrival order.
+`{...}` parallel composition is one composite Goal, represented by one
+`parallel` occurrence. Its branches do not expose branch-local `EndOfResult`
+frames on the composite's outward edge.
+Branch terminals remain internal scope state; after the composite's work has
+terminated and drained, the composite emits exactly one `EndOfResult` carrying
+its single Scheduler-determined scope outcome. Arrival order never combines or
+selects that outcome.
 
 Because separate input segments never overlap, the portable `EndOfResult`
 frame needs no ID. The Vessel may retain internal correlation and provenance;
@@ -737,7 +738,9 @@ Minimum conformance coverage includes:
     than `NoOutputNotRoutable`;
 19. TUI, MCP, library, and service adapters exposing arbitrary-Goal debugging
     through `lay(goalRef)` plus separate send/decommission operations and
-    exposing no input-bearing `evaluate(GoalTarget, arguments)` equivalent.
+    exposing no input-bearing `evaluate(GoalTarget, arguments)` equivalent;
+20. a parallel composite exposing exactly one outward `EndOfResult`, with all
+    branch-local terminals remaining internal to its one composite scope.
 
 ## 14. Remaining drafting questions
 
@@ -749,12 +752,11 @@ These questions affect projection details but do not reopen the decisions above:
    outward Vessel operations, or a shared surface with identical semantics;
 4. exact Host diagnostic names for multiplicity and terminal violations;
 5. retry and cancellation after partial `/N` publication;
-6. how parallel branches aggregate one downstream `EndOfResult` outcome;
-7. whether a channel-blocked send is pre-attempt ineligibility or an active
+6. whether a channel-blocked send is pre-attempt ineligibility or an active
    attempt for Scheduler accounting, and how channel capacity composes with the
    SCP-0001 Touchdown prefetch window;
-8. concrete buffer/profile declaration and observability;
-9. the precise accepted-input boundary during a race with
+7. concrete buffer/profile declaration and observability;
+8. the precise accepted-input boundary during a race with
    `decommision(cable)`.
 
 ## Owner decision record

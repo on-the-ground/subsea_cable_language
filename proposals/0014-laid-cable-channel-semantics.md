@@ -263,16 +263,29 @@ The portable behavioral contract is:
 - silence is not termination;
 - only the explicit terminal protocol establishes completion;
 - buffer capacity and concrete physical transport remain Runtime/profile
-  concerns unless a later activated contract says otherwise.
+  concerns rather than Voyage syntax or `@policy`.
 
 The implementation may use Go channels, queues, continuations, callbacks, or
 another mechanism, but observable behavior must satisfy the portable contract.
 
-Channel capacity does not replace SCP-0001's Touchdown prefetch window. The
-activation work must define how the two limits compose and whether waiting on a
-full channel is Scheduler ineligibility or an already-active attempt. Until
-then, implementations must not silently derive attempt accounting or policy
-semantics from a chosen queue implementation.
+Channel capacity is selected by Vessel configuration, for example
+`vessel.conf`. Every Runtime profile defines a default used when the operator
+does not configure one; capacity `0` remains a valid rendezvous setting. The
+exact configuration key, numeric default, and reload behavior are profile
+details, not language syntax.
+
+Channel capacity does not replace SCP-0001's Touchdown prefetch window:
+
+- the prefetch window limits how far structural deduction and Touchdown
+  publication may advance;
+- channel capacity limits transmission of Values after an invocation is
+  already running;
+- both limits apply at their own boundaries and neither overrides the other.
+
+When a send waits because the channel is full, the Host invocation has already
+started and remains an active attempt. The Scheduler must not reclassify it as
+an occurrence that was never eligible or never dispatched. Attempt accounting,
+cancellation, timeout, and evidence therefore continue across the blocked send.
 
 ## 4. One active input segment per Cable
 
@@ -740,7 +753,13 @@ Minimum conformance coverage includes:
     through `lay(goalRef)` plus separate send/decommission operations and
     exposing no input-bearing `evaluate(GoalTarget, arguments)` equivalent;
 20. a parallel composite exposing exactly one outward `EndOfResult`, with all
-    branch-local terminals remaining internal to its one composite scope.
+    branch-local terminals remaining internal to its one composite scope;
+21. configured and default channel capacities producing identical result
+    semantics while changing only permitted blocking behavior;
+22. a full-channel send remaining one active attempt rather than reverting to
+    undispatched Scheduler ineligibility;
+23. Touchdown prefetch and channel capacity independently enforcing their own
+    structural and Value-flow bounds.
 
 ## 14. Remaining drafting questions
 
@@ -752,11 +771,9 @@ These questions affect projection details but do not reopen the decisions above:
    outward Vessel operations, or a shared surface with identical semantics;
 4. exact Host diagnostic names for multiplicity and terminal violations;
 5. retry and cancellation after partial `/N` publication;
-6. whether a channel-blocked send is pre-attempt ineligibility or an active
-   attempt for Scheduler accounting, and how channel capacity composes with the
-   SCP-0001 Touchdown prefetch window;
-7. concrete buffer/profile declaration and observability;
-8. the precise accepted-input boundary during a race with
+6. the concrete `vessel.conf` key, each profile's numeric default, observability,
+   and whether configuration reload affects already laid Cables;
+7. the precise accepted-input boundary during a race with
    `decommision(cable)`.
 
 ## Owner decision record
